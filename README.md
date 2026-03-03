@@ -231,8 +231,6 @@ El frontend es el puente entre el usuario clínico y la infraestructura criptogr
 
 MVP en desarrollo.
 
-Fase actual:
-
 Subnet privada
 
 Registro de hashes on-chain
