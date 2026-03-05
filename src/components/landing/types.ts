@@ -10,7 +10,6 @@ export type StoryChapter = {
   title: string;
   body: string;
   image: string;
-  supportImage: string;
   miniCta: string;
 };
 

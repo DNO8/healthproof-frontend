@@ -89,28 +89,39 @@ export const TRUST_METRICS: MetricItem[] = [
 
 export const STORY_CHAPTERS: StoryChapter[] = [
   {
-    chapter: "Capítulo 1",
-    title: "La fricción del modelo actual",
-    body: "Historias clínicas y resultados viajan en múltiples canales, con riesgo de pérdida de contexto y validaciones manuales.",
-    image: "/images/storyboard/issue.jpeg",
-    supportImage: "/images/storyboard/papers.png",
-    miniCta: "Identificar puntos críticos",
+    chapter: "Capítulo 1 — El problema",
+    title: "Burocracia y validación lenta",
+    body: "El paciente visita al médico, quien emite una orden en papel. Luego va al laboratorio donde la receta se valida manualmente. Los resultados llegan por email, papel o portal web. Cada paso depende de confianza implícita y procesos manuales que retrasan la atención.",
+    image: "/images/storyboard/issue1.jpeg",
+    miniCta: "Proceso manual y lento",
   },
   {
-    chapter: "Capítulo 2",
-    title: "Cadena de verificación clínica",
-    body: "Laboratorios y centros médicos emiten evidencia verificable y permisos granulares, sin fricción para los equipos.",
-    image: "/images/storyboard/Medical_Collaboration2.png",
-    supportImage: "/images/storyboard/medics.png",
-    miniCta: "Verificar evidencia en tiempo real",
+    chapter: "Capítulo 2 — El problema",
+    title: "Resultados dispersos sin interoperabilidad",
+    body: "Centros médicos y laboratorios operan en silos. Los datos clínicos están fragmentados entre instituciones que no se comunican entre sí. El paciente se convierte en mensajero de sus propios documentos, transportándolos físicamente entre proveedores.",
+    image: "/images/storyboard/issue2.jpeg",
+    miniCta: "Datos fragmentados",
   },
   {
-    chapter: "Capítulo 3",
-    title: "Confianza compartida entre actores",
-    body: "Pacientes, médicos y laboratorios colaboran con trazabilidad completa para decidir con datos confiables.",
-    image: "/images/storyboard/Medical_Collaboration.png",
-    supportImage: "/images/storyboard/papers.png",
-    miniCta: "Activar flujo HealthProof",
+    chapter: "Capítulo 3 — El problema",
+    title: "Sin control sobre tu historial clínico",
+    body: "Las plataformas centralizadas almacenan registros en entornos cerrados. El paciente depende de la institución que guarda sus datos, sin portabilidad ni soberanía. Los sistemas actuales almacenan datos, pero no prueban su veracidad.",
+    image: "/images/storyboard/issue3.jpeg",
+    miniCta: "Paciente sin soberanía",
+  },
+  {
+    chapter: "Capítulo 4 — La solución",
+    title: "Autenticidad criptográfica verificable",
+    body: "HealthProof registra un hash criptográfico de cada documento clínico en blockchain Layer 1. Cada orden médica, resultado de laboratorio y prescripción genera una prueba inmutable con marca de tiempo. La evidencia es verificable por cualquier actor autorizado, sin intermediarios.",
+    image: "/images/storyboard/healthproof1.jpeg",
+    miniCta: "Verificación on-chain",
+  },
+  {
+    chapter: "Capítulo 5 — La solución",
+    title: "Control de permisos por el paciente",
+    body: "El paciente no comparte datos — comparte permisos. Autoriza al centro médico a emitir órdenes, al laboratorio a acceder y subir resultados, y al doctor a interpretar. Todo mediante un código QR o autorización en un clic. Trazabilidad completa, control total.",
+    image: "/images/storyboard/healthproof2.jpeg",
+    miniCta: "Permisos granulares",
   },
 ];
 
@@ -221,10 +232,7 @@ export const ASSET_ROUTE_POINTS: {
   },
 };
 
-export const ACTOR_LABEL_POSITIONS: Record<
-  string,
-  { className: string }
-> = {
+export const ACTOR_LABEL_POSITIONS: Record<string, { className: string }> = {
   "Centro Médico": {
     className: "left-[2%] bottom-[30%] sm:left-[12%] sm:bottom-[28%]",
   },
