@@ -81,8 +81,6 @@ export const ICON_VISUAL_VARIANTS: IconVisualVariant[] = TRANSMISSION_SLOTS.map(
 );
 
 export const INITIAL_FLOW_SEGMENT_DURATION = 2.6;
-export const VERIFIED_FLOW_SPEED_MULTIPLIER = 1.5;
-export const INITIAL_FLOW_ROTATION_DURATION = 1.8;
 
 export const ACTOR_SCENE_TRANSFORMS: Record<string, string> = {
   "Medical Center":

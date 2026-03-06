@@ -1,9 +1,8 @@
 import gsap from "gsap";
-import { type RefObject, useLayoutEffect } from "react";
+import { type RefObject, useLayoutEffect, useRef } from "react";
 import {
   ICON_VISUAL_VARIANTS,
   INITIAL_FLOW_SEGMENT_DURATION,
-  VERIFIED_FLOW_SPEED_MULTIPLIER,
 } from "@/components/landing/constants";
 
 type CarouselAnimationRefs = {
@@ -21,8 +20,11 @@ export function useCarouselAnimation(
   reduceMotion: boolean,
 ) {
   const { sectionRef, ringRef, domeRef, actorRefs, iconRefs, dotRefs } = refs;
+  const verifiedRef = useRef(verified);
+  verifiedRef.current = verified;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refs object is memoized and stable
+  // Effect 1: One-time orbit setup — only re-runs when reduceMotion changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refs are stable via useMemo; verified tracked via ref
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       if (ringRef.current) {
@@ -53,7 +55,7 @@ export function useCarouselAnimation(
         });
 
         if (domeRef.current) {
-          gsap.set(domeRef.current, { autoAlpha: verified ? 1 : 0 });
+          gsap.set(domeRef.current, { autoAlpha: verifiedRef.current ? 1 : 0 });
         }
 
         return;
@@ -73,9 +75,7 @@ export function useCarouselAnimation(
 
       const icons = iconRefs.current.filter(Boolean) as HTMLDivElement[];
       const mm = gsap.matchMedia();
-      const speedMultiplier = verified ? VERIFIED_FLOW_SPEED_MULTIPLIER : 1;
-      const orbitDuration =
-        (INITIAL_FLOW_SEGMENT_DURATION * 3) / speedMultiplier;
+      const orbitDuration = INITIAL_FLOW_SEGMENT_DURATION * 3;
 
       const animateOrbit = (radiusX: number, radiusY: number) => {
         const totalIcons = icons.length;
@@ -181,93 +181,90 @@ export function useCarouselAnimation(
     }, sectionRef);
 
     return () => ctx.revert();
-  }, [reduceMotion, verified, refs]);
+  }, [reduceMotion]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refs accessed via .current are stable
+  // Effect 2: Verified-state transitions — only re-runs when verified changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refs are stable; reduceMotion read from closure is intentional
   useLayoutEffect(() => {
-    const ctx = gsap.context(() => {
-      const icons = iconRefs.current.filter(Boolean) as HTMLDivElement[];
+    const icons = iconRefs.current.filter(Boolean) as HTMLDivElement[];
 
-      if (reduceMotion) {
-        gsap.set(icons, { autoAlpha: 0.95, scale: 1 });
+    if (reduceMotion) {
+      gsap.set(icons, { autoAlpha: 0.95, scale: 1 });
 
-        if (domeRef.current) {
-          gsap.set(domeRef.current, { autoAlpha: verified ? 1 : 0 });
-        }
-
-        dotRefs.current.forEach((dotNode) => {
-          if (!dotNode) {
-            return;
-          }
-
-          gsap.set(dotNode, {
-            autoAlpha: verified ? 0.85 : 0,
-            scale: 1,
-          });
-        });
-
-        return;
+      if (domeRef.current) {
+        gsap.set(domeRef.current, { autoAlpha: verified ? 1 : 0 });
       }
 
-      gsap.fromTo(
-        icons,
-        { autoAlpha: 0, scale: 0.68 },
-        {
-          autoAlpha: 0.95,
-          scale: 1,
-          duration: 0.45,
-          stagger: 0.06,
-          ease: "power2.out",
-        },
-      );
-
-      if (!domeRef.current) {
-        return;
-      }
-
-      if (!verified) {
-        gsap.to(domeRef.current, {
-          autoAlpha: 0,
-          duration: 0.35,
-          ease: "power1.out",
-        });
-        return;
-      }
-
-      gsap.to(domeRef.current, {
-        autoAlpha: 1,
-        duration: 0.65,
-        ease: "power2.out",
-      });
-
-      dotRefs.current.forEach((dotNode, index) => {
+      dotRefs.current.forEach((dotNode) => {
         if (!dotNode) {
           return;
         }
 
-        gsap.fromTo(
-          dotNode,
-          { autoAlpha: 0, scale: 0.4 },
-          {
-            autoAlpha: 0.95,
-            scale: 1,
-            duration: 0.34,
-            delay: index * 0.02,
-            ease: "power2.out",
-          },
-        );
-
-        gsap.to(dotNode, {
-          autoAlpha: 0.35 + (index % 5) * 0.11,
-          duration: 1.1 + (index % 4) * 0.2,
-          repeat: -1,
-          yoyo: true,
-          ease: "sine.inOut",
-          delay: index * 0.03,
+        gsap.set(dotNode, {
+          autoAlpha: verified ? 0.85 : 0,
+          scale: 1,
         });
       });
-    }, sectionRef);
 
-    return () => ctx.revert();
-  }, [reduceMotion, verified, refs]);
+      return;
+    }
+
+    gsap.fromTo(
+      icons,
+      { autoAlpha: 0, scale: 0.68 },
+      {
+        autoAlpha: 0.95,
+        scale: 1,
+        duration: 0.45,
+        stagger: 0.06,
+        ease: "power2.out",
+      },
+    );
+
+    if (!domeRef.current) {
+      return;
+    }
+
+    if (!verified) {
+      gsap.to(domeRef.current, {
+        autoAlpha: 0,
+        duration: 0.35,
+        ease: "power1.out",
+      });
+      return;
+    }
+
+    gsap.to(domeRef.current, {
+      autoAlpha: 1,
+      duration: 0.65,
+      ease: "power2.out",
+    });
+
+    dotRefs.current.forEach((dotNode, index) => {
+      if (!dotNode) {
+        return;
+      }
+
+      gsap.fromTo(
+        dotNode,
+        { autoAlpha: 0, scale: 0.4 },
+        {
+          autoAlpha: 0.95,
+          scale: 1,
+          duration: 0.34,
+          delay: index * 0.02,
+          ease: "power2.out",
+        },
+      );
+
+      gsap.to(dotNode, {
+        autoAlpha: 0.35 + (index % 5) * 0.11,
+        duration: 1.1 + (index % 4) * 0.2,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+        delay: index * 0.03,
+      });
+    });
+  }, [verified]);
 }
