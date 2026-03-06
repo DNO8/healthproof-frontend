@@ -5,26 +5,6 @@ export type Actor = {
   summary: string;
 };
 
-export type StoryChapter = {
-  chapter: string;
-  title: string;
-  body: string;
-  image: string;
-  miniCta: string;
-};
-
-export type MetricItem = {
-  value: string;
-  label: string;
-  note: string;
-};
-
-export type TestimonialItem = {
-  quote: string;
-  author: string;
-  role: string;
-};
-
 export type DecorShape = {
   className: string;
   color: string;

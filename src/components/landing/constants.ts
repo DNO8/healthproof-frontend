@@ -2,52 +2,31 @@ import type {
   Actor,
   DecorShape,
   IconVisualVariant,
-  MetricItem,
   RoutePoint,
   SolutionFeature,
-  StoryChapter,
   TeamMember,
-  TestimonialItem,
   UseCaseItem,
   WorkflowStep,
 } from "./types";
 
 export const ACTORS: Actor[] = [
   {
-    name: "Centro Médico",
-    role: "Valida resultados",
+    name: "Medical Center",
+    role: "Validates results",
     image: "/images/hero/medical-center.png",
-    summary: "Comprueba permisos y autenticidad antes de atender.",
+    summary: "Checks permissions and authenticity before attending.",
   },
   {
-    name: "Laboratorio",
-    role: "Emite evidencia",
+    name: "Laboratory",
+    role: "Emits evidence",
     image: "/images/hero/laboratory.png",
-    summary: "Entrega resultados clínicos listos para verificación.",
+    summary: "Delivers clinical results ready for verification.",
   },
   {
-    name: "Paciente",
-    role: "Control soberano",
+    name: "Patient",
+    role: "Sovereign control",
     image: "/images/hero/paciente-nene.png",
-    summary: "Decide quién accede a su información y por cuánto tiempo.",
-  },
-];
-
-export const BASELINE_PAIN_METRICS: MetricItem[] = [
-  {
-    value: "Excesivo",
-    label: "Papeleo clínico",
-    note: "Demasiados documentos manuales por validación",
-  },
-  {
-    value: "Lenta",
-    label: "Burocracia operativa",
-    note: "Autorizaciones y revisión con tiempos extendidos",
-  },
-  {
-    value: "Frecuente",
-    label: "Retrabajo médico",
-    note: "Se repiten procesos por evidencia no confiable",
+    summary: "You decide who accesses your information and for how long.",
   },
 ];
 
@@ -62,99 +41,6 @@ export const POST_BLOCKCHAIN_ASSETS = [
   "/images/icons/post-blockchain/candado.png",
   "/images/icons/post-blockchain/security.png",
   "/images/icons/post-blockchain/verify.png",
-];
-
-export const PRE_LABELS = ["Documentos", "Imágenes", "Carpetas compartidas"];
-
-export const POST_LABELS = [
-  "Registro Avalanche",
-  "Permisos cifrados",
-  "Evidencia segura",
-  "Verificación instantánea",
-];
-
-export const TRUST_METRICS: MetricItem[] = [
-  {
-    value: "99.97%",
-    label: "Integridad verificable",
-    note: "Auditoría criptográfica de evidencias clínicas",
-  },
-  {
-    value: "< 2 min",
-    label: "Validación de documentos",
-    note: "Desde emisión de laboratorio hasta consulta médica",
-  },
-  {
-    value: "+42%",
-    label: "Reducción de retrabajo",
-    note: "Menos reprocesos por archivos no confiables",
-  },
-];
-
-export const STORY_CHAPTERS: StoryChapter[] = [
-  {
-    chapter: "Capítulo 1 — El problema",
-    title: "Burocracia y validación lenta",
-    body: "El paciente visita al médico, quien emite una orden en papel. Luego va al laboratorio donde la receta se valida manualmente. Los resultados llegan por email, papel o portal web. Cada paso depende de confianza implícita y procesos manuales que retrasan la atención.",
-    image: "/images/storyboard/issue1.jpeg",
-    miniCta: "Proceso manual y lento",
-  },
-  {
-    chapter: "Capítulo 2 — El problema",
-    title: "Resultados dispersos sin interoperabilidad",
-    body: "Centros médicos y laboratorios operan en silos. Los datos clínicos están fragmentados entre instituciones que no se comunican entre sí. El paciente se convierte en mensajero de sus propios documentos, transportándolos físicamente entre proveedores.",
-    image: "/images/storyboard/issue2.jpeg",
-    miniCta: "Datos fragmentados",
-  },
-  {
-    chapter: "Capítulo 3 — El problema",
-    title: "Sin control sobre tu historial clínico",
-    body: "Las plataformas centralizadas almacenan registros en entornos cerrados. El paciente depende de la institución que guarda sus datos, sin portabilidad ni soberanía. Los sistemas actuales almacenan datos, pero no prueban su veracidad.",
-    image: "/images/storyboard/issue3.jpeg",
-    miniCta: "Paciente sin soberanía",
-  },
-  {
-    chapter: "Capítulo 4 — La solución",
-    title: "Autenticidad criptográfica verificable",
-    body: "HealthProof registra un hash criptográfico de cada documento clínico en blockchain Layer 1. Cada orden médica, resultado de laboratorio y prescripción genera una prueba inmutable con marca de tiempo. La evidencia es verificable por cualquier actor autorizado, sin intermediarios.",
-    image: "/images/storyboard/healthproof1.jpeg",
-    miniCta: "Verificación on-chain",
-  },
-  {
-    chapter: "Capítulo 5 — La solución",
-    title: "Control de permisos por el paciente",
-    body: "El paciente no comparte datos — comparte permisos. Autoriza al centro médico a emitir órdenes, al laboratorio a acceder y subir resultados, y al doctor a interpretar. Todo mediante un código QR o autorización en un clic. Trazabilidad completa, control total.",
-    image: "/images/storyboard/healthproof2.jpeg",
-    miniCta: "Permisos granulares",
-  },
-];
-
-export const TESTIMONIALS: TestimonialItem[] = [
-  {
-    quote:
-      "Pasamos de validar documentos manualmente a verificar evidencia clínica en segundos.",
-    author: "Dra. Camila Torres",
-    role: "Dirección Médica, Red Vital",
-  },
-  {
-    quote:
-      "Ahora cada resultado de laboratorio viaja con trazabilidad, sin romper la experiencia clínica.",
-    author: "Tomás Herrera",
-    role: "CTO, Lab Nova",
-  },
-  {
-    quote:
-      "El paciente mantiene control y nosotros reducimos riesgo operativo con evidencia auditable.",
-    author: "Marta Quiroga",
-    role: "Gerencia de Operaciones, MediTrust",
-  },
-];
-
-export const PARTNER_SIGNALS = [
-  "Hospital Networks",
-  "Clinical Labs",
-  "Insurance Providers",
-  "Digital Health",
 ];
 
 export const HERO_CIRCLE_DECORS: DecorShape[] = [
@@ -173,19 +59,6 @@ export const HERO_CROSS_DECORS: DecorShape[] = [
   { className: "left-[29%] top-[14%]", color: "#6EC7D8", size: 18 },
   { className: "right-[12%] top-16", color: "#67C3D0", size: 34 },
   { className: "right-[24%] bottom-[18%]", color: "#A8DDED", size: 22 },
-];
-
-export const STORY_CIRCLE_DECORS: DecorShape[] = [
-  { className: "left-7 top-24", color: "#D8EEF9", size: 18 },
-  { className: "right-8 top-10", color: "#C9EBF8", size: 34 },
-  { className: "left-[42%] bottom-8", color: "#BDE5F5", size: 14 },
-  { className: "right-6 bottom-6", color: "#C9EBF8", size: 104 },
-];
-
-export const STORY_CROSS_DECORS: DecorShape[] = [
-  { className: "left-7 top-7", color: "#74C9D8", size: 24 },
-  { className: "right-[34%] top-[21%]", color: "#9EDBE9", size: 20 },
-  { className: "left-[12%] bottom-[17%]", color: "#8ED2E2", size: 16 },
 ];
 
 export const TRANSMISSION_SLOTS = Array.from(
@@ -212,11 +85,11 @@ export const VERIFIED_FLOW_SPEED_MULTIPLIER = 1.5;
 export const INITIAL_FLOW_ROTATION_DURATION = 1.8;
 
 export const ACTOR_SCENE_TRANSFORMS: Record<string, string> = {
-  "Centro Médico":
+  "Medical Center":
     "translate(-20%, -50%) translate3d(calc(-1 * clamp(60px, 19vw, 240px)), clamp(40px, 12vw, 130px), clamp(14px, 10vw, 140px))",
-  Laboratorio:
+  Laboratory:
     "translate(-15%, -10%) translate3d(-10px, calc(-1 * clamp(60px, 16vw, 170px)), calc(-1 * clamp(60px, 18vw, 210px)))",
-  Paciente:
+  Patient:
     "translate(20%, -50%) translate3d(clamp(60px, 19vw, 240px), clamp(40px, 12vw, 130px), clamp(44px, 10vw, 140px))",
 };
 
@@ -237,22 +110,22 @@ export const ASSET_ROUTE_POINTS: {
 };
 
 export const ACTOR_LABEL_POSITIONS: Record<string, { className: string }> = {
-  "Centro Médico": {
+  "Medical Center": {
     className: "left-[2%] bottom-[30%] sm:left-[12%] sm:bottom-[28%]",
   },
-  Laboratorio: {
+  Laboratory: {
     className: "left-1/2 -translate-x-1/2 top-[2%] sm:top-[15%]",
   },
-  Paciente: {
+  Patient: {
     className:
       "right-[2%] bottom-[30%] text-right sm:right-[16%] sm:bottom-[28%]",
   },
 };
 
 export const ACTOR_PAIN_ROLES: Record<string, string> = {
-  "Centro Médico": "Burocracia y validación lenta",
-  Laboratorio: "Resultados en canales dispersos",
-  Paciente: "Poco control sobre su historial",
+  "Medical Center": "Bureaucracy and slow validation",
+  Laboratory: "Results across scattered channels",
+  Patient: "Little control over their history",
 };
 
 // §1 Hero — Pain bullets
@@ -373,7 +246,6 @@ export const ICD11_FEATURES: string[] = [
   "Fully digital disease classification",
   "Over 17,000 diagnostic codes",
   "More than 120,000 codifiable terms",
-  "Integrated APIs and digital tooling",
   "Standardized interoperability frameworks",
 ];
 

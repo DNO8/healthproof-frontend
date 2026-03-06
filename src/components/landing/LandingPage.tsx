@@ -54,6 +54,12 @@ export function LandingPage() {
         </ScrollReveal>
         <TechnologySection />
 
+        {/* §10 Team */}
+        <ScrollReveal y={30} duration={0.5}>
+          <SectionDivider label="Team" />
+        </ScrollReveal>
+        <TeamSection />
+
         {/* §7 ICD-11 */}
         <ScrollReveal y={30} duration={0.5}>
           <SectionDivider label="ICD-11" />
@@ -72,12 +78,6 @@ export function LandingPage() {
         <ScrollReveal y={80} duration={1}>
           <FinalCtaSection />
         </ScrollReveal>
-
-        {/* §10 Team */}
-        <ScrollReveal y={30} duration={0.5}>
-          <SectionDivider label="Team" />
-        </ScrollReveal>
-        <TeamSection />
       </section>
     </main>
   );

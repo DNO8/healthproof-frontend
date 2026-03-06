@@ -12,27 +12,11 @@ export function SolutionSection() {
 
         <div className="mx-auto mt-6 max-w-3xl space-y-4 text-center">
           <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
-            HealthProof is a{" "}
-            <strong className="text-slate-800">
-              Web3 infrastructure layer
-            </strong>{" "}
-            that allows medical institutions to issue, verify, and exchange
-            clinical documents with{" "}
-            <strong className="text-slate-800">
-              cryptographic proof of authenticity
-            </strong>
-            .
-          </p>
-          <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
             Instead of trusting PDFs, emails, or manual validations, every
             document receives a{" "}
             <strong className="text-slate-800">
               tamper-proof verification record anchored on blockchain.
             </strong>
-          </p>
-          <p className="text-sm font-semibold text-slate-700 sm:text-base">
-            HealthProof does not store medical data. It stores{" "}
-            <span className="text-sky-600">proof of truth</span>.
           </p>
         </div>
 

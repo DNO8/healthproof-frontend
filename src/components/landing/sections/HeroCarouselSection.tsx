@@ -259,13 +259,7 @@ export function HeroCarouselSection({
                 "Verifiable and secure workflow."
               ) : (
                 <>
-                  HealthProof is a verification layer for healthcare
-                  institutions that need to exchange clinical data while
-                  guaranteeing{" "}
-                  <strong className="text-slate-700">
-                    integrity, traceability, and patient-controlled access
-                  </strong>
-                  . Built for the new era of{" "}
+                  Built for the new era of{" "}
                   <strong className="text-slate-700">
                     health data interoperability and ICD-11 digital standards
                   </strong>

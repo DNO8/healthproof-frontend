@@ -7,7 +7,7 @@ export function Icd11Section() {
       <div className="neu-shell border border-white/70 p-6 sm:p-10">
         <SectionTitle
           eyebrow="ICD-11"
-          title="Designed for the global transition to ICD-11"
+          title="Designing the global transition to ICD-11"
         />
 
         <div className="mx-auto mt-6 max-w-3xl space-y-6">
@@ -51,11 +51,6 @@ export function Icd11Section() {
                 verifiable clinical documentation compatible with interoperable
                 health systems.
               </strong>
-            </p>
-            <p className="text-sm font-semibold text-slate-700 sm:text-base">
-              Instead of rebuilding their systems, institutions can{" "}
-              <span className="text-sky-600">add a verification layer</span>{" "}
-              that ensures their clinical data can be trusted across networks.
             </p>
           </div>
         </div>
