@@ -186,85 +186,89 @@ export function useCarouselAnimation(
   // Effect 2: Verified-state transitions — only re-runs when verified changes
   // biome-ignore lint/correctness/useExhaustiveDependencies: refs are stable; reduceMotion read from closure is intentional
   useLayoutEffect(() => {
-    const icons = iconRefs.current.filter(Boolean) as HTMLDivElement[];
+    const ctx = gsap.context(() => {
+      const icons = iconRefs.current.filter(Boolean) as HTMLDivElement[];
 
-    if (reduceMotion) {
-      gsap.set(icons, { autoAlpha: 0.95, scale: 1 });
+      if (reduceMotion) {
+        gsap.set(icons, { autoAlpha: 0.95, scale: 1 });
 
-      if (domeRef.current) {
-        gsap.set(domeRef.current, { autoAlpha: verified ? 1 : 0 });
-      }
-
-      dotRefs.current.forEach((dotNode) => {
-        if (!dotNode) {
-          return;
+        if (domeRef.current) {
+          gsap.set(domeRef.current, { autoAlpha: verified ? 1 : 0 });
         }
 
-        gsap.set(dotNode, {
-          autoAlpha: verified ? 0.85 : 0,
-          scale: 1,
+        dotRefs.current.forEach((dotNode) => {
+          if (!dotNode) {
+            return;
+          }
+
+          gsap.set(dotNode, {
+            autoAlpha: verified ? 0.85 : 0,
+            scale: 1,
+          });
         });
-      });
 
-      return;
-    }
-
-    gsap.fromTo(
-      icons,
-      { autoAlpha: 0, scale: 0.68 },
-      {
-        autoAlpha: 0.95,
-        scale: 1,
-        duration: 0.45,
-        stagger: 0.06,
-        ease: "power2.out",
-      },
-    );
-
-    if (!domeRef.current) {
-      return;
-    }
-
-    if (!verified) {
-      gsap.to(domeRef.current, {
-        autoAlpha: 0,
-        duration: 0.35,
-        ease: "power1.out",
-      });
-      return;
-    }
-
-    gsap.to(domeRef.current, {
-      autoAlpha: 1,
-      duration: 0.65,
-      ease: "power2.out",
-    });
-
-    dotRefs.current.forEach((dotNode, index) => {
-      if (!dotNode) {
         return;
       }
 
       gsap.fromTo(
-        dotNode,
-        { autoAlpha: 0, scale: 0.4 },
+        icons,
+        { autoAlpha: 0, scale: 0.68 },
         {
           autoAlpha: 0.95,
           scale: 1,
-          duration: 0.34,
-          delay: index * 0.02,
+          duration: 0.45,
+          stagger: 0.06,
           ease: "power2.out",
         },
       );
 
-      gsap.to(dotNode, {
-        autoAlpha: 0.35 + (index % 5) * 0.11,
-        duration: 1.1 + (index % 4) * 0.2,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-        delay: index * 0.03,
+      if (!domeRef.current) {
+        return;
+      }
+
+      if (!verified) {
+        gsap.to(domeRef.current, {
+          autoAlpha: 0,
+          duration: 0.35,
+          ease: "power1.out",
+        });
+        return;
+      }
+
+      gsap.to(domeRef.current, {
+        autoAlpha: 1,
+        duration: 0.65,
+        ease: "power2.out",
       });
-    });
+
+      dotRefs.current.forEach((dotNode, index) => {
+        if (!dotNode) {
+          return;
+        }
+
+        gsap.fromTo(
+          dotNode,
+          { autoAlpha: 0, scale: 0.4 },
+          {
+            autoAlpha: 0.95,
+            scale: 1,
+            duration: 0.34,
+            delay: index * 0.02,
+            ease: "power2.out",
+          },
+        );
+
+        gsap.to(dotNode, {
+          autoAlpha: 0.35 + (index % 5) * 0.11,
+          duration: 1.1 + (index % 4) * 0.2,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+          delay: index * 0.03,
+        });
+      });
+    }, sectionRef);
+
+    return () => ctx.revert();
   }, [verified]);
 }
