@@ -1,0 +1,64 @@
+import { SOLUTION_FEATURES } from "@/components/landing/constants";
+import { ScrollReveal, SectionTitle } from "@/components/ui";
+
+export function SolutionSection() {
+  return (
+    <ScrollReveal y={50} duration={0.8}>
+      <div className="neu-shell border border-white/70 p-6 sm:p-10">
+        <SectionTitle
+          eyebrow="The Solution"
+          title="A verification layer for medical documents"
+        />
+
+        <div className="mx-auto mt-6 max-w-3xl space-y-4 text-center">
+          <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
+            HealthProof is a{" "}
+            <strong className="text-slate-800">
+              Web3 infrastructure layer
+            </strong>{" "}
+            that allows medical institutions to issue, verify, and exchange
+            clinical documents with{" "}
+            <strong className="text-slate-800">
+              cryptographic proof of authenticity
+            </strong>
+            .
+          </p>
+          <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
+            Instead of trusting PDFs, emails, or manual validations, every
+            document receives a{" "}
+            <strong className="text-slate-800">
+              tamper-proof verification record anchored on blockchain.
+            </strong>
+          </p>
+          <p className="text-sm font-semibold text-slate-700 sm:text-base">
+            HealthProof does not store medical data. It stores{" "}
+            <span className="text-sky-600">proof of truth</span>.
+          </p>
+        </div>
+
+        <div className="mx-auto mt-10 max-w-2xl">
+          <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            What HealthProof enables
+          </p>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {SOLUTION_FEATURES.map((feature) => (
+              <li
+                className="neu-inset flex items-center gap-3 p-4"
+                key={feature.label}
+              >
+                <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-(--hp-success)" />
+                <span className="text-sm font-medium text-slate-700">
+                  {feature.label}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-6 text-center text-sm text-slate-500">
+            All without replacing existing hospital systems. HealthProof{" "}
+            <strong className="text-slate-700">connects them</strong>.
+          </p>
+        </div>
+      </div>
+    </ScrollReveal>
+  );
+}

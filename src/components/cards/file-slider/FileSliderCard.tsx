@@ -9,6 +9,7 @@ type FileSliderCardProps = {
   item: FileSliderItem;
   index: number;
   total: number;
+  cardWidth?: { base: number; sm: number };
 };
 
 export const TAB_HEIGHT = 72;
@@ -17,7 +18,6 @@ const ANIM_DURATION = 0.8;
 const ANIM_EASE = "power3.out";
 const PERSPECTIVE = 1600;
 const Z_STEP = -2;
-const Z_OPEN = 100;
 const Y_OPEN = -40;
 const Z_INDEX_OPEN = 50;
 const REST_ROTATE_X = -235;
@@ -27,7 +27,14 @@ const TAB_OFFSET_STEP = 40;
 
 const CARD_BODY_HEIGHT = 280;
 
-export function FileSliderCard({ item, index, total }: FileSliderCardProps) {
+const DEFAULT_WIDTH = { base: 280, sm: 320 };
+
+export function FileSliderCard({
+  item,
+  index,
+  total,
+  cardWidth = DEFAULT_WIDTH,
+}: FileSliderCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -51,16 +58,36 @@ export function FileSliderCard({ item, index, total }: FileSliderCardProps) {
     const el = cardRef.current;
     if (!el) return;
 
-    const target = isOpen
-      ? { rotateX: 0, scaleY: 1, z: Z_OPEN, y: Y_OPEN }
-      : { rotateX: REST_ROTATE_X, scaleY: REST_SCALE_Y, z: restZ, y: 0 };
-
-    gsap.to(el, {
-      ...target,
-      duration: ANIM_DURATION,
-      ease: ANIM_EASE,
-      overwrite: true,
-    });
+    if (isOpen) {
+      gsap.to(el, {
+        rotateX: 0,
+        scaleY: 1,
+        z: 0,
+        y: Y_OPEN,
+        duration: ANIM_DURATION,
+        ease: ANIM_EASE,
+        overwrite: true,
+        onComplete: () => {
+          gsap.set(el, {
+            transformPerspective: 0,
+            rotateX: 0,
+            scaleY: 1,
+            z: 0,
+          });
+        },
+      });
+    } else {
+      gsap.set(el, { transformPerspective: PERSPECTIVE });
+      gsap.to(el, {
+        rotateX: REST_ROTATE_X,
+        scaleY: REST_SCALE_Y,
+        z: restZ,
+        y: 0,
+        duration: ANIM_DURATION,
+        ease: ANIM_EASE,
+        overwrite: true,
+      });
+    }
   }, [isOpen, restZ]);
 
   const handleEnter = () => setIsOpen(true);
@@ -71,8 +98,9 @@ export function FileSliderCard({ item, index, total }: FileSliderCardProps) {
 
   return (
     <div
-      className="absolute left-0 w-[280px] sm:w-[320px]"
+      className="absolute left-0"
       style={{
+        width: cardWidth.base,
         zIndex: isOpen ? Z_INDEX_OPEN : index,
         top: index * TAB_HEIGHT,
         height: `${hitHeight}px`,

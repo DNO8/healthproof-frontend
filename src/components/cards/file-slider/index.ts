@@ -1,4 +1,4 @@
-export { FileSlider } from "./FileSlider";
+export { FileSlider, FileSliderDrawer } from "./FileSlider";
 export { FileSliderCard } from "./FileSliderCard";
 export {
   FILE_SLIDER_ITEMS_LEFT,

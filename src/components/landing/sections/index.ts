@@ -1,6 +1,13 @@
 export { BeforeAfterSection } from "./BeforeAfterSection";
 export { FinalCtaSection } from "./FinalCtaSection";
 export { HeroCarouselSection } from "./HeroCarouselSection";
+export { Icd11Section } from "./Icd11Section";
+export { RegulatoryUrgencySection } from "./RegulatoryUrgencySection";
+export { SolutionSection } from "./SolutionSection";
 export { StorytellingSection } from "./StorytellingSection";
+export { TeamSection } from "./TeamSection";
+export { TechnologySection } from "./TechnologySection";
 export { TestimonialsSection } from "./TestimonialsSection";
 export { TrustSignalsSection } from "./TrustSignalsSection";
+export { UseCasesSection } from "./UseCasesSection";
+export { WorkflowSection } from "./WorkflowSection";

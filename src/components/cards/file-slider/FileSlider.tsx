@@ -7,16 +7,20 @@ import {
 
 const CARD_BODY_HEIGHT = 320;
 
-function FileSliderDrawer({ items }: { items: FileSliderItem[] }) {
+type FileSliderDrawerProps = {
+  items: FileSliderItem[];
+  cardWidth?: { base: number; sm: number };
+};
+
+export function FileSliderDrawer({ items, cardWidth }: FileSliderDrawerProps) {
+  const width = cardWidth?.base ?? 280;
   const drawerHeight = items.length * TAB_HEIGHT + CARD_BODY_HEIGHT;
 
   return (
-    <div
-      className="relative w-[280px] sm:w-[320px]"
-      style={{ height: `${drawerHeight}px` }}
-    >
+    <div className="relative" style={{ width, height: `${drawerHeight}px` }}>
       {items.map((item, index) => (
         <FileSliderCard
+          cardWidth={cardWidth}
           index={index}
           item={item}
           key={item.id}

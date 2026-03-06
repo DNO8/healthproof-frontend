@@ -1,15 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { ScrollReveal, SectionDivider, SectionTitle } from "@/components/ui";
-import { FileSlider } from "@/components/cards/file-slider";
+import { ScrollReveal, SectionDivider } from "@/components/ui";
 import {
   BeforeAfterSection,
   FinalCtaSection,
   HeroCarouselSection,
-  StorytellingSection,
-  TestimonialsSection,
-  TrustSignalsSection,
+  Icd11Section,
+  RegulatoryUrgencySection,
+  SolutionSection,
+  TeamSection,
+  TechnologySection,
+  UseCasesSection,
+  WorkflowSection,
 } from "./sections";
 
 export function LandingPage() {
@@ -17,54 +20,64 @@ export function LandingPage() {
 
   return (
     <main className="relative overflow-hidden bg-(--hp-bg)">
+      {/* §1 Hero */}
       <HeroCarouselSection
         onVerify={() => setVerified(true)}
         verified={verified}
       />
 
-      <section className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-8 lg:px-12">
-        <ScrollReveal y={40} duration={0.7}>
-          <TrustSignalsSection verified={verified} />
-        </ScrollReveal>
+      <section className="mx-auto w-full max-w-7xl space-y-12 px-4 pb-20 pt-12 sm:px-8 lg:px-12">
+        {/* §2 The Solution */}
+        <SolutionSection />
 
+        {/* §3 Why This Matters Now */}
         <ScrollReveal y={30} duration={0.5}>
-          <SectionDivider label="Storytelling del producto" />
+          <SectionDivider label="Regulatory Urgency" />
         </ScrollReveal>
-        <StorytellingSection />
+        <RegulatoryUrgencySection />
 
+        {/* §4 Use Cases */}
         <ScrollReveal y={30} duration={0.5}>
-          <SectionDivider label="Antes vs Después" />
+          <SectionDivider label="Use Cases" />
+        </ScrollReveal>
+        <UseCasesSection />
+
+        {/* §5 How It Works */}
+        <ScrollReveal y={30} duration={0.5}>
+          <SectionDivider label="How It Works" />
+        </ScrollReveal>
+        <WorkflowSection />
+
+        {/* §6 Technology */}
+        <ScrollReveal y={30} duration={0.5}>
+          <SectionDivider label="Technology" />
+        </ScrollReveal>
+        <TechnologySection />
+
+        {/* §7 ICD-11 */}
+        <ScrollReveal y={30} duration={0.5}>
+          <SectionDivider label="ICD-11" />
+        </ScrollReveal>
+        <Icd11Section />
+
+        {/* §8 Before / After */}
+        <ScrollReveal y={30} duration={0.5}>
+          <SectionDivider label="Before / After" />
         </ScrollReveal>
         <ScrollReveal y={50} duration={0.8}>
           <BeforeAfterSection />
         </ScrollReveal>
 
-        <ScrollReveal y={30} duration={0.5}>
-          <SectionDivider label="Documentos verificables" />
-        </ScrollReveal>
-        <ScrollReveal y={60} duration={0.9}>
-          <section className="py-12">
-            <SectionTitle
-              eyebrow="Documentos"
-              subtitle="Cada examen, orden o resultado queda registrado como evidencia verificable e inmutable."
-              title="Archivos médicos on-chain"
-            />
-            <div className="mt-16">
-              <FileSlider />
-            </div>
-          </section>
-        </ScrollReveal>
-
-        <ScrollReveal y={30} duration={0.5}>
-          <SectionDivider label="Prueba social" />
-        </ScrollReveal>
-        <ScrollReveal y={50} duration={0.8}>
-          <TestimonialsSection />
-        </ScrollReveal>
-
+        {/* §9 Final CTA */}
         <ScrollReveal y={80} duration={1}>
           <FinalCtaSection />
         </ScrollReveal>
+
+        {/* §10 Team */}
+        <ScrollReveal y={30} duration={0.5}>
+          <SectionDivider label="Team" />
+        </ScrollReveal>
+        <TeamSection />
       </section>
     </main>
   );

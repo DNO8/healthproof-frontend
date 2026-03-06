@@ -108,49 +108,20 @@ export function HeroCarouselSection({
       </div>
 
       <header className="relative z-10 mx-auto mb-6 max-w-5xl text-center sm:mb-10">
-        <div className="mb-6 flex justify-center">
-          <span className="neu-chip inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-slate-500 sm:px-6 sm:text-base">
-            <svg
-              aria-hidden="true"
-              fill="none"
-              height="16"
-              viewBox="0 0 24 24"
-              width="16"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2 12h4l2-6 3 12 2-8 2 4h7"
-                stroke="#60A5FA"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.8"
-              />
-            </svg>
-            Protocolo L1 : Avalanche
+        <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+          <span className="block text-slate-800">
+            Interoperability is becoming mandatory.
           </span>
-        </div>
-
-        <h1 className="text-balance text-5xl font-semibold tracking-tight sm:text-6xl lg:text-7xl">
-          <span className="bg-linear-to-r from-sky-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
-            Health
+          <span className="block bg-linear-to-r from-sky-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
+            Are your medical documents verifiable?
           </span>
-          <span className="text-slate-800">Proof</span>
         </h1>
-
-        <p className="mx-auto mt-5 max-w-4xl text-base leading-relaxed text-(--hp-muted) sm:text-2xl sm:leading-snug">
-          <span className="block">
-            Intercambio clínico seguro entre paciente, laboratorio y centro
-            médico.
-          </span>
-          <span className="block">
-            Verificación médica soberana construida sobre blockchain.
-          </span>
-        </p>
       </header>
 
       <div className="relative z-10">
         <div className="neu-shell relative mx-auto h-[420px] w-full max-w-6xl overflow-hidden border border-white/70 p-3 sm:h-[540px] sm:p-6">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(167,243,208,0.16),transparent_56%)]" />
+
           <div className="pointer-events-none absolute left-[8%] right-[8%] top-[53%] z-10 h-px bg-linear-to-r from-transparent via-slate-300/75 to-transparent" />
           <div className="pointer-events-none absolute left-[16%] right-[16%] top-[53%] z-10 h-10 -translate-y-1/2 bg-[radial-gradient(circle_at_center,rgba(148,163,184,0.15),transparent_70%)] blur-lg" />
 
@@ -275,17 +246,31 @@ export function HeroCarouselSection({
                 key={verified ? "active" : "discover"}
                 style={{ animation: "fadeIn 0.5s ease" }}
               >
-                {verified ? "Verificación Activa" : "Descubre HealthProof"}
+                {verified ? "Verification Active" : "Verify on Chain"}
               </span>
             </Button>
             <p
-              className="max-w-[260px] text-center text-[10px] text-slate-500 sm:max-w-none sm:text-sm"
+              className="max-w-[220px] px-4 text-center text-[10px] text-slate-500 sm:max-w-xl sm:text-sm"
               key={verified ? "verified-caption" : "base-caption"}
               style={{ animation: "fadeIn 0.6s ease" }}
             >
-              {verified
-                ? "Flujo verificable y seguro."
-                : "Papeleo excesivo y retrabajo clínico."}
+              {verified ? (
+                "Verifiable and secure workflow."
+              ) : (
+                <>
+                  HealthProof is a verification layer for healthcare
+                  institutions that need to exchange clinical data while
+                  guaranteeing{" "}
+                  <strong className="text-slate-700">
+                    integrity, traceability, and patient-controlled access
+                  </strong>
+                  . Built for the new era of{" "}
+                  <strong className="text-slate-700">
+                    health data interoperability and ICD-11 digital standards
+                  </strong>
+                  .
+                </>
+              )}
             </p>
           </div>
         </div>

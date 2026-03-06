@@ -110,8 +110,15 @@ body {
 
 .file-drawer-card {
   cursor: pointer;
-  transform-style: preserve-3d;
   will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.file-drawer-card > * {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 @keyframes fadeIn {

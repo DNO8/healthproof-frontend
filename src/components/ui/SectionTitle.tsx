@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 type SectionTitleProps = {
   eyebrow: string;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   centered?: boolean;
   className?: string;
 };
@@ -28,14 +28,16 @@ export function SectionTitle({
       >
         {title}
       </h1>
-      <p
-        className={cn(
-          "max-w-2xl text-sm leading-6 text-(--hp-muted) sm:text-base",
-          centered && "mx-auto",
-        )}
-      >
-        {subtitle}
-      </p>
+      {subtitle ? (
+        <p
+          className={cn(
+            "max-w-2xl text-sm leading-6 text-(--hp-muted) sm:text-base",
+            centered && "mx-auto",
+          )}
+        >
+          {subtitle}
+        </p>
+      ) : null}
     </header>
   );
 }

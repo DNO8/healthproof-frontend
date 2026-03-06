@@ -21,7 +21,7 @@ const DEFAULTS: Required<Omit<ScrollRevealOptions, "x" | "stagger">> = {
   duration: 0.8,
   delay: 0,
   ease: "power3.out",
-  start: "top 20%",
+  start: "top 80%",
 };
 
 /**

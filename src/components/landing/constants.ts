@@ -4,8 +4,12 @@ import type {
   IconVisualVariant,
   MetricItem,
   RoutePoint,
+  SolutionFeature,
   StoryChapter,
+  TeamMember,
   TestimonialItem,
+  UseCaseItem,
+  WorkflowStep,
 } from "./types";
 
 export const ACTORS: Actor[] = [
@@ -250,6 +254,188 @@ export const ACTOR_PAIN_ROLES: Record<string, string> = {
   Laboratorio: "Resultados en canales dispersos",
   Paciente: "Poco control sobre su historial",
 };
+
+// §1 Hero — Pain bullets
+export const HERO_PAIN_BULLETS: string[] = [
+  "Exchange clinical data across institutions",
+  "Guarantee document integrity",
+  "Maintain traceability of medical records",
+  "Record patient consent",
+  "Assume legal responsibility for data leaks or document manipulation",
+];
+
+// §2 The Solution — what HealthProof enables
+export const SOLUTION_FEATURES: SolutionFeature[] = [
+  { label: "Verifiable medical orders" },
+  { label: "Tamper-proof laboratory results" },
+  { label: "Traceable prescriptions" },
+  { label: "Patient-controlled data access" },
+  { label: "Interoperability between institutions" },
+];
+
+// §3 Regulatory urgency — drivers
+export const REGULATORY_DRIVERS: string[] = [
+  "Interoperability regulations",
+  "Digital health infrastructure",
+  "AI-assisted clinical decision systems",
+  "New global data standards",
+];
+
+export const RISK_EXAMPLES: string[] = [
+  "a diagnosis",
+  "a prescription",
+  "a payment",
+  "a clinical decision",
+];
+
+// §4 Use Cases
+export const USE_CASES: UseCaseItem[] = [
+  {
+    title: "Medical Centers",
+    description:
+      "Doctors issue medical orders that are cryptographically registered and traceable. When patients move across institutions, the document travels with proof of authenticity.",
+    benefits: [
+      "Eliminate manual validation",
+      "Reduce administrative overhead",
+      "Enable interoperability with laboratories",
+    ],
+  },
+  {
+    title: "Laboratories",
+    description:
+      "Laboratories receive verifiable orders and attach test results directly to the original request. Every update is timestamped and auditable.",
+    benefits: [
+      "Reduce fraud and document disputes",
+      "Faster verification by physicians",
+      "Secure exchange with hospitals",
+    ],
+  },
+  {
+    title: "Patients",
+    description:
+      "Patients control access to their medical documents. They approve which institution can read or update their exams.",
+    benefits: [
+      "Portability across healthcare providers",
+      "Privacy by design",
+      "Secure long-term medical record integrity",
+    ],
+  },
+];
+
+// §5 How it works — workflow steps
+export const WORKFLOW_STEPS: WorkflowStep[] = [
+  {
+    step: 1,
+    title: "Medical order issued",
+    description:
+      "A doctor creates a medical test order inside their system. A cryptographic hash of the document is registered on blockchain.",
+    image: "/images/storyboard/healthproof1.jpeg",
+  },
+  {
+    step: 2,
+    title: "Patient authorizes laboratory access",
+    description:
+      "The patient grants the laboratory permission to view the order. Authorization can occur via QR code or one-click approval.",
+    image: "/images/storyboard/healthproof2.jpeg",
+  },
+  {
+    step: 3,
+    title: "Laboratory performs the test",
+    description:
+      "The laboratory updates the exam status and uploads the results. The new document is linked to the original order.",
+    image: "/images/storyboard/issue2.jpeg",
+  },
+  {
+    step: 4,
+    title: "Doctor verifies results",
+    description:
+      "The patient returns to the medical center. The doctor verifies the results instantly through HealthProof.",
+    image: "/images/storyboard/issue1.jpeg",
+  },
+];
+
+// §6 Technology — blockchain guarantees
+export const TECH_GUARANTEES: string[] = [
+  "Document authenticity",
+  "Tamper resistance",
+  "Time-stamped traceability",
+  "Verifiable issuer identity",
+];
+
+export const TECH_ENSURES: string[] = [
+  "Privacy compliance",
+  "Regulatory compatibility",
+  "Secure interoperability",
+];
+
+// §7 ICD-11
+export const ICD11_FEATURES: string[] = [
+  "Fully digital disease classification",
+  "Over 17,000 diagnostic codes",
+  "More than 120,000 codifiable terms",
+  "Integrated APIs and digital tooling",
+  "Standardized interoperability frameworks",
+];
+
+// §8 Before / After
+export const BEFORE_HEALTHPROOF: string[] = [
+  "PDFs sent by email",
+  "Manual validation",
+  "Disconnected systems",
+  "No document authenticity",
+  "Patients locked into institutions",
+];
+
+export const AFTER_HEALTHPROOF: string[] = [
+  "Verifiable clinical documents",
+  "Instant authenticity checks",
+  "Interoperable institutions",
+  "Patient-controlled permissions",
+  "Traceable clinical workflows",
+];
+
+// §9 Final CTA bullets
+export const FINAL_CTA_BULLETS: string[] = [
+  "Where clinical documents originated",
+  "Whether they were altered",
+  "Who accessed them",
+  "When they were issued",
+];
+
+// §10 Team
+export const TEAM_MEMBERS: TeamMember[] = [
+  {
+    name: "Catalina Orellana",
+    role: "CEO",
+    photo: "/images/team/catalina_orellana.png",
+    icons: ["/images/icons/herdao-icon.png"],
+    linkedin: "https://www.linkedin.com/in/catalina-orellana-riveros/",
+  },
+  {
+    name: "Pablo Guzmán",
+    role: "CTO",
+    photo: "/images/team/pablo_guzman.png",
+    icons: ["/images/icons/team-one-icon.png", "/images/icons/pablo-icon.png"],
+    linkedin: "https://www.linkedin.com/in/pablo-guzman-sanchez/",
+  },
+  {
+    name: "Danilo Contreras",
+    role: "CPO",
+    photo: "/images/team/danilo_contreras.png",
+    icons: ["/images/icons/ronin-icon.png", "/images/icons/stellar-icon.png"],
+    linkedin: "https://www.linkedin.com/in/danilo-contreras-05597922b/",
+  },
+  {
+    name: "Andrés Peña",
+    role: "CMO",
+    photo: "/images/team/andres_peña.png",
+    icons: [
+      "/images/icons/andres-icon.png",
+      "/images/icons/chatterpay-icon.png",
+    ],
+    linkedin: "https://www.linkedin.com/in/andresanemic/",
+  },
+];
 
 export const buildDomePoints = () => {
   const points: Array<{ left: number; top: number; size: number }> = [];

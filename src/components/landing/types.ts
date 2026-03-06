@@ -43,3 +43,28 @@ export type IconVisualVariant = {
   baseScale: number;
   alpha: number;
 };
+
+export type SolutionFeature = {
+  label: string;
+};
+
+export type UseCaseItem = {
+  title: string;
+  description: string;
+  benefits: string[];
+};
+
+export type WorkflowStep = {
+  step: number;
+  title: string;
+  description: string;
+  image: string;
+};
+
+export type TeamMember = {
+  name: string;
+  role: string;
+  photo: string;
+  icons: string[];
+  linkedin: string;
+};
