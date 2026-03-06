@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { sileo } from "sileo";
-import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { useState } from "react";
+import { sileo } from "sileo";
+import { updateProfile } from "@/app/auth/update-profile";
+import { clearDbUserCache } from "@/hooks/useDbUser";
 
 type ProfileFormProps = {
+  userId: string;
   email: string;
   fullName: string;
   walletAddress: string;
@@ -15,15 +16,14 @@ type ProfileFormProps = {
 };
 
 export function ProfileForm({
+  userId,
   email,
   fullName: initialName,
-  walletAddress: initialWallet,
+  walletAddress,
   role,
   roleLabel,
 }: ProfileFormProps) {
-  const router = useRouter();
   const [fullName, setFullName] = useState(initialName);
-  const [walletAddress, setWalletAddress] = useState(initialWallet);
   const [saving, setSaving] = useState(false);
 
   async function handleSave(e: React.FormEvent) {
@@ -31,29 +31,22 @@ export function ProfileForm({
     setSaving(true);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          full_name: fullName.trim(),
-          wallet_address: walletAddress.trim() || null,
-        },
-      });
+      const result = await updateProfile({ id: userId, full_name: fullName });
 
-      if (error) {
+      if (result.error) {
         sileo.error({
           title: "Error",
-          description: error.message,
+          description: result.error,
         });
         return;
       }
 
+      clearDbUserCache();
       sileo.success({
         title: "Profile updated",
         description: "Your profile has been saved successfully.",
         duration: 3000,
       });
-
-      router.refresh();
     } finally {
       setSaving(false);
     }
@@ -109,18 +102,19 @@ export function ProfileForm({
 
       <div>
         <label className={labelClass} htmlFor="walletAddress">
-          Wallet Address
+          Embedded Wallet
         </label>
         <input
-          className={inputClass}
+          className={readOnlyClass}
           id="walletAddress"
-          onChange={(e) => setWalletAddress(e.target.value)}
-          placeholder="0x... (optional for now)"
+          readOnly
           type="text"
-          value={walletAddress}
+          value={walletAddress || "No wallet linked yet"}
         />
         <p className="mt-1 text-[11px] text-slate-400">
-          Required for on-chain signing. Wallet connect integration coming soon.
+          {walletAddress
+            ? "Used for on-chain signing."
+            : "A wallet will be created when you need on-chain features."}
         </p>
       </div>
 

@@ -1,61 +1,33 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { UserRole } from "@/types/domain.types";
 
-export async function login(formData: FormData) {
-  const supabase = await createClient();
+export async function upsertUser(data: {
+  id: string;
+  email: string;
+  role: UserRole;
+  wallet_address: string | null;
+  full_name: string | null;
+}) {
+  const supabase = createAdminClient();
 
-  const data = {
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
-  };
-
-  const { error } = await supabase.auth.signInWithPassword(data);
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  revalidatePath("/", "layout");
-  return { success: true };
-}
-
-export async function signup(formData: FormData) {
-  const supabase = await createClient();
-
-  const role = formData.get("role") as UserRole;
-
-  if (!role) {
-    return { error: "Please select a role." };
-  }
-
-  const { data, error } = await supabase.auth.signUp({
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
-    options: {
-      data: { role },
+  const { error } = await supabase.from("users").upsert(
+    {
+      id: data.id,
+      email: data.email,
+      role: data.role.toUpperCase(),
+      wallet_address: data.wallet_address ?? "",
+      full_name: data.full_name,
+      is_verified: false,
     },
-  });
+    { onConflict: "id" },
+  );
 
   if (error) {
+    console.error("upsertUser error:", error);
     return { error: error.message };
   }
 
-  if (data.user && data.user.identities?.length === 0) {
-    return {
-      error: "An account with this email already exists. Please log in.",
-    };
-  }
-
-  revalidatePath("/", "layout");
-  return { success: true };
-}
-
-export async function logout() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  revalidatePath("/", "layout");
   return { success: true };
 }

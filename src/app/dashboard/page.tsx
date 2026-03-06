@@ -1,10 +1,14 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { ROLES } from "@/types/domain.types";
+"use client";
+
+import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import type { UserRole } from "@/types/domain.types";
-import { WelcomeToast } from "./WelcomeToast";
+import { ROLES } from "@/types/domain.types";
+import { useDbUser } from "@/hooks/useDbUser";
 import { DashboardActions } from "./DashboardActions";
 import { ProfileBanner } from "./ProfileBanner";
+import { WelcomeToast } from "./WelcomeToast";
 
 const ROLE_METRICS: Record<UserRole, { label: string; value: string }[]> = {
   patient: [
@@ -33,30 +37,42 @@ const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
     "Issue medical orders, verify laboratory results, and manage your institution's clinical workflows.",
 };
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default function DashboardPage() {
+  const router = useRouter();
+  const { ready, authenticated, user } = usePrivy();
+  const { wallets } = useWallets();
+  const { dbUser } = useDbUser();
 
-  if (!user) {
-    redirect("/auth");
+  useEffect(() => {
+    if (ready && !authenticated) {
+      const loggingOut = sessionStorage.getItem("hp_logging_out");
+      if (!loggingOut) router.replace("/auth");
+    }
+  }, [ready, authenticated, router]);
+
+  if (!ready || !authenticated || !user) {
+    return (
+      <main className="flex min-h-[calc(100vh-60px)] items-center justify-center">
+        <p className="text-sm text-slate-400">Loading...</p>
+      </main>
+    );
   }
 
-  const meta = user.user_metadata ?? {};
-  const role = (meta.role as UserRole) ?? "patient";
+  const email = user.email?.address ?? "";
+  const role: UserRole = dbUser?.role ?? "patient";
   const roleConfig = ROLES.find((r) => r.key === role);
   const metrics = ROLE_METRICS[role];
   const description = ROLE_DESCRIPTIONS[role];
 
-  const isProfileComplete = Boolean(meta.full_name && meta.wallet_address);
+  const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
+  const walletAddress =
+    dbUser?.wallet_address || embeddedWallet?.address || null;
+  const displayName = dbUser?.full_name ?? null;
+  const isProfileComplete = Boolean(displayName && walletAddress);
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-      <WelcomeToast
-        email={user.email ?? ""}
-        roleLabel={roleConfig?.label ?? "User"}
-      />
+      <WelcomeToast email={email} roleLabel={roleConfig?.label ?? "User"} />
 
       {/* Header */}
       <div className="neu-shell border border-white/70 p-8 sm:p-10">
@@ -71,7 +87,13 @@ export default async function DashboardPage() {
             </h1>
           </div>
         </div>
-        <p className="mt-2 text-sm text-slate-500">{user.email}</p>
+        <p className="mt-2 text-sm text-slate-500">{email}</p>
+
+        {walletAddress && (
+          <p className="mt-1 text-xs font-mono text-slate-400">
+            {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+          </p>
+        )}
 
         {/* Metrics */}
         <div className="mt-8 grid gap-5 sm:grid-cols-3">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useWallets } from "@privy-io/react-auth";
 import { QRCodeSVG } from "qrcode.react";
 import { sileo } from "sileo";
 import type { GrantedToRole, ResourceType } from "@/types/domain.types";
@@ -26,10 +27,13 @@ export function ShareResultsModal({
   onClose: () => void;
   patientId: string;
 }) {
+  const { wallets } = useWallets();
   const [grantedTo, setGrantedTo] = useState<GrantedToRole | null>(null);
   const [resourceType, setResourceType] = useState<ResourceType | null>(null);
   const [qrData, setQrData] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+
+  const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
 
   async function handleGenerate() {
     if (!grantedTo) {
@@ -49,29 +53,53 @@ export function ShareResultsModal({
 
     setGenerating(true);
 
-    const payload = buildPermissionPayload({
-      patientId,
-      grantedToRole: grantedTo,
-      resourceType,
-      resourceId: "demo-resource-id",
-    });
+    try {
+      const payload = buildPermissionPayload({
+        patientId,
+        grantedToRole: grantedTo,
+        resourceType,
+        resourceId: `${resourceType.toLowerCase()}-${patientId.slice(-8)}`,
+      });
 
-    // TODO: When wallet is connected, use generateSignedQR() instead
-    const qr = {
-      type: "healthproof_permission" as const,
-      payload,
-      signature: "unsigned-demo",
-      wallet: "not-connected",
-    };
+      const message = JSON.stringify(payload);
+      let signature = "unsigned";
+      let walletAddress = patientId;
 
-    setQrData(encodeQRData(qr));
-    setGenerating(false);
+      if (embeddedWallet) {
+        const provider = await embeddedWallet.getEthereumProvider();
+        const accounts = (await provider.request({
+          method: "eth_accounts",
+        })) as string[];
+        walletAddress = accounts[0] ?? embeddedWallet.address;
+        signature = (await provider.request({
+          method: "personal_sign",
+          params: [message, walletAddress],
+        })) as string;
+      }
 
-    sileo.success({
-      title: "QR Generated",
-      description: `Permission QR for ${grantedTo.replace("_", " ")} created. Expires in ${QR_EXPIRY_MINUTES} minutes.`,
-      duration: 4000,
-    });
+      const qr = {
+        type: "healthproof_permission" as const,
+        payload,
+        signature,
+        wallet: walletAddress,
+      };
+
+      setQrData(encodeQRData(qr));
+
+      sileo.success({
+        title: "QR Generated",
+        description: `Signed permission QR for ${grantedTo.replace("_", " ")} created. Expires in ${QR_EXPIRY_MINUTES} minutes.`,
+        duration: 4000,
+      });
+    } catch (err) {
+      console.error("[ShareResultsModal] Error generating QR:", err);
+      sileo.error({
+        title: "Error",
+        description: "Failed to sign QR payload. Please try again.",
+      });
+    } finally {
+      setGenerating(false);
+    }
   }
 
   return (
@@ -157,8 +185,10 @@ export function ShareResultsModal({
 
             {/* Expiry info */}
             <p className="mt-4 text-[11px] text-slate-400">
-              QR expires in {QR_EXPIRY_MINUTES} minutes. Wallet signature
-              required for on-chain registration (coming soon).
+              QR expires in {QR_EXPIRY_MINUTES} minutes.{" "}
+              {embeddedWallet
+                ? "Payload will be signed with your embedded wallet."
+                : "Connect a wallet for signed permissions."}
             </p>
 
             {/* Generate button */}

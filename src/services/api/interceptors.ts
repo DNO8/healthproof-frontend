@@ -1,16 +1,20 @@
 import type { AxiosInstance, InternalAxiosRequestConfig } from "axios";
-import { createClient } from "@/lib/supabase/client";
+
+type TokenGetter = () => Promise<string | null>;
+
+let _getAccessToken: TokenGetter = async () => null;
+
+export function setTokenGetter(getter: TokenGetter) {
+  _getAccessToken = getter;
+}
 
 export function setupInterceptors(client: AxiosInstance) {
   client.interceptors.request.use(
     async (config: InternalAxiosRequestConfig) => {
-      const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const token = await _getAccessToken();
 
-      if (session?.access_token) {
-        config.headers.Authorization = `Bearer ${session.access_token}`;
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
       }
 
       return config;
@@ -23,13 +27,7 @@ export function setupInterceptors(client: AxiosInstance) {
       const status = error.response?.status;
 
       if (status === 401) {
-        const supabase = createClient();
-        const { error: refreshError } = await supabase.auth.refreshSession();
-
-        if (refreshError) {
-          await supabase.auth.signOut();
-          window.location.href = "/auth";
-        }
+        window.location.href = "/auth";
       }
 
       return Promise.reject(error);

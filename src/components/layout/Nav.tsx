@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { sileo } from "sileo";
-import { createClient } from "@/lib/supabase/client";
+import { usePrivy } from "@privy-io/react-auth";
+import { clearDbUserCache } from "@/hooks/useDbUser";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -15,27 +16,11 @@ const NAV_LINKS = [
 export function Nav() {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<{ email?: string } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { ready, authenticated, logout } = usePrivy();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const supabase = createClient();
-
-    supabase.auth.getUser().then(({ data: { user: u } }) => {
-      setUser(u);
-      setLoading(false);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const loading = !ready;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: close menu on route change
   useEffect(() => {
@@ -56,17 +41,19 @@ export function Nav() {
   }, [menuOpen]);
 
   async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    setUser(null);
+    sessionStorage.setItem("hp_logging_out", "true");
+    await logout();
     setMenuOpen(false);
+    clearDbUserCache();
+    sessionStorage.removeItem("hp_upserted");
+    sessionStorage.removeItem("hp_wallet_synced");
     sessionStorage.removeItem("hp_welcome_shown");
+    sessionStorage.removeItem("hp_logging_out");
     sileo.success({
       title: "Signed out",
       description: "You have been logged out successfully.",
     });
-    router.push("/");
-    router.refresh();
+    router.replace("/");
   }
 
   // Hide nav on auth page
@@ -137,7 +124,7 @@ export function Nav() {
 
             {!loading && (
               <>
-                {user ? (
+                {authenticated ? (
                   <>
                     <Link
                       className={linkClass(
@@ -221,7 +208,7 @@ export function Nav() {
 
             {!loading && (
               <>
-                {user ? (
+                {authenticated ? (
                   <>
                     <Link
                       className={linkClass(

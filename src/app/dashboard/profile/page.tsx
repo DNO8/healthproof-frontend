@@ -1,22 +1,68 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+"use client";
+
+import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import type { UserRole } from "@/types/domain.types";
 import { ROLES } from "@/types/domain.types";
+import { useDbUser } from "@/hooks/useDbUser";
 import { ProfileForm } from "./ProfileForm";
 
-export default async function ProfilePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default function ProfilePage() {
+  const router = useRouter();
+  const { ready, authenticated, user } = usePrivy();
+  const { wallets } = useWallets();
+  const { dbUser } = useDbUser();
 
-  if (!user) {
-    redirect("/auth");
+  useEffect(() => {
+    if (ready && !authenticated) {
+      const loggingOut = sessionStorage.getItem("hp_logging_out");
+      if (!loggingOut) router.replace("/auth");
+    }
+  }, [ready, authenticated, router]);
+
+  if (!ready || !authenticated || !user) {
+    return (
+      <main className="flex min-h-[calc(100vh-60px)] items-center justify-center">
+        <p className="text-sm text-slate-400">Loading...</p>
+      </main>
+    );
   }
 
-  const meta = user.user_metadata ?? {};
-  const role = (meta.role as UserRole) ?? "patient";
+  const email = user.email?.address ?? "";
+  const role: UserRole = dbUser?.role ?? "patient";
   const roleConfig = ROLES.find((r) => r.key === role);
+
+  const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
+
+  // Fallback: extract from user.linkedAccounts (available before useWallets resolves)
+  const linkedWalletAddress = (() => {
+    const accounts = user?.linkedAccounts;
+    if (!accounts) return null;
+    for (const a of accounts) {
+      const raw = a as unknown as {
+        type: string;
+        walletClientType?: string;
+        address?: string;
+      };
+      if (
+        raw.type === "wallet" &&
+        raw.walletClientType === "privy" &&
+        raw.address
+      ) {
+        return raw.address;
+      }
+    }
+    return null;
+  })();
+
+  const walletAddress =
+    dbUser?.wallet_address ||
+    embeddedWallet?.address ||
+    linkedWalletAddress ||
+    "";
+
+  const fullName = dbUser?.full_name ?? "";
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
@@ -34,17 +80,17 @@ export default async function ProfilePage() {
         </div>
 
         <p className="mt-3 text-sm text-slate-500">
-          Fill in your details to unlock the full HealthProof experience.
-          Wallet connection and verification will be required for on-chain
-          features.
+          Fill in your details to unlock the full HealthProof experience. Your
+          embedded wallet was automatically created by Privy.
         </p>
 
         <ProfileForm
-          email={user.email ?? ""}
-          fullName={(meta.full_name as string) ?? ""}
+          userId={user.id}
+          email={email}
+          fullName={fullName}
           role={role}
           roleLabel={roleConfig?.label ?? "User"}
-          walletAddress={(meta.wallet_address as string) ?? ""}
+          walletAddress={walletAddress}
         />
       </div>
     </main>

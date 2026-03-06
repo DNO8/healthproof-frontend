@@ -10,8 +10,11 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "@privy-io/react-auth": "^3.16.0",
+    "@privy-io/wagmi": "^4.0.2",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.98.0",
+    "@tanstack/react-query": "^5.90.21",
     "axios": "^1.13.6",
     "gsap": "^3.14.2",
     "next": "16.1.6",
@@ -21,11 +24,14 @@
     "react-dom": "19.2.3",
     "resend": "^6.9.3",
     "sileo": "^0.1.5",
+    "viem": "^2.47.0",
+    "wagmi": "^3.5.0",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
     "@tailwindcss/postcss": "^4",
+    "@types/lodash": "^4.17.24",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
