@@ -42,11 +42,12 @@ export function HeroCarouselSection({
     ? POST_BLOCKCHAIN_ASSETS
     : PRE_BLOCKCHAIN_ASSETS;
 
-  useCarouselAnimation(
-    { sectionRef, ringRef, domeRef, actorRefs, iconRefs, dotRefs },
-    verified,
-    reduceMotion,
+  const carouselRefs = useMemo(
+    () => ({ sectionRef, ringRef, domeRef, actorRefs, iconRefs, dotRefs }),
+    [],
   );
+
+  useCarouselAnimation(carouselRefs, verified, reduceMotion);
 
   const handleDiscoverClick = () => {
     if (verified || isTransitioningRef.current) {

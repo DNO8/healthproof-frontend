@@ -4,6 +4,7 @@ import { ROLES } from "@/types/domain.types";
 import type { UserRole } from "@/types/domain.types";
 import { WelcomeToast } from "./WelcomeToast";
 import { DashboardActions } from "./DashboardActions";
+import { ProfileBanner } from "./ProfileBanner";
 
 const ROLE_METRICS: Record<UserRole, { label: string; value: string }[]> = {
   patient: [
@@ -42,10 +43,13 @@ export default async function DashboardPage() {
     redirect("/auth");
   }
 
-  const role = (user.user_metadata?.role as UserRole) ?? "patient";
+  const meta = user.user_metadata ?? {};
+  const role = (meta.role as UserRole) ?? "patient";
   const roleConfig = ROLES.find((r) => r.key === role);
   const metrics = ROLE_METRICS[role];
   const description = ROLE_DESCRIPTIONS[role];
+
+  const isProfileComplete = Boolean(meta.full_name && meta.wallet_address);
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -87,6 +91,8 @@ export default async function DashboardPage() {
           <p className="text-sm text-slate-600">{description}</p>
         </div>
       </div>
+
+      <ProfileBanner isComplete={isProfileComplete} />
 
       <DashboardActions role={role} userId={user.id} />
     </main>

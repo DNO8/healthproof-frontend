@@ -6,6 +6,8 @@ export const env = {
   CHAIN_ID: Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? "0"),
   CONTRACT_ADDRESS: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ?? "",
   PINATA_JWT: process.env.PINATA_JWT_SECRET ?? "",
-  PINATA_GATEWAY:
-    process.env.NEXT_PUBLIC_PINATA_GATEWAY ?? "https://gateway.pinata.cloud",
+  PINATA_GATEWAY: (() => {
+    const gw = process.env.NEXT_PUBLIC_PINATA_GATEWAY ?? "gateway.pinata.cloud";
+    return gw.startsWith("http") ? gw : `https://${gw}`;
+  })(),
 } as const;

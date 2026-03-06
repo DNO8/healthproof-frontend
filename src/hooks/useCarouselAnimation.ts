@@ -22,6 +22,7 @@ export function useCarouselAnimation(
 ) {
   const { sectionRef, ringRef, domeRef, actorRefs, iconRefs, dotRefs } = refs;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refs object is memoized and stable
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       if (ringRef.current) {
@@ -180,17 +181,9 @@ export function useCarouselAnimation(
     }, sectionRef);
 
     return () => ctx.revert();
-  }, [
-    reduceMotion,
-    verified,
-    sectionRef,
-    ringRef,
-    domeRef,
-    actorRefs,
-    iconRefs,
-    dotRefs,
-  ]);
+  }, [reduceMotion, verified, refs]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refs accessed via .current are stable
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       const icons = iconRefs.current.filter(Boolean) as HTMLDivElement[];
@@ -276,5 +269,5 @@ export function useCarouselAnimation(
     }, sectionRef);
 
     return () => ctx.revert();
-  }, [reduceMotion, verified, sectionRef, domeRef, iconRefs, dotRefs]);
+  }, [reduceMotion, verified, refs]);
 }

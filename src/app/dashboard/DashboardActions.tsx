@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { sileo } from "sileo";
 import type { UserRole } from "@/types/domain.types";
 import { useUiStore } from "@/state/ui.store";
 import { ShareResultsModal } from "./ShareResultsModal";
+import { UploadResultsModal } from "./UploadResultsModal";
 
 type ActionCard = {
   id: string;
@@ -71,8 +73,7 @@ const ROLE_ACTIONS: Record<UserRole, ActionCard[]> = {
       title: "Upload Results",
       description: "Upload encrypted exam results linked to a medical order.",
       icon: "📤",
-      disabled: true,
-      tag: "Backend required",
+      disabled: false,
     },
     {
       id: "pending-orders",
@@ -138,11 +139,15 @@ export function DashboardActions({
 }) {
   const actions = ROLE_ACTIONS[role];
   const { isQrModalOpen, openQrModal, closeQrModal } = useUiStore();
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   function handleActionClick(actionId: string) {
     switch (actionId) {
       case "share-results":
         openQrModal();
+        break;
+      case "upload-results":
+        setIsUploadOpen(true);
         break;
       case "scan-qr":
         sileo.info({
@@ -190,6 +195,10 @@ export function DashboardActions({
 
       {isQrModalOpen && (
         <ShareResultsModal onClose={closeQrModal} patientId={userId} />
+      )}
+
+      {isUploadOpen && (
+        <UploadResultsModal onClose={() => setIsUploadOpen(false)} />
       )}
     </>
   );

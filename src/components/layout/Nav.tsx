@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { sileo } from "sileo";
 import { createClient } from "@/lib/supabase/client";
 
@@ -37,6 +37,7 @@ export function Nav() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: close menu on route change
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
@@ -139,10 +140,20 @@ export function Nav() {
                 {user ? (
                   <>
                     <Link
-                      className={linkClass(pathname.startsWith("/dashboard"))}
+                      className={linkClass(
+                        pathname === "/dashboard" ||
+                          (pathname.startsWith("/dashboard") &&
+                            !pathname.startsWith("/dashboard/profile")),
+                      )}
                       href="/dashboard"
                     >
                       Dashboard
+                    </Link>
+                    <Link
+                      className={linkClass(pathname === "/dashboard/profile")}
+                      href="/dashboard/profile"
+                    >
+                      Profile
                     </Link>
                     <button
                       className="rounded-full px-4 py-1.5 text-sm font-medium text-slate-500 transition-all duration-200 hover:bg-white/50 hover:text-slate-800"
@@ -213,10 +224,20 @@ export function Nav() {
                 {user ? (
                   <>
                     <Link
-                      className={linkClass(pathname.startsWith("/dashboard"))}
+                      className={linkClass(
+                        pathname === "/dashboard" ||
+                          (pathname.startsWith("/dashboard") &&
+                            !pathname.startsWith("/dashboard/profile")),
+                      )}
                       href="/dashboard"
                     >
                       Dashboard
+                    </Link>
+                    <Link
+                      className={linkClass(pathname === "/dashboard/profile")}
+                      href="/dashboard/profile"
+                    >
+                      Profile
                     </Link>
                     <button
                       className="rounded-full px-4 py-1.5 text-left text-sm font-medium text-slate-500 transition-all duration-200 hover:bg-white/50 hover:text-slate-800"
