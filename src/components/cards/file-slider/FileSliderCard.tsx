@@ -16,12 +16,10 @@ export const TAB_HEIGHT = 72;
 
 const ANIM_DURATION = 0.8;
 const ANIM_EASE = "power3.out";
-const PERSPECTIVE = 1600;
-const Z_STEP = -2;
-const Y_OPEN = -40;
+const PERSPECTIVE = 1200;
+const REST_ROTATE_X = -35;
+const Y_OPEN = -80;
 const Z_INDEX_OPEN = 50;
-const REST_ROTATE_X = -235;
-const REST_SCALE_Y = -1;
 const TAB_OFFSET_BASE = 16;
 const TAB_OFFSET_STEP = 40;
 
@@ -36,9 +34,8 @@ export function FileSliderCard({
   cardWidth = DEFAULT_WIDTH,
 }: FileSliderCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const tlRef = useRef<gsap.core.Timeline | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-
-  const restZ = index * Z_STEP;
 
   useLayoutEffect(() => {
     const el = cardRef.current;
@@ -46,49 +43,53 @@ export function FileSliderCard({
 
     gsap.set(el, {
       rotateX: REST_ROTATE_X,
-      scaleY: REST_SCALE_Y,
-      z: restZ,
       y: 0,
+      scale: 0.95,
+      opacity: 0.85,
       transformPerspective: PERSPECTIVE,
-      transformOrigin: "center bottom",
+      transformOrigin: "center top",
     });
-  }, [restZ]);
+  }, []);
 
   useLayoutEffect(() => {
     const el = cardRef.current;
     if (!el) return;
 
+    if (tlRef.current) {
+      tlRef.current.kill();
+    }
+
+    const tl = gsap.timeline();
+    tlRef.current = tl;
+
     if (isOpen) {
-      gsap.to(el, {
-        rotateX: 0,
-        scaleY: 1,
-        z: 0,
+      tl.to(el, {
         y: Y_OPEN,
-        duration: ANIM_DURATION,
+        scale: 1,
+        opacity: 1,
+        duration: ANIM_DURATION * 0.5,
         ease: ANIM_EASE,
-        overwrite: true,
-        onComplete: () => {
-          gsap.set(el, {
-            transformPerspective: 0,
-            rotateX: 0,
-            scaleY: 1,
-            z: 0,
-          });
-        },
+      });
+      tl.to(el, {
+        rotateX: 0,
+        duration: ANIM_DURATION * 0.5,
+        ease: ANIM_EASE,
       });
     } else {
-      gsap.set(el, { transformPerspective: PERSPECTIVE });
-      gsap.to(el, {
+      tl.to(el, {
         rotateX: REST_ROTATE_X,
-        scaleY: REST_SCALE_Y,
-        z: restZ,
-        y: 0,
-        duration: ANIM_DURATION,
+        duration: ANIM_DURATION * 0.5,
         ease: ANIM_EASE,
-        overwrite: true,
+      });
+      tl.to(el, {
+        y: 0,
+        scale: 0.95,
+        opacity: 0.85,
+        duration: ANIM_DURATION * 0.5,
+        ease: ANIM_EASE,
       });
     }
-  }, [isOpen, restZ]);
+  }, [isOpen]);
 
   const handleEnter = () => setIsOpen(true);
   const handleLeave = () => setIsOpen(false);
@@ -98,7 +99,7 @@ export function FileSliderCard({
 
   return (
     <div
-      className="absolute left-0"
+      className="absolute left-0 mt-20"
       style={{
         width: cardWidth.base,
         zIndex: isOpen ? Z_INDEX_OPEN : index,

@@ -23,7 +23,7 @@ const USE_CASE_SLIDER_ITEMS: FileSliderItem[] = USE_CASES.map((uc) => ({
   tabLabel: TAB_LABELS[uc.title] ?? "USE",
 }));
 
-const SPLIT_TEXT = "Now, in just 3 documents. How is that possible?";
+const SPLIT_TEXT = "Now, in just 3 steps. How is that possible?";
 
 function AnimatedHeadline() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -86,15 +86,17 @@ export function UseCasesSection() {
         />
       </ScrollReveal>
 
-      <div className="mt-8 flex flex-col items-center gap-1 lg:flex-row lg:items-start lg:justify-center lg:gap-32">
-        <ScrollReveal y={50} duration={0.8}>
+      <div className="mt-8 flex flex-col items-center gap-8 lg:flex-row lg:items-start lg:justify-center lg:gap-32">
+        <div className="order-1 lg:order-2">
+          <AnimatedHeadline />
+        </div>
+
+        <ScrollReveal className="order-2 lg:order-1" y={50} duration={0.8}>
           <FileSliderDrawer
             cardWidth={{ base: 380, sm: 440 }}
             items={USE_CASE_SLIDER_ITEMS}
           />
         </ScrollReveal>
-
-        <AnimatedHeadline />
       </div>
     </div>
   );

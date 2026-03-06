@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ROLES } from "@/types/domain.types";
 import type { UserRole } from "@/types/domain.types";
 import { WelcomeToast } from "./WelcomeToast";
+import { DashboardActions } from "./DashboardActions";
 
 const ROLE_METRICS: Record<UserRole, { label: string; value: string }[]> = {
   patient: [
@@ -52,6 +53,8 @@ export default async function DashboardPage() {
         email={user.email ?? ""}
         roleLabel={roleConfig?.label ?? "User"}
       />
+
+      {/* Header */}
       <div className="neu-shell border border-white/70 p-8 sm:p-10">
         <div className="flex items-center gap-3">
           <span className="text-2xl">{roleConfig?.icon}</span>
@@ -66,6 +69,7 @@ export default async function DashboardPage() {
         </div>
         <p className="mt-2 text-sm text-slate-500">{user.email}</p>
 
+        {/* Metrics */}
         <div className="mt-8 grid gap-5 sm:grid-cols-3">
           {metrics.map((metric) => (
             <div className="neu-surface rounded-2xl p-6" key={metric.label}>
@@ -83,6 +87,8 @@ export default async function DashboardPage() {
           <p className="text-sm text-slate-600">{description}</p>
         </div>
       </div>
+
+      <DashboardActions role={role} userId={user.id} />
     </main>
   );
 }

@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useTransition } from "react";
 import { sileo } from "sileo";
+import { sendContactEmail } from "./actions";
 
 export function ContactForm() {
   const formRef = useRef<HTMLFormElement>(null);
+  const [isPending, startTransition] = useTransition();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -33,6 +35,14 @@ export function ContactForm() {
       return;
     }
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      sileo.warning({
+        title: "Invalid email",
+        description: "Please enter a valid email address.",
+      });
+      return;
+    }
+
     if (!subject) {
       sileo.warning({
         title: "Subject required",
@@ -49,14 +59,33 @@ export function ContactForm() {
       return;
     }
 
-    sileo.success({
-      title: "Message sent",
-      description:
-        "Thank you for reaching out! Our team will get back to you shortly.",
-      duration: 5000,
+    sileo.info({
+      title: "Sending message...",
+      description: "Please wait a moment.",
+      duration: 2000,
     });
 
-    form.reset();
+    startTransition(async () => {
+      const result = await sendContactEmail(data);
+
+      if (result?.error) {
+        sileo.error({
+          title: "Failed to send",
+          description: result.error,
+        });
+        return;
+      }
+
+      if (result?.success) {
+        sileo.success({
+          title: "Message sent!",
+          description:
+            "Thank you for reaching out! Our team will get back to you shortly.",
+          duration: 5000,
+        });
+        form.reset();
+      }
+    });
   }
 
   return (
@@ -127,10 +156,11 @@ export function ContactForm() {
       </div>
 
       <button
-        className="rounded-2xl border border-white/60 bg-(--hp-primary) px-8 py-3 text-sm font-semibold text-slate-800 shadow-(--hp-shadow-raised) transition hover:bg-(--hp-primary-soft) active:translate-y-px"
+        className="rounded-2xl border border-white/60 bg-(--hp-primary) px-8 py-3 text-sm font-semibold text-slate-800 shadow-(--hp-shadow-raised) transition hover:bg-(--hp-primary-soft) active:translate-y-px disabled:opacity-60"
+        disabled={isPending}
         type="submit"
       >
-        Send message
+        {isPending ? "Sending..." : "Send message"}
       </button>
     </form>
   );

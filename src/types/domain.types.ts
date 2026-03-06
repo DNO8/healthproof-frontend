@@ -1,3 +1,5 @@
+// ─── Roles ───────────────────────────────────────────────
+
 export type UserRole = "patient" | "laboratory" | "medical_center";
 
 export type RoleConfig = {
@@ -28,3 +30,102 @@ export const ROLES: RoleConfig[] = [
     icon: "🏥",
   },
 ];
+
+// ─── Permissions ─────────────────────────────────────────
+
+export type PermissionStatus = "ACTIVE" | "REVOKED" | "EXPIRED";
+
+export type ResourceType = "RESULT" | "ORDER" | "DOCUMENT";
+
+export type GrantedToRole = "doctor" | "laboratory" | "medical_center";
+
+export interface PermissionPayload {
+  patient_id: string;
+  granted_to_role: GrantedToRole;
+  resource_type: ResourceType;
+  resource_id: string;
+  expires_at: number;
+  nonce: string;
+}
+
+export interface SignedPermission {
+  payload: PermissionPayload;
+  signature: string;
+  wallet: string;
+}
+
+export interface QRData extends SignedPermission {
+  type: "healthproof_permission";
+}
+
+export interface Permission {
+  id: string;
+  patient_id: string;
+  granted_to_id: string;
+  resource_type: ResourceType;
+  resource_id: string;
+  status: PermissionStatus;
+  onchain_tx_hash: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ─── Documents ───────────────────────────────────────────
+
+export type DocumentStatus = "PENDING" | "VERIFIED" | "REJECTED";
+
+export interface MedicalDocument {
+  id: string;
+  patient_id: string;
+  title: string;
+  document_hash: string;
+  encrypted_url: string;
+  status: DocumentStatus;
+  onchain_tx_hash: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ─── Exam Results ────────────────────────────────────────
+
+export type ExamResultStatus = "PENDING" | "UPLOADED" | "VERIFIED";
+
+export interface ExamResult {
+  id: string;
+  order_id: string;
+  laboratory_id: string;
+  patient_id: string;
+  result_hash: string;
+  encrypted_url: string;
+  status: ExamResultStatus;
+  onchain_tx_hash: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ─── Medical Orders ──────────────────────────────────────
+
+export type OrderStatus = "CREATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+
+export interface MedicalOrder {
+  id: string;
+  medical_center_id: string;
+  patient_id: string;
+  laboratory_id: string | null;
+  description: string;
+  status: OrderStatus;
+  onchain_tx_hash: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ─── User Profile ────────────────────────────────────────
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  role: UserRole;
+  wallet_address: string | null;
+  display_name: string | null;
+  created_at: string;
+}
