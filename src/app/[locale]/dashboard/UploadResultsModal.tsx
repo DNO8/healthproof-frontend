@@ -8,6 +8,7 @@ import { getKeyPair } from "@/services/encryption/keystore";
 import { exportPublicKey } from "@/services/encryption/ecdh";
 import { getUserPublicKey } from "@/actions/get-user-public-key";
 import { saveExamResult } from "@/actions/save-exam-result";
+import { UserSelect } from "@/components/forms/UserSelect";
 
 type UploadResultsModalProps = {
   onClose: () => void;
@@ -189,19 +190,13 @@ export function UploadResultsModal({
             <p className="mt-3 text-sm text-slate-500">{t("description")}</p>
 
             <div className="mt-5">
-              <label
-                className="mb-1.5 block text-xs font-medium text-slate-700"
-                htmlFor="patientId"
-              >
-                {t("patientId")}
-              </label>
-              <input
-                id="patientId"
-                className="neu-inset w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                placeholder={t("patientIdPlaceholder")}
+              <UserSelect
+                dbRole="PATIENT"
                 value={patientId}
-                onChange={(e) => setPatientId(e.target.value)}
-                type="text"
+                onChange={setPatientId}
+                label={t("patientId")}
+                placeholder={t("patientIdPlaceholder")}
+                excludeId={labId}
               />
             </div>
 

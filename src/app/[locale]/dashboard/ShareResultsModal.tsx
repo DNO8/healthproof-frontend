@@ -16,13 +16,23 @@ import { getUserPublicKey } from "@/actions/get-user-public-key";
 import { rewrapKeyForRecipient } from "@/services/encryption/rewrap";
 import { exportPublicKey } from "@/services/encryption/ecdh";
 import { getKeyPair } from "@/services/encryption/keystore";
+import { UserSelect } from "@/components/forms/UserSelect";
 
-const GRANTED_ROLES: { key: GrantedToRole; labelKey: string; icon: string }[] =
-  [
-    { key: "doctor", labelKey: "doctor", icon: "🩺" },
-    { key: "laboratory", labelKey: "laboratory", icon: "🔬" },
-    { key: "medical_center", labelKey: "medicalCenter", icon: "🏥" },
-  ];
+const GRANTED_ROLES: {
+  key: GrantedToRole;
+  labelKey: string;
+  icon: string;
+  dbRole: string;
+}[] = [
+  { key: "doctor", labelKey: "doctor", icon: "🩺", dbRole: "DOCTOR" },
+  { key: "laboratory", labelKey: "laboratory", icon: "🔬", dbRole: "LAB" },
+  {
+    key: "medical_center",
+    labelKey: "medicalCenter",
+    icon: "🏥",
+    dbRole: "DOCTOR",
+  },
+];
 
 export function ShareResultsModal({
   onClose,
@@ -348,7 +358,10 @@ export function ShareResultsModal({
                         : "neu-surface border border-transparent text-slate-600 hover:border-slate-200"
                     }`}
                     key={role.key}
-                    onClick={() => setGrantedTo(role.key)}
+                    onClick={() => {
+                      setGrantedTo(role.key);
+                      setRecipientId("");
+                    }}
                     type="button"
                   >
                     <span className="text-xl">{role.icon}</span>
@@ -360,23 +373,22 @@ export function ShareResultsModal({
               </div>
             </div>
 
-            {/* Recipient ID */}
-            <div className="mt-5">
-              <label
-                className="mb-1.5 block text-xs font-medium text-slate-700"
-                htmlFor="recipientId"
-              >
-                {t("recipientId")}
-              </label>
-              <input
-                id="recipientId"
-                className="neu-inset w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                placeholder={t("recipientIdPlaceholder")}
-                value={recipientId}
-                onChange={(e) => setRecipientId(e.target.value)}
-                type="text"
-              />
-            </div>
+            {/* Recipient selector */}
+            {grantedTo && (
+              <div className="mt-5">
+                <UserSelect
+                  dbRole={
+                    GRANTED_ROLES.find((r) => r.key === grantedTo)?.dbRole ??
+                    "DOCTOR"
+                  }
+                  value={recipientId}
+                  onChange={setRecipientId}
+                  label={t("recipientId")}
+                  placeholder={t("recipientIdPlaceholder")}
+                  excludeId={patientId}
+                />
+              </div>
+            )}
 
             {/* Expiry info */}
             <p className="mt-4 text-[11px] text-slate-400">
