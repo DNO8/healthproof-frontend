@@ -2,6 +2,7 @@
 
 import { useRef, useLayoutEffect, useState } from "react";
 import gsap from "gsap";
+import { useTranslations } from "next-intl";
 import { CardFile } from "@/components/ui";
 import type { FileSliderItem } from "./constants";
 
@@ -33,6 +34,7 @@ export function FileSliderCard({
   total,
   cardWidth = DEFAULT_WIDTH,
 }: FileSliderCardProps) {
+  const t = useTranslations("useCases");
   const cardRef = useRef<HTMLDivElement>(null);
   const tlRef = useRef<gsap.core.Timeline | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -127,7 +129,9 @@ export function FileSliderCard({
         >
           <div className="mt-3 flex items-center gap-2">
             <span className="inline-block h-2 w-2 rounded-full bg-(--hp-success)" />
-            <span className="text-xs text-(--hp-muted)">Verified hash</span>
+            <span className="text-xs text-(--hp-muted)">
+              {t("verifiedHash")}
+            </span>
           </div>
         </CardFile>
       </div>

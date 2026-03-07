@@ -2,9 +2,11 @@
 
 import { useRef, useTransition } from "react";
 import { sileo } from "sileo";
+import { useTranslations } from "next-intl";
 import { sendContactEmail } from "./actions";
 
 export function ContactForm() {
+  const t = useTranslations("contact");
   const formRef = useRef<HTMLFormElement>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -21,47 +23,47 @@ export function ContactForm() {
 
     if (!name) {
       sileo.warning({
-        title: "Name required",
-        description: "Please enter your name.",
+        title: t("nameRequired"),
+        description: t("nameRequiredDesc"),
       });
       return;
     }
 
     if (!email) {
       sileo.warning({
-        title: "Email required",
-        description: "Please enter a valid email address.",
+        title: t("emailRequired"),
+        description: t("emailRequiredDesc"),
       });
       return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       sileo.warning({
-        title: "Invalid email",
-        description: "Please enter a valid email address.",
+        title: t("invalidEmail"),
+        description: t("invalidEmailDesc"),
       });
       return;
     }
 
     if (!subject) {
       sileo.warning({
-        title: "Subject required",
-        description: "Please enter a subject for your message.",
+        title: t("subjectRequired"),
+        description: t("subjectRequiredDesc"),
       });
       return;
     }
 
     if (!message) {
       sileo.warning({
-        title: "Message required",
-        description: "Please write your message before sending.",
+        title: t("messageRequired"),
+        description: t("messageRequiredDesc"),
       });
       return;
     }
 
     sileo.info({
-      title: "Sending message...",
-      description: "Please wait a moment.",
+      title: t("sendingMessage"),
+      description: t("sendingMessageDesc"),
       duration: 2000,
     });
 
@@ -70,7 +72,7 @@ export function ContactForm() {
 
       if (result?.error) {
         sileo.error({
-          title: "Failed to send",
+          title: t("failedToSend"),
           description: result.error,
         });
         return;
@@ -78,9 +80,8 @@ export function ContactForm() {
 
       if (result?.success) {
         sileo.success({
-          title: "Message sent!",
-          description:
-            "Thank you for reaching out! Our team will get back to you shortly.",
+          title: t("messageSent"),
+          description: t("messageSentDesc"),
           duration: 5000,
         });
         form.reset();
@@ -96,13 +97,13 @@ export function ContactForm() {
             className="mb-1.5 block text-xs font-medium text-slate-700"
             htmlFor="name"
           >
-            Name
+            {t("nameLabel")}
           </label>
           <input
             className="neu-inset w-full rounded-xl px-4 py-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:neu-focus-ring"
             id="name"
             name="name"
-            placeholder="Your name"
+            placeholder={t("namePlaceholder")}
             type="text"
           />
         </div>
@@ -111,13 +112,13 @@ export function ContactForm() {
             className="mb-1.5 block text-xs font-medium text-slate-700"
             htmlFor="email"
           >
-            Email
+            {t("emailLabel")}
           </label>
           <input
             className="neu-inset w-full rounded-xl px-4 py-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:neu-focus-ring"
             id="email"
             name="email"
-            placeholder="you@example.com"
+            placeholder={t("emailPlaceholder")}
             type="email"
           />
         </div>
@@ -128,13 +129,13 @@ export function ContactForm() {
           className="mb-1.5 block text-xs font-medium text-slate-700"
           htmlFor="subject"
         >
-          Subject
+          {t("subjectLabel")}
         </label>
         <input
           className="neu-inset w-full rounded-xl px-4 py-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:neu-focus-ring"
           id="subject"
           name="subject"
-          placeholder="What is this about?"
+          placeholder={t("subjectPlaceholder")}
           type="text"
         />
       </div>
@@ -144,13 +145,13 @@ export function ContactForm() {
           className="mb-1.5 block text-xs font-medium text-slate-700"
           htmlFor="message"
         >
-          Message
+          {t("messageLabel")}
         </label>
         <textarea
           className="neu-inset w-full resize-none rounded-xl px-4 py-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:neu-focus-ring"
           id="message"
           name="message"
-          placeholder="Tell us more..."
+          placeholder={t("messagePlaceholder")}
           rows={5}
         />
       </div>
@@ -160,7 +161,7 @@ export function ContactForm() {
         disabled={isPending}
         type="submit"
       >
-        {isPending ? "Sending..." : "Send message"}
+        {isPending ? t("sending") : t("send")}
       </button>
     </form>
   );

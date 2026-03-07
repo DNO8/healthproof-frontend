@@ -1,0 +1,449 @@
+{
+  "metadata": {
+    "title": "HealthProof — Sovereign Medical Verification",
+    "description": "Official web client for sovereign medical verification"
+  },
+  "nav": {
+    "home": "Home",
+    "contact": "Contact",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "login": "Login",
+    "logout": "Logout",
+    "protocol": "Protocol L1 : Avalanche",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "signedOut": "Signed out",
+    "signedOutDescription": "You have been logged out successfully."
+  },
+  "hero": {
+    "headline1": "Interoperability is becoming mandatory.",
+    "headline2": "Are your medical documents verifiable?",
+    "svgTitle": "Connection paths between actors",
+    "captionVerified": "Verifiable and secure workflow.",
+    "captionBase": "Built for the new era of",
+    "captionBaseBold": "health data interoperability and ICD-11 digital standards",
+    "buttonVerified": "Verification Active",
+    "buttonBase": "Verify on Chain"
+  },
+  "actors": {
+    "medicalCenter": "Medical Center",
+    "laboratory": "Laboratory",
+    "patient": "Patient",
+    "medicalCenterRole": "Validates results",
+    "laboratoryRole": "Emits evidence",
+    "patientRole": "Sovereign control",
+    "medicalCenterSummary": "Checks permissions and authenticity before attending.",
+    "laboratorySummary": "Delivers clinical results ready for verification.",
+    "patientSummary": "You decide who accesses your information and for how long."
+  },
+  "solution": {
+    "eyebrow": "HealthProof",
+    "title": "A verification layer for medical documents",
+    "description": "Instead of trusting PDFs, emails, or manual validations, every document receives a",
+    "descriptionBold": "tamper-proof verification record anchored on blockchain.",
+    "enablesTitle": "What HealthProof enables",
+    "features": [
+      "Verifiable medical orders",
+      "Tamper-proof laboratory results",
+      "Traceable prescriptions",
+      "Patient-controlled data access",
+      "Interoperability between institutions"
+    ],
+    "footer": "All without replacing existing hospital systems. HealthProof",
+    "footerBold": "connects them"
+  },
+  "regulatory": {
+    "eyebrow": "Why Now",
+    "title": "Healthcare is entering the era of verifiable data",
+    "intro": "Healthcare systems are undergoing a structural shift driven by:",
+    "drivers": [
+      "Interoperability regulations",
+      "Digital health infrastructure",
+      "AI-assisted clinical decision systems",
+      "New global data standards"
+    ],
+    "riskIntro": "The risk is no longer losing documents. The risk is",
+    "riskBold": "trusting documents that cannot be verified.",
+    "alteredPdf": "A single altered PDF can change:",
+    "riskExamples": [
+      "a diagnosis",
+      "a prescription",
+      "a payment",
+      "a clinical decision"
+    ],
+    "conclusion": "Healthcare needs",
+    "conclusionHighlight": "verifiable evidence",
+    "conclusionEnd": ", not just stored data."
+  },
+  "useCases": {
+    "eyebrow": "Use Cases",
+    "title": "Clinical workflows built on verifiable evidence",
+    "splitText": "HealthProof makes it possible in three simple steps!",
+    "tabLabels": {
+      "Medical Centers": "MCR",
+      "Laboratories": "LAB",
+      "Patients": "PAT"
+    },
+    "cases": [
+      {
+        "title": "Medical Centers",
+        "description": "Doctors issue medical orders that are cryptographically registered and traceable. When patients move across institutions, the document travels with proof of authenticity.",
+        "benefits": [
+          "Eliminate manual validation",
+          "Reduce administrative overhead",
+          "Enable interoperability with laboratories"
+        ]
+      },
+      {
+        "title": "Laboratories",
+        "description": "Laboratories receive verifiable orders and attach test results directly to the original request. Every update is timestamped and auditable.",
+        "benefits": [
+          "Reduce fraud and document disputes",
+          "Faster verification by physicians",
+          "Secure exchange with hospitals"
+        ]
+      },
+      {
+        "title": "Patients",
+        "description": "Patients control access to their medical documents. They approve which institution can read or update their exams.",
+        "benefits": [
+          "Portability across healthcare providers",
+          "Privacy by design",
+          "Secure long-term medical record integrity"
+        ]
+      }
+    ],
+    "verifiedHash": "Verified hash"
+  },
+  "workflow": {
+    "eyebrow": "How It Works",
+    "title": "Verification without exposing medical data",
+    "steps": [
+      {
+        "title": "Medical order issued",
+        "description": "A doctor creates a medical test order inside their system. A cryptographic hash of the document is registered on blockchain."
+      },
+      {
+        "title": "Patient authorizes laboratory access",
+        "description": "The patient grants the laboratory permission to view the order. Authorization can occur via QR code or one-click approval."
+      },
+      {
+        "title": "Laboratory performs the test",
+        "description": "The laboratory updates the exam status and uploads the results. The new document is linked to the original order."
+      },
+      {
+        "title": "Doctor verifies results",
+        "description": "The patient returns to the medical center. The doctor verifies the results instantly through HealthProof."
+      }
+    ],
+    "tagline": "The patient does not share data.",
+    "taglineBold": "The patient shares",
+    "taglineHighlight": "permissions"
+  },
+  "technology": {
+    "eyebrow": "Technology",
+    "title": "Proof infrastructure built for healthcare",
+    "guaranteesTitle": "Blockchain guarantees",
+    "guarantees": [
+      "Document authenticity",
+      "Tamper resistance",
+      "Time-stamped traceability",
+      "Verifiable issuer identity"
+    ],
+    "offChain": "Sensitive medical data remains",
+    "offChainBold1": "off-chain",
+    "offChainMid": ". Only",
+    "offChainBold2": "cryptographic proofs and document references",
+    "offChainEnd": "are recorded.",
+    "ensuresTitle": "This approach ensures",
+    "ensures": [
+      "Privacy compliance",
+      "Regulatory compatibility",
+      "Secure interoperability"
+    ],
+    "l1": "Each country can operate its own",
+    "l1Bold": "HealthProof Layer-1 network",
+    "l1End": "to comply with national data sovereignty laws."
+  },
+  "icd11": {
+    "eyebrow": "ICD-11",
+    "title": "Designing the global transition to ICD-11",
+    "intro": "The",
+    "introBold": "International Classification of Diseases (ICD-11)",
+    "introEnd": "is the new global standard for digital health data. Adopted by the World Health Organization, ICD-11 enables standardized health information exchange across countries and healthcare systems.",
+    "featuresTitle": "ICD-11 introduces",
+    "features": [
+      "Fully digital disease classification",
+      "Over 17,000 diagnostic codes",
+      "More than 120,000 codifiable terms",
+      "Standardized interoperability frameworks"
+    ],
+    "adapt": "Healthcare institutions must adapt their digital infrastructure to support these standards.",
+    "accelerate": "HealthProof accelerates that transition by enabling",
+    "accelerateBold": "verifiable clinical documentation compatible with interoperable health systems."
+  },
+  "beforeAfter": {
+    "before": "Before HealthProof",
+    "after": "With HealthProof",
+    "beforeItems": [
+      "PDFs sent by email",
+      "Manual validation",
+      "Disconnected systems",
+      "No document authenticity",
+      "Patients locked into institutions"
+    ],
+    "afterItems": [
+      "Verifiable clinical documents",
+      "Instant authenticity checks",
+      "Interoperable institutions",
+      "Patient-controlled permissions",
+      "Traceable clinical workflows"
+    ]
+  },
+  "finalCta": {
+    "eyebrow": "Get Started",
+    "title": "Prepare your institution for verifiable healthcare",
+    "description": "Interoperability is not optional anymore. Healthcare institutions will soon need to prove:",
+    "bullets": [
+      "Where clinical documents originated",
+      "Whether they were altered",
+      "Who accessed them",
+      "When they were issued"
+    ],
+    "footer": "HealthProof provides the infrastructure to do that",
+    "footerBold": "securely, privately, and instantly.",
+    "button": "Request a technical demo"
+  },
+  "team": {
+    "eyebrow": "Team",
+    "title": "HealthProof Co-Founders",
+    "description": "HealthProof is built by a team with experience in",
+    "descriptionBold": "blockchain infrastructure, healthcare innovation, and digital product development."
+  },
+  "painBullets": [
+    "Exchange clinical data across institutions",
+    "Guarantee document integrity",
+    "Maintain traceability of medical records",
+    "Record patient consent",
+    "Assume legal responsibility for data leaks or document manipulation"
+  ],
+  "auth": {
+    "loading": "Loading...",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "subtitle": "Access your medical records securely",
+    "otpSubtitle": "Enter the code we sent to your email",
+    "signInSubtitle": "Sign in to access your medical records",
+    "selectRole": "Select your role",
+    "continueEmail": "Continue with Email",
+    "or": "or",
+    "continueWallet": "Continue with Wallet or Google",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "sendingCode": "Sending...",
+    "sendCode": "Send Verification Code",
+    "back": "Back",
+    "otpLabel": "Verification Code",
+    "otpPlaceholder": "000000",
+    "verifying": "Verifying...",
+    "verifySignIn": "Verify & Sign In",
+    "useDifferentEmail": "Use a different email",
+    "invalidEmail": "Invalid email",
+    "invalidEmailDesc": "Please enter a valid email address.",
+    "roleRequired": "Role required",
+    "roleRequiredDesc": "Please select a role to continue.",
+    "codeSent": "Code sent",
+    "codeSentDesc": "We sent a verification code to {email}",
+    "errorTitle": "Error",
+    "errorSendCode": "Failed to send verification code. Please try again.",
+    "codeRequired": "Code required",
+    "codeRequiredDesc": "Please enter the verification code.",
+    "welcome": "Welcome!",
+    "welcomeDesc": "You have signed in successfully.",
+    "invalidCode": "Invalid code",
+    "invalidCodeDesc": "The verification code is incorrect or expired."
+  },
+  "roles": {
+    "patient": "Patient",
+    "patientDesc": "Access and share your medical records securely",
+    "laboratory": "Laboratory",
+    "laboratoryDesc": "Upload and manage test results",
+    "medicalCenter": "Medical Center",
+    "medicalCenterDesc": "Issue orders and verify clinical documents"
+  },
+  "dashboard": {
+    "loading": "Loading...",
+    "welcomeBack": "Welcome back",
+    "welcomeToast": "Welcome, {role}",
+    "signedInAs": "Signed in as {email}",
+    "metrics": {
+      "myDocuments": "My Documents",
+      "activePermissions": "Active Permissions",
+      "verifications": "Verifications",
+      "testsPerformed": "Tests Performed",
+      "resultsUploaded": "Results Uploaded",
+      "pendingOrders": "Pending Orders",
+      "ordersIssued": "Orders Issued",
+      "verifiedResults": "Verified Results",
+      "activePatients": "Active Patients"
+    },
+    "descriptions": {
+      "patient": "Manage your medical documents, grant or revoke access permissions, and verify the integrity of your clinical records.",
+      "laboratory": "Perform tests linked to medical orders, upload verifiable results, and manage your laboratory workflow.",
+      "medicalCenter": "Issue medical orders, verify laboratory results, and manage your institution's clinical workflows."
+    },
+    "actions": {
+      "title": "Actions",
+      "shareResults": "Share Results",
+      "shareResultsDesc": "Generate a temporary QR code to grant access to a doctor or lab.",
+      "myDocuments": "My Documents",
+      "myDocumentsDesc": "View and manage your encrypted medical documents.",
+      "activePermissions": "Active Permissions",
+      "activePermissionsDesc": "Review and revoke access permissions you have granted.",
+      "auditLog": "Audit Log",
+      "auditLogDesc": "View the on-chain history of all access events.",
+      "connectWallet": "Connect Wallet",
+      "connectWalletDesc": "Link your wallet to sign permissions cryptographically.",
+      "scanQr": "Scan Patient QR",
+      "scanQrDescLab": "Scan a patient's QR code to receive access to their results.",
+      "scanQrDescMc": "Verify a patient's identity and access their authorized records.",
+      "uploadResults": "Upload Results",
+      "uploadResultsDesc": "Upload encrypted exam results linked to a medical order.",
+      "pendingOrders": "Pending Orders",
+      "pendingOrdersDesc": "View medical orders assigned to your laboratory.",
+      "resultsHistory": "Results History",
+      "resultsHistoryDesc": "Browse all results uploaded by your laboratory.",
+      "createOrder": "Create Order",
+      "createOrderDesc": "Issue a new medical order for a patient examination.",
+      "verifyResults": "Verify Results",
+      "verifyResultsDesc": "Check the integrity and on-chain registration of lab results.",
+      "patientRecords": "Patient Records",
+      "patientRecordsDesc": "Access authorized patient records via verified permissions.",
+      "tags": {
+        "backendRequired": "Backend required",
+        "contractsRequired": "Contracts required",
+        "walletPending": "Wallet integration pending"
+      },
+      "comingSoon": "Coming soon",
+      "comingSoonDesc": "QR scanner will be available when the backend is ready."
+    },
+    "profileBanner": {
+      "title": "Complete your profile",
+      "description": "Add your full name and wallet address to unlock all HealthProof features.",
+      "button": "Complete Profile"
+    },
+    "profile": {
+      "eyebrow": "Profile Settings",
+      "heading": "Complete your profile",
+      "intro": "Fill in your details to unlock the full HealthProof experience. Your embedded wallet was automatically created by Privy.",
+      "emailLabel": "Email",
+      "roleLabel": "Role",
+      "fullNameLabel": "Full Name",
+      "fullNamePlaceholder": "Enter your full name",
+      "walletLabel": "Embedded Wallet",
+      "noWallet": "No wallet linked yet",
+      "walletHint": "Used for on-chain signing.",
+      "noWalletHint": "A wallet will be created when you need on-chain features.",
+      "saving": "Saving...",
+      "saveProfile": "Save Profile",
+      "backToDashboard": "Back to Dashboard",
+      "errorTitle": "Error",
+      "updated": "Profile updated",
+      "updatedDesc": "Your profile has been saved successfully."
+    }
+  },
+  "contact": {
+    "title": "Contact — HealthProof",
+    "description": "Get in touch with the HealthProof team",
+    "eyebrow": "Contact",
+    "heading": "Get in touch",
+    "intro": "Have a question about HealthProof, want to explore a partnership, or need technical details? Reach out and our team will respond shortly.",
+    "nameLabel": "Name",
+    "namePlaceholder": "Your name",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "subjectLabel": "Subject",
+    "subjectPlaceholder": "What is this about?",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Tell us more...",
+    "sending": "Sending...",
+    "send": "Send message",
+    "nameRequired": "Name required",
+    "nameRequiredDesc": "Please enter your name.",
+    "emailRequired": "Email required",
+    "emailRequiredDesc": "Please enter a valid email address.",
+    "invalidEmail": "Invalid email",
+    "invalidEmailDesc": "Please enter a valid email address.",
+    "subjectRequired": "Subject required",
+    "subjectRequiredDesc": "Please enter a subject for your message.",
+    "messageRequired": "Message required",
+    "messageRequiredDesc": "Please write your message before sending.",
+    "sendingMessage": "Sending message...",
+    "sendingMessageDesc": "Please wait a moment.",
+    "failedToSend": "Failed to send",
+    "messageSent": "Message sent!",
+    "messageSentDesc": "Thank you for reaching out! Our team will get back to you shortly."
+  },
+  "sectionDividers": {
+    "regulatoryUrgency": "Regulatory Urgency",
+    "useCases": "Use Cases",
+    "howItWorks": "How It Works",
+    "technology": "Technology",
+    "team": "Team",
+    "icd11": "ICD-11",
+    "beforeAfter": "Before / After"
+  },
+  "shareModal": {
+    "title": "Share Results",
+    "close": "Close",
+    "description": "Generate a temporary QR code to grant access to your medical data.",
+    "shareWith": "Share with",
+    "doctor": "Doctor",
+    "laboratory": "Laboratory",
+    "medicalCenter": "Medical Center",
+    "resourceType": "Resource type",
+    "examResult": "Exam Result",
+    "medicalOrder": "Medical Order",
+    "document": "Document",
+    "expiryInfo": "QR expires in {minutes} minutes.",
+    "walletSigned": "Payload will be signed with your embedded wallet.",
+    "noWallet": "Connect a wallet for signed permissions.",
+    "generating": "Generating...",
+    "generateQr": "Generate QR",
+    "qrGenerated": "QR Generated",
+    "qrGeneratedDesc": "Signed permission QR for {role} created. Expires in {minutes} minutes.",
+    "errorTitle": "Error",
+    "errorDesc": "Failed to sign QR payload. Please try again.",
+    "selectRecipient": "Select a recipient",
+    "selectRecipientDesc": "Choose who you want to share access with.",
+    "selectResource": "Select a resource type",
+    "selectResourceDesc": "Choose what type of resource to share.",
+    "qrShowDescription": "Show this QR code to the recipient. It contains a signed permission payload.",
+    "expiresIn": "Expires in {minutes} minutes",
+    "viewPayload": "View payload",
+    "copyPayload": "Copy payload",
+    "copied": "Copied!",
+    "copiedDesc": "QR payload copied to clipboard.",
+    "generateNew": "Generate new"
+  },
+  "uploadModal": {
+    "title": "Upload Results",
+    "close": "Close",
+    "description": "Select a file to encrypt and upload to IPFS. The file will be encrypted client-side before upload.",
+    "selectFile": "Click to select a file",
+    "clientMode": "Client mode: The encrypted file is stored on IPFS via Pinata. Metadata is saved locally. No backend required.",
+    "encrypting": "Encrypting & Uploading...",
+    "encryptUpload": "Encrypt & Upload",
+    "cancel": "Cancel",
+    "uploadComplete": "Upload complete",
+    "uploadCompleteDesc": "{fileName} encrypted and uploaded to IPFS.",
+    "uploadFailed": "Upload failed",
+    "fileUploaded": "File uploaded successfully",
+    "fileName": "File Name",
+    "sha256": "SHA-256 Hash",
+    "ipfsCid": "IPFS CID",
+    "uploadAnother": "Upload Another",
+    "done": "Done"
+  }
+}

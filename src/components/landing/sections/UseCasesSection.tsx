@@ -3,29 +3,14 @@
 import { useRef, useLayoutEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useTranslations } from "next-intl";
 import { FileSliderDrawer } from "@/components/cards/file-slider";
 import type { FileSliderItem } from "@/components/cards/file-slider";
-import { USE_CASES } from "@/components/landing/constants";
 import { ScrollReveal, SectionTitle } from "@/components/ui";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const TAB_LABELS: Record<string, string> = {
-  "Medical Centers": "MCR",
-  Laboratories: "LAB",
-  Patients: "PAT",
-};
-
-const USE_CASE_SLIDER_ITEMS: FileSliderItem[] = USE_CASES.map((uc) => ({
-  id: uc.title.toLowerCase().replace(/\s+/g, "-"),
-  title: uc.title,
-  description: uc.description,
-  tabLabel: TAB_LABELS[uc.title] ?? "USE",
-}));
-
-const SPLIT_TEXT = "HealthProof makes it possible in three simple steps!";
-
-function AnimatedHeadline() {
+function AnimatedHeadline({ text }: { text: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -61,7 +46,7 @@ function AnimatedHeadline() {
       ref={containerRef}
       className="flex max-w-lg flex-wrap items-baseline gap-x-4 gap-y-2 lg:pt-16"
     >
-      {SPLIT_TEXT.split(" ").map((word, i) => {
+      {text.split(" ").map((word, i) => {
         const key = `w${i}-${word}`;
         return (
           <span
@@ -77,24 +62,36 @@ function AnimatedHeadline() {
 }
 
 export function UseCasesSection() {
+  const t = useTranslations("useCases");
+  const cases = t.raw("cases") as Array<{
+    title: string;
+    description: string;
+    benefits: string[];
+  }>;
+  const tabLabels = t.raw("tabLabels") as Record<string, string>;
+
+  const sliderItems: FileSliderItem[] = cases.map((uc) => ({
+    id: uc.title.toLowerCase().replace(/\s+/g, "-"),
+    title: uc.title,
+    description: uc.description,
+    tabLabel: tabLabels[uc.title] ?? "USE",
+  }));
+
   return (
     <div>
       <ScrollReveal y={40} duration={0.6}>
-        <SectionTitle
-          eyebrow="Use Cases"
-          title="Clinical workflows built on verifiable evidence"
-        />
+        <SectionTitle eyebrow={t("eyebrow")} title={t("title")} />
       </ScrollReveal>
 
       <div className="mt-8 flex flex-col items-center gap-8 lg:flex-row lg:items-start lg:justify-center lg:gap-32">
         <div className="order-1 lg:order-2">
-          <AnimatedHeadline />
+          <AnimatedHeadline text={t("splitText")} />
         </div>
 
         <ScrollReveal className="order-2 lg:order-1" y={50} duration={0.8}>
           <FileSliderDrawer
             cardWidth={{ base: 380, sm: 440 }}
-            items={USE_CASE_SLIDER_ITEMS}
+            items={sliderItems}
           />
         </ScrollReveal>
       </div>

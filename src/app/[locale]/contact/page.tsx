@@ -1,24 +1,22 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useTranslations } from "next-intl";
 import { ContactForm } from "./ContactForm";
 
-export const metadata: Metadata = {
-  title: "Contact — HealthProof",
-  description: "Get in touch with the HealthProof team",
-};
-
 export default function ContactPage() {
+  const t = useTranslations("contact");
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24">
       <div className="neu-shell border border-white/70 p-8 sm:p-12">
         <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">
-          Contact
+          {t("eyebrow")}
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-800 sm:text-4xl">
-          Get in touch
+          {t("heading")}
         </h1>
         <p className="mt-4 text-sm leading-relaxed text-slate-600 sm:text-base">
-          Have a question about HealthProof, want to explore a partnership, or
-          need technical details? Reach out and our team will respond shortly.
+          {t("intro")}
         </p>
 
         <ContactForm />

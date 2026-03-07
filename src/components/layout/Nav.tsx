@@ -1,31 +1,38 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { sileo } from "sileo";
 import { usePrivy } from "@privy-io/react-auth";
+import { useLocale, useTranslations } from "next-intl";
+import {
+  Link,
+  useRouter as useIntlRouter,
+  usePathname as useIntlPathname,
+} from "@/i18n/navigation";
 import { clearDbUserCache } from "@/hooks/useDbUser";
 
-const NAV_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/contact", label: "Contact" },
-] as const;
-
 export function Nav() {
-  const pathname = usePathname();
+  const t = useTranslations("nav");
   const router = useRouter();
   const { ready, authenticated, logout } = usePrivy();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const locale = useLocale();
+  const intlRouter = useIntlRouter();
+  const intlPathname = useIntlPathname();
+
+  function switchLocale(next: "en" | "es") {
+    intlRouter.replace(intlPathname, { locale: next });
+  }
 
   const loading = !ready;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: close menu on route change
   useEffect(() => {
     setMenuOpen(false);
-  }, [pathname]);
+  }, [intlPathname]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -50,14 +57,14 @@ export function Nav() {
     sessionStorage.removeItem("hp_welcome_shown");
     sessionStorage.removeItem("hp_logging_out");
     sileo.success({
-      title: "Signed out",
-      description: "You have been logged out successfully.",
+      title: t("signedOut"),
+      description: t("signedOutDescription"),
     });
     router.replace("/");
   }
 
   // Hide nav on auth page
-  if (pathname === "/auth") return null;
+  if (intlPathname === "/auth") return null;
 
   const linkClass = (active: boolean) =>
     `rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
@@ -65,6 +72,33 @@ export function Nav() {
         ? "neu-pressed text-sky-700"
         : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
     }`;
+
+  const localePill = (
+    <div className="flex items-center rounded-full border border-white/60 bg-white/40 p-0.5">
+      <button
+        className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-200 ${
+          locale === "en"
+            ? "neu-pressed text-sky-700"
+            : "text-slate-400 hover:text-slate-600"
+        }`}
+        onClick={() => switchLocale("en")}
+        type="button"
+      >
+        EN
+      </button>
+      <button
+        className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-200 ${
+          locale === "es"
+            ? "neu-pressed text-sky-700"
+            : "text-slate-400 hover:text-slate-600"
+        }`}
+        onClick={() => switchLocale("es")}
+        type="button"
+      >
+        ES
+      </button>
+    </div>
+  );
 
   return (
     <div
@@ -107,20 +141,20 @@ export function Nav() {
                 strokeWidth="1.8"
               />
             </svg>
-            Protocol L1 : Avalanche
+            {t("protocol")}
           </span>
 
           {/* Desktop links */}
           <div className="hidden items-center gap-1 md:flex">
-            {NAV_LINKS.map((link) => (
-              <Link
-                className={linkClass(pathname === link.href)}
-                href={link.href}
-                key={link.href}
-              >
-                {link.label}
-              </Link>
-            ))}
+            <Link className={linkClass(intlPathname === "/")} href="/">
+              {t("home")}
+            </Link>
+            <Link
+              className={linkClass(intlPathname === "/contact")}
+              href="/contact"
+            >
+              {t("contact")}
+            </Link>
 
             {!loading && (
               <>
@@ -128,83 +162,91 @@ export function Nav() {
                   <>
                     <Link
                       className={linkClass(
-                        pathname === "/dashboard" ||
-                          (pathname.startsWith("/dashboard") &&
-                            !pathname.startsWith("/dashboard/profile")),
+                        intlPathname === "/dashboard" ||
+                          (intlPathname.startsWith("/dashboard") &&
+                            !intlPathname.startsWith("/dashboard/profile")),
                       )}
                       href="/dashboard"
                     >
-                      Dashboard
+                      {t("dashboard")}
                     </Link>
                     <Link
-                      className={linkClass(pathname === "/dashboard/profile")}
+                      className={linkClass(
+                        intlPathname === "/dashboard/profile",
+                      )}
                       href="/dashboard/profile"
                     >
-                      Profile
+                      {t("profile")}
                     </Link>
                     <button
                       className="rounded-full px-4 py-1.5 text-sm font-medium text-slate-500 transition-all duration-200 hover:bg-white/50 hover:text-slate-800"
                       onClick={handleLogout}
                       type="button"
                     >
-                      Logout
+                      {t("logout")}
                     </button>
                   </>
                 ) : (
                   <Link
-                    className={linkClass(pathname === "/auth")}
+                    className={linkClass(intlPathname === "/auth")}
                     href="/auth"
                   >
-                    Login
+                    {t("login")}
                   </Link>
                 )}
               </>
             )}
+
+            {localePill}
           </div>
 
-          {/* Hamburger — mobile only */}
-          <button
-            className="flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-white/50 md:hidden"
-            onClick={() => setMenuOpen((prev) => !prev)}
-            type="button"
-            aria-label="Toggle menu"
-          >
-            <svg
-              fill="none"
-              height="20"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              width="20"
+          {/* Mobile: locale pill + hamburger */}
+          <div className="flex items-center gap-2 md:hidden">
+            {localePill}
+
+            <button
+              className="flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-white/50"
+              onClick={() => setMenuOpen((prev) => !prev)}
+              type="button"
+              aria-label="Toggle menu"
             >
-              <title>{menuOpen ? "Close menu" : "Open menu"}</title>
-              {menuOpen ? (
-                <path d="M18 6 6 18M6 6l12 12" />
-              ) : (
-                <>
-                  <path d="M4 6h16" />
-                  <path d="M4 12h16" />
-                  <path d="M4 18h16" />
-                </>
-              )}
-            </svg>
-          </button>
+              <svg
+                fill="none"
+                height="20"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                width="20"
+              >
+                <title>{menuOpen ? t("closeMenu") : t("openMenu")}</title>
+                {menuOpen ? (
+                  <path d="M18 6 6 18M6 6l12 12" />
+                ) : (
+                  <>
+                    <path d="M4 6h16" />
+                    <path d="M4 12h16" />
+                    <path d="M4 18h16" />
+                  </>
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Mobile dropdown */}
         {menuOpen && (
           <div className="absolute left-0 right-0 top-full mt-2 flex flex-col gap-1 rounded-2xl border border-white/70 bg-(--hp-bg) p-3 shadow-lg md:hidden">
-            {NAV_LINKS.map((link) => (
-              <Link
-                className={linkClass(pathname === link.href)}
-                href={link.href}
-                key={link.href}
-              >
-                {link.label}
-              </Link>
-            ))}
+            <Link className={linkClass(intlPathname === "/")} href="/">
+              {t("home")}
+            </Link>
+            <Link
+              className={linkClass(intlPathname === "/contact")}
+              href="/contact"
+            >
+              {t("contact")}
+            </Link>
 
             {!loading && (
               <>
@@ -212,34 +254,36 @@ export function Nav() {
                   <>
                     <Link
                       className={linkClass(
-                        pathname === "/dashboard" ||
-                          (pathname.startsWith("/dashboard") &&
-                            !pathname.startsWith("/dashboard/profile")),
+                        intlPathname === "/dashboard" ||
+                          (intlPathname.startsWith("/dashboard") &&
+                            !intlPathname.startsWith("/dashboard/profile")),
                       )}
                       href="/dashboard"
                     >
-                      Dashboard
+                      {t("dashboard")}
                     </Link>
                     <Link
-                      className={linkClass(pathname === "/dashboard/profile")}
+                      className={linkClass(
+                        intlPathname === "/dashboard/profile",
+                      )}
                       href="/dashboard/profile"
                     >
-                      Profile
+                      {t("profile")}
                     </Link>
                     <button
                       className="rounded-full px-4 py-1.5 text-left text-sm font-medium text-slate-500 transition-all duration-200 hover:bg-white/50 hover:text-slate-800"
                       onClick={handleLogout}
                       type="button"
                     >
-                      Logout
+                      {t("logout")}
                     </button>
                   </>
                 ) : (
                   <Link
-                    className={linkClass(pathname === "/auth")}
+                    className={linkClass(intlPathname === "/auth")}
                     href="/auth"
                   >
-                    Login
+                    {t("login")}
                   </Link>
                 )}
               </>

@@ -1,6 +1,7 @@
 import gsap from "gsap";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import {
   ACTORS,
   HERO_CIRCLE_DECORS,
@@ -22,6 +23,8 @@ export function HeroCarouselSection({
   verified,
   onVerify,
 }: HeroCarouselSectionProps) {
+  const t = useTranslations("hero");
+  const tActors = useTranslations("actors");
   const sectionRef = useRef<HTMLElement | null>(null);
   const iconRefs = useRef<Array<HTMLDivElement | null>>([]);
   const headline1Ref = useRef<HTMLSpanElement | null>(null);
@@ -81,22 +84,22 @@ export function HeroCarouselSection({
       <header className="relative z-10 mx-auto mb-6 max-w-5xl text-center sm:mb-10">
         <h1 className="relative text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
           <span
-            className="block bg-linear-to-r from-sky-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent"
+            className="block bg-linear-to-r from-sky-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent pb-2"
             ref={headline1Ref}
           >
-            Interoperability is becoming mandatory.
+            {t("headline1")}
           </span>
           <span
             className="absolute inset-x-0 top-0 bg-linear-to-r from-sky-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent"
             ref={headline2Ref}
           >
-            Are your medical documents verifiable?
+            {t("headline2")}
           </span>
         </h1>
       </header>
 
       <div className="relative z-10">
-        <div className="neu-shell relative mx-auto h-[520px] w-full max-w-6xl overflow-hidden border border-white/70 pb-20 sm:h-[640px] sm:p-6 sm:pb-24">
+        <div className="neu-shell relative mx-auto aspect-square w-full max-w-6xl overflow-hidden border border-white/70 sm:aspect-auto sm:h-[640px] sm:p-6 sm:pb-24">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(167,243,208,0.16),transparent_56%)]" />
 
           {/* SVG paths connecting actors */}
@@ -107,7 +110,7 @@ export function HeroCarouselSection({
             role="img"
             viewBox="0 0 1000 600"
           >
-            <title id="hero-paths-title">Connection paths between actors</title>
+            <title id="hero-paths-title">{t("svgTitle")}</title>
             {/* Medical Center → Laboratory (top arc) */}
             <path
               className="hero-path"
@@ -154,7 +157,7 @@ export function HeroCarouselSection({
           <div className="absolute left-[6%] top-[22%] z-10 flex flex-col items-center sm:left-[10%] sm:top-[18%]">
             <div className="relative h-[80px] w-[100px] sm:h-[140px] sm:w-[180px] lg:h-[170px] lg:w-[210px]">
               <Image
-                alt={ACTORS[0].name}
+                alt={tActors("medicalCenter")}
                 className="object-contain drop-shadow-[0_14px_24px_rgba(120,134,165,0.3)]"
                 fill
                 priority
@@ -163,7 +166,7 @@ export function HeroCarouselSection({
               />
             </div>
             <h3 className="mt-1 text-xs font-semibold text-slate-700 sm:text-sm">
-              {ACTORS[0].name}
+              {tActors("medicalCenter")}
             </h3>
           </div>
 
@@ -171,7 +174,7 @@ export function HeroCarouselSection({
           <div className="absolute right-[6%] top-[22%] z-10 flex flex-col items-center sm:right-[10%] sm:top-[18%]">
             <div className="relative h-[80px] w-[100px] sm:h-[140px] sm:w-[180px] lg:h-[170px] lg:w-[210px]">
               <Image
-                alt={ACTORS[1].name}
+                alt={tActors("laboratory")}
                 className="object-contain drop-shadow-[0_14px_24px_rgba(120,134,165,0.3)]"
                 fill
                 sizes="(max-width: 640px) 100px, (max-width: 1024px) 180px, 210px"
@@ -179,15 +182,15 @@ export function HeroCarouselSection({
               />
             </div>
             <h3 className="mt-1 text-xs font-semibold text-slate-700 sm:text-sm">
-              {ACTORS[1].name}
+              {tActors("laboratory")}
             </h3>
           </div>
 
           {/* Actor: Patient (bottom center) */}
-          <div className="absolute bottom-[90px] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center sm:bottom-[100px]">
+          <div className="absolute bottom-[16px] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center sm:bottom-[100px]">
             <div className="relative h-[90px] w-[60px] sm:h-[150px] sm:w-[100px] lg:h-[180px] lg:w-[120px]">
               <Image
-                alt={ACTORS[2].name}
+                alt={tActors("patient")}
                 className="object-contain drop-shadow-[0_14px_24px_rgba(120,134,165,0.3)]"
                 fill
                 priority
@@ -196,7 +199,7 @@ export function HeroCarouselSection({
               />
             </div>
             <h3 className="mt-1 text-xs font-semibold text-slate-700 sm:text-sm">
-              {ACTORS[2].name}
+              {tActors("patient")}
             </h3>
           </div>
 
@@ -221,27 +224,27 @@ export function HeroCarouselSection({
             ))}
           </div>
 
-          {/* CTA */}
-          <div className="absolute inset-x-0 bottom-4 z-50 flex flex-col items-center gap-1 sm:bottom-6 sm:gap-2">
+          {/* CTA — inside box on sm+, hidden on mobile */}
+          <div className="absolute inset-x-0 bottom-[-30px] p-8 z-50 hidden flex-col items-center gap-2 sm:flex">
             <p
-              className="max-w-[220px] px-4 text-center text-[10px] text-slate-500 sm:max-w-xl sm:text-sm"
+              className="max-w-xl px-4 text-center text-sm text-slate-500"
               key={verified ? "verified-caption" : "base-caption"}
               style={{ animation: "fadeIn 0.6s ease" }}
             >
               {verified ? (
-                "Verifiable and secure workflow."
+                t("captionVerified")
               ) : (
                 <>
-                  Built for the new era of{" "}
+                  {t("captionBase")}{" "}
                   <strong className="text-slate-700">
-                    health data interoperability and ICD-11 digital standards
+                    {t("captionBaseBold")}
                   </strong>
                   .
                 </>
               )}
             </p>
             <Button
-              className="min-w-[200px] transition-all duration-500 sm:min-w-[250px]"
+              className="min-w-[250px] transition-all duration-500"
               onClick={() => !verified && onVerify()}
               size="lg"
               variant={verified ? "success" : "primary"}
@@ -250,10 +253,44 @@ export function HeroCarouselSection({
                 key={verified ? "active" : "discover"}
                 style={{ animation: "fadeIn 0.5s ease" }}
               >
-                {verified ? "Verification Active" : "Verify on Chain"}
+                {verified ? t("buttonVerified") : t("buttonBase")}
               </span>
             </Button>
           </div>
+        </div>
+
+        {/* CTA — below box on mobile only */}
+        <div className="mt-12 flex flex-col items-center gap-2 sm:hidden">
+          <p
+            className="max-w-[280px] px-4 text-center text-xs text-slate-500"
+            key={verified ? "verified-caption-m" : "base-caption-m"}
+            style={{ animation: "fadeIn 0.6s ease" }}
+          >
+            {verified ? (
+              t("captionVerified")
+            ) : (
+              <>
+                {t("captionBase")}{" "}
+                <strong className="text-slate-700">
+                  {t("captionBaseBold")}
+                </strong>
+                .
+              </>
+            )}
+          </p>
+          <Button
+            className="min-w-[200px] transition-all duration-500"
+            onClick={() => !verified && onVerify()}
+            size="lg"
+            variant={verified ? "success" : "primary"}
+          >
+            <span
+              key={verified ? "active-m" : "discover-m"}
+              style={{ animation: "fadeIn 0.5s ease" }}
+            >
+              {verified ? t("buttonVerified") : t("buttonBase")}
+            </span>
+          </Button>
         </div>
       </div>
     </section>

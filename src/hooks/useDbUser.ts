@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import type { UserRole } from "@/types/domain.types";
-import { getDbUser } from "@/app/auth/get-user";
+import { getDbUser } from "@/actions/get-user";
 
 const CACHE_KEY = "hp_db_user";
 

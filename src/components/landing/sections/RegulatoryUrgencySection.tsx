@@ -1,25 +1,25 @@
-import {
-  REGULATORY_DRIVERS,
-  RISK_EXAMPLES,
-} from "@/components/landing/constants";
+"use client";
+
+import { useTranslations } from "next-intl";
 import { ScrollReveal, SectionTitle } from "@/components/ui";
 
 export function RegulatoryUrgencySection() {
+  const t = useTranslations("regulatory");
+  const drivers = t.raw("drivers") as string[];
+  const riskExamples = t.raw("riskExamples") as string[];
+
   return (
     <ScrollReveal y={50} duration={0.8}>
       <div className="neu-shell border border-white/70 p-6 sm:p-10">
-        <SectionTitle
-          eyebrow="Why Now"
-          title="Healthcare is entering the era of verifiable data"
-        />
+        <SectionTitle eyebrow={t("eyebrow")} title={t("title")} />
 
         <div className="mx-auto mt-6 max-w-3xl space-y-6">
           <p className="text-center text-sm leading-relaxed text-slate-600 sm:text-base">
-            Healthcare systems are undergoing a structural shift driven by:
+            {t("intro")}
           </p>
 
           <ul className="mx-auto grid max-w-xl gap-3 sm:grid-cols-2">
-            {REGULATORY_DRIVERS.map((driver) => (
+            {drivers.map((driver) => (
               <li
                 className="neu-inset flex items-center gap-3 p-4"
                 key={driver}
@@ -34,16 +34,14 @@ export function RegulatoryUrgencySection() {
 
           <div className="mx-auto max-w-2xl space-y-4 text-center">
             <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
-              The risk is no longer losing documents. The risk is{" "}
-              <strong className="text-slate-800">
-                trusting documents that cannot be verified.
-              </strong>
+              {t("riskIntro")}{" "}
+              <strong className="text-slate-800">{t("riskBold")}</strong>
             </p>
             <p className="text-sm text-slate-600 sm:text-base">
-              A single altered PDF can change:
+              {t("alteredPdf")}
             </p>
             <div className="flex flex-wrap justify-center gap-2">
-              {RISK_EXAMPLES.map((risk) => (
+              {riskExamples.map((risk) => (
                 <span
                   className="neu-chip px-4 py-2 text-xs font-semibold text-slate-600"
                   key={risk}
@@ -53,9 +51,9 @@ export function RegulatoryUrgencySection() {
               ))}
             </div>
             <p className="text-sm font-semibold text-slate-700 sm:text-base">
-              Healthcare needs{" "}
-              <span className="text-sky-600">verifiable evidence</span>, not
-              just stored data.
+              {t("conclusion")}{" "}
+              <span className="text-sky-600">{t("conclusionHighlight")}</span>
+              {t("conclusionEnd")}
             </p>
           </div>
         </div>

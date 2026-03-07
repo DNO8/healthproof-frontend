@@ -1,19 +1,21 @@
+"use client";
+
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { TEAM_MEMBERS } from "@/components/landing/constants";
 import { ScrollReveal, SectionTitle } from "@/components/ui";
 
 export function TeamSection() {
+  const t = useTranslations("team");
+
   return (
     <ScrollReveal y={50} duration={0.8}>
       <div className="neu-shell border border-white/70 p-6 sm:p-10">
-        <SectionTitle eyebrow="Team" title="HealtProof Co-Founders" />
+        <SectionTitle eyebrow={t("eyebrow")} title={t("title")} />
 
         <p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-slate-600 sm:text-base">
-          HealthProof is built by a team with experience in{" "}
-          <strong className="text-slate-800">
-            blockchain infrastructure, healthcare innovation, and digital
-            product development.
-          </strong>
+          {t("description")}{" "}
+          <strong className="text-slate-800">{t("descriptionBold")}</strong>
         </p>
 
         <div className="mx-auto mt-8 grid max-w-3xl gap-5 sm:grid-cols-2 lg:grid-cols-4">

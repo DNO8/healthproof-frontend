@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { ScrollReveal, SectionDivider } from "@/components/ui";
 import {
   BeforeAfterSection,
@@ -17,6 +18,7 @@ import {
 
 export function LandingPage() {
   const [verified, setVerified] = useState(false);
+  const t = useTranslations("sectionDividers");
 
   return (
     <main className="relative overflow-hidden bg-(--hp-bg)">
@@ -32,43 +34,43 @@ export function LandingPage() {
 
         {/* §3 Why This Matters Now */}
         <ScrollReveal y={30} duration={0.5}>
-          <SectionDivider label="Regulatory Urgency" />
+          <SectionDivider label={t("regulatoryUrgency")} />
         </ScrollReveal>
         <RegulatoryUrgencySection />
 
         {/* §4 Use Cases */}
         <ScrollReveal y={30} duration={0.5}>
-          <SectionDivider label="Use Cases" />
+          <SectionDivider label={t("useCases")} />
         </ScrollReveal>
         <UseCasesSection />
 
         {/* §5 How It Works */}
         <ScrollReveal y={30} duration={0.5}>
-          <SectionDivider label="How It Works" />
+          <SectionDivider label={t("howItWorks")} />
         </ScrollReveal>
         <WorkflowSection />
 
         {/* §6 Technology */}
         <ScrollReveal y={30} duration={0.5}>
-          <SectionDivider label="Technology" />
+          <SectionDivider label={t("technology")} />
         </ScrollReveal>
         <TechnologySection />
 
         {/* §10 Team */}
         <ScrollReveal y={30} duration={0.5}>
-          <SectionDivider label="Team" />
+          <SectionDivider label={t("team")} />
         </ScrollReveal>
         <TeamSection />
 
         {/* §7 ICD-11 */}
         <ScrollReveal y={30} duration={0.5}>
-          <SectionDivider label="ICD-11" />
+          <SectionDivider label={t("icd11")} />
         </ScrollReveal>
         <Icd11Section />
 
         {/* §8 Before / After */}
         <ScrollReveal y={30} duration={0.5}>
-          <SectionDivider label="Before / After" />
+          <SectionDivider label={t("beforeAfter")} />
         </ScrollReveal>
         <ScrollReveal y={50} duration={0.8}>
           <BeforeAfterSection />

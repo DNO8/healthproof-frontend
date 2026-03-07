@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useState } from "react";
 import { sileo } from "sileo";
-import { updateProfile } from "@/app/auth/update-profile";
+import { useTranslations } from "next-intl";
+import { updateProfile } from "@/actions/update-profile";
 import { clearDbUserCache } from "@/hooks/useDbUser";
 
 type ProfileFormProps = {
@@ -23,6 +24,7 @@ export function ProfileForm({
   role,
   roleLabel,
 }: ProfileFormProps) {
+  const t = useTranslations("dashboard.profile");
   const [fullName, setFullName] = useState(initialName);
   const [saving, setSaving] = useState(false);
 
@@ -35,7 +37,7 @@ export function ProfileForm({
 
       if (result.error) {
         sileo.error({
-          title: "Error",
+          title: t("errorTitle"),
           description: result.error,
         });
         return;
@@ -43,8 +45,8 @@ export function ProfileForm({
 
       clearDbUserCache();
       sileo.success({
-        title: "Profile updated",
-        description: "Your profile has been saved successfully.",
+        title: t("updated"),
+        description: t("updatedDesc"),
         duration: 3000,
       });
     } finally {
@@ -62,7 +64,7 @@ export function ProfileForm({
     <form className="mt-8 space-y-5" onSubmit={handleSave}>
       <div>
         <label className={labelClass} htmlFor="email">
-          Email
+          {t("emailLabel")}
         </label>
         <input
           className={readOnlyClass}
@@ -75,7 +77,7 @@ export function ProfileForm({
 
       <div>
         <label className={labelClass} htmlFor="role">
-          Role
+          {t("roleLabel")}
         </label>
         <input
           className={readOnlyClass}
@@ -88,13 +90,13 @@ export function ProfileForm({
 
       <div>
         <label className={labelClass} htmlFor="fullName">
-          Full Name
+          {t("fullNameLabel")}
         </label>
         <input
           className={inputClass}
           id="fullName"
           onChange={(e) => setFullName(e.target.value)}
-          placeholder="Enter your full name"
+          placeholder={t("fullNamePlaceholder")}
           type="text"
           value={fullName}
         />
@@ -102,19 +104,17 @@ export function ProfileForm({
 
       <div>
         <label className={labelClass} htmlFor="walletAddress">
-          Embedded Wallet
+          {t("walletLabel")}
         </label>
         <input
           className={readOnlyClass}
           id="walletAddress"
           readOnly
           type="text"
-          value={walletAddress || "No wallet linked yet"}
+          value={walletAddress || t("noWallet")}
         />
         <p className="mt-1 text-[11px] text-slate-400">
-          {walletAddress
-            ? "Used for on-chain signing."
-            : "A wallet will be created when you need on-chain features."}
+          {walletAddress ? t("walletHint") : t("noWalletHint")}
         </p>
       </div>
 
@@ -124,13 +124,13 @@ export function ProfileForm({
           disabled={saving}
           type="submit"
         >
-          {saving ? "Saving..." : "Save Profile"}
+          {saving ? t("saving") : t("saveProfile")}
         </button>
         <Link
           className="rounded-2xl px-4 py-2.5 text-sm font-medium text-slate-500 transition hover:text-slate-700"
           href="/dashboard"
         >
-          Back to Dashboard
+          {t("backToDashboard")}
         </Link>
       </div>
     </form>

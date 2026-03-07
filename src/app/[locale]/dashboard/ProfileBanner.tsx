@@ -1,12 +1,15 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 
 type ProfileBannerProps = {
   isComplete: boolean;
 };
 
 export function ProfileBanner({ isComplete }: ProfileBannerProps) {
+  const t = useTranslations("dashboard.profileBanner");
+
   if (isComplete) return null;
 
   return (
@@ -14,20 +17,15 @@ export function ProfileBanner({ isComplete }: ProfileBannerProps) {
       <div className="flex items-start gap-3">
         <span className="text-xl">⚠️</span>
         <div>
-          <p className="text-sm font-semibold text-amber-800">
-            Complete your profile
-          </p>
-          <p className="mt-0.5 text-xs text-amber-600">
-            Add your full name and wallet address to unlock all HealthProof
-            features.
-          </p>
+          <p className="text-sm font-semibold text-amber-800">{t("title")}</p>
+          <p className="mt-0.5 text-xs text-amber-600">{t("description")}</p>
         </div>
       </div>
       <Link
         className="shrink-0 rounded-xl border border-amber-300/60 bg-amber-100 px-4 py-2 text-center text-xs font-semibold text-amber-800 transition hover:bg-amber-200"
         href="/dashboard/profile"
       >
-        Complete Profile
+        {t("button")}
       </Link>
     </div>
   );

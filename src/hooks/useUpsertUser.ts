@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import type { UserRole } from "@/types/domain.types";
-import { upsertUser } from "@/app/auth/actions";
+import { upsertUser } from "@/actions/upsert-user";
 
 const ROLE_KEY = "hp_selected_role";
 const SESSION_KEY = "hp_upserted";

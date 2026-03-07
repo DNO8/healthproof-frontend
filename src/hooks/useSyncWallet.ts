@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { usePrivy, useWallets, useCreateWallet } from "@privy-io/react-auth";
-import { updateWalletAddress } from "@/app/auth/update-wallet";
+import { updateWalletAddress } from "@/actions/update-wallet";
 import { clearDbUserCache } from "@/hooks/useDbUser";
 
 const SYNCED_KEY = "hp_wallet_synced";

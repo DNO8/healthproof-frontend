@@ -4,20 +4,22 @@ import { useState } from "react";
 import { useWallets } from "@privy-io/react-auth";
 import { QRCodeSVG } from "qrcode.react";
 import { sileo } from "sileo";
+import { useTranslations } from "next-intl";
 import type { GrantedToRole, ResourceType } from "@/types/domain.types";
 import { QR_EXPIRY_MINUTES } from "@/lib/constants";
 import { buildPermissionPayload, encodeQRData } from "@/features/permissions";
 
-const GRANTED_ROLES: { key: GrantedToRole; label: string; icon: string }[] = [
-  { key: "doctor", label: "Doctor", icon: "🩺" },
-  { key: "laboratory", label: "Laboratory", icon: "🔬" },
-  { key: "medical_center", label: "Medical Center", icon: "🏥" },
-];
+const GRANTED_ROLES: { key: GrantedToRole; labelKey: string; icon: string }[] =
+  [
+    { key: "doctor", labelKey: "doctor", icon: "🩺" },
+    { key: "laboratory", labelKey: "laboratory", icon: "🔬" },
+    { key: "medical_center", labelKey: "medicalCenter", icon: "🏥" },
+  ];
 
-const RESOURCE_TYPES: { key: ResourceType; label: string }[] = [
-  { key: "RESULT", label: "Exam Result" },
-  { key: "ORDER", label: "Medical Order" },
-  { key: "DOCUMENT", label: "Document" },
+const RESOURCE_TYPES: { key: ResourceType; labelKey: string }[] = [
+  { key: "RESULT", labelKey: "examResult" },
+  { key: "ORDER", labelKey: "medicalOrder" },
+  { key: "DOCUMENT", labelKey: "document" },
 ];
 
 export function ShareResultsModal({
@@ -27,6 +29,7 @@ export function ShareResultsModal({
   onClose: () => void;
   patientId: string;
 }) {
+  const t = useTranslations("shareModal");
   const { wallets } = useWallets();
   const [grantedTo, setGrantedTo] = useState<GrantedToRole | null>(null);
   const [resourceType, setResourceType] = useState<ResourceType | null>(null);
@@ -38,15 +41,15 @@ export function ShareResultsModal({
   async function handleGenerate() {
     if (!grantedTo) {
       sileo.warning({
-        title: "Select a recipient",
-        description: "Choose who you want to share access with.",
+        title: t("selectRecipient"),
+        description: t("selectRecipientDesc"),
       });
       return;
     }
     if (!resourceType) {
       sileo.warning({
-        title: "Select a resource type",
-        description: "Choose what type of resource to share.",
+        title: t("selectResource"),
+        description: t("selectResourceDesc"),
       });
       return;
     }
@@ -87,15 +90,18 @@ export function ShareResultsModal({
       setQrData(encodeQRData(qr));
 
       sileo.success({
-        title: "QR Generated",
-        description: `Signed permission QR for ${grantedTo.replace("_", " ")} created. Expires in ${QR_EXPIRY_MINUTES} minutes.`,
+        title: t("qrGenerated"),
+        description: t("qrGeneratedDesc", {
+          role: grantedTo.replace("_", " "),
+          minutes: QR_EXPIRY_MINUTES,
+        }),
         duration: 4000,
       });
     } catch (err) {
       console.error("[ShareResultsModal] Error generating QR:", err);
       sileo.error({
-        title: "Error",
-        description: "Failed to sign QR payload. Please try again.",
+        title: t("errorTitle"),
+        description: t("errorDesc"),
       });
     } finally {
       setGenerating(false);
@@ -106,7 +112,7 @@ export function ShareResultsModal({
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="neu-shell mx-4 w-full max-w-lg border border-white/70 p-5 sm:p-8">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-800">Share Results</h2>
+          <h2 className="text-lg font-bold text-slate-800">{t("title")}</h2>
           <button
             className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
             onClick={onClose}
@@ -120,9 +126,9 @@ export function ShareResultsModal({
               strokeWidth="2"
               viewBox="0 0 24 24"
               width="20"
-              aria-label="Close"
+              aria-label={t("close")}
             >
-              <title>Close</title>
+              <title>{t("close")}</title>
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
@@ -130,14 +136,12 @@ export function ShareResultsModal({
 
         {!qrData ? (
           <>
-            <p className="mt-3 text-sm text-slate-500">
-              Generate a temporary QR code to grant access to your medical data.
-            </p>
+            <p className="mt-3 text-sm text-slate-500">{t("description")}</p>
 
             {/* Recipient role */}
             <div className="mt-6">
               <p className="mb-2 text-xs font-medium text-slate-700">
-                Share with
+                {t("shareWith")}
               </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
                 {GRANTED_ROLES.map((role) => (
@@ -153,7 +157,7 @@ export function ShareResultsModal({
                   >
                     <span className="text-xl">{role.icon}</span>
                     <span className="text-[11px] font-semibold">
-                      {role.label}
+                      {t(role.labelKey)}
                     </span>
                   </button>
                 ))}
@@ -163,7 +167,7 @@ export function ShareResultsModal({
             {/* Resource type */}
             <div className="mt-5">
               <p className="mb-2 text-xs font-medium text-slate-700">
-                Resource type
+                {t("resourceType")}
               </p>
               <div className="flex flex-wrap gap-2">
                 {RESOURCE_TYPES.map((rt) => (
@@ -177,7 +181,7 @@ export function ShareResultsModal({
                     onClick={() => setResourceType(rt.key)}
                     type="button"
                   >
-                    {rt.label}
+                    {t(rt.labelKey)}
                   </button>
                 ))}
               </div>
@@ -185,10 +189,8 @@ export function ShareResultsModal({
 
             {/* Expiry info */}
             <p className="mt-4 text-[11px] text-slate-400">
-              QR expires in {QR_EXPIRY_MINUTES} minutes.{" "}
-              {embeddedWallet
-                ? "Payload will be signed with your embedded wallet."
-                : "Connect a wallet for signed permissions."}
+              {t("expiryInfo", { minutes: QR_EXPIRY_MINUTES })}{" "}
+              {embeddedWallet ? t("walletSigned") : t("noWallet")}
             </p>
 
             {/* Generate button */}
@@ -198,14 +200,13 @@ export function ShareResultsModal({
               onClick={handleGenerate}
               type="button"
             >
-              {generating ? "Generating..." : "Generate QR"}
+              {generating ? t("generating") : t("generateQr")}
             </button>
           </>
         ) : (
           <>
             <p className="mt-3 text-sm text-slate-500">
-              Show this QR code to the recipient. It contains a signed
-              permission payload.
+              {t("qrShowDescription")}
             </p>
 
             <div className="mt-6 flex justify-center">
@@ -220,13 +221,13 @@ export function ShareResultsModal({
               </div>
             </div>
             <p className="mt-2 text-center text-[10px] text-slate-400">
-              Expires in {QR_EXPIRY_MINUTES} minutes
+              {t("expiresIn", { minutes: QR_EXPIRY_MINUTES })}
             </p>
 
             {/* Payload preview */}
             <details className="mt-4">
               <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-700">
-                View payload
+                {t("viewPayload")}
               </summary>
               <pre className="neu-inset mt-2 max-h-40 overflow-auto rounded-xl p-3 text-[10px] text-slate-600">
                 {qrData}
@@ -240,13 +241,13 @@ export function ShareResultsModal({
                 onClick={() => {
                   navigator.clipboard.writeText(qrData);
                   sileo.success({
-                    title: "Copied!",
-                    description: "QR payload copied to clipboard.",
+                    title: t("copied"),
+                    description: t("copiedDesc"),
                   });
                 }}
                 type="button"
               >
-                Copy payload
+                {t("copyPayload")}
               </button>
               <button
                 className="flex-1 rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
@@ -257,7 +258,7 @@ export function ShareResultsModal({
                 }}
                 type="button"
               >
-                Generate new
+                {t("generateNew")}
               </button>
             </div>
           </>

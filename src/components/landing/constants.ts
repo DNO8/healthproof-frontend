@@ -195,28 +195,28 @@ export const WORKFLOW_STEPS: WorkflowStep[] = [
     title: "Medical order issued",
     description:
       "A doctor creates a medical test order inside their system. A cryptographic hash of the document is registered on blockchain.",
-    image: "/images/storyboard/healthproof1.jpeg",
+    image: "/images/storyboard/Paso1.png",
   },
   {
     step: 2,
     title: "Patient authorizes laboratory access",
     description:
       "The patient grants the laboratory permission to view the order. Authorization can occur via QR code or one-click approval.",
-    image: "/images/storyboard/healthproof2.jpeg",
+    image: "/images/storyboard/Paso2.png",
   },
   {
     step: 3,
     title: "Laboratory performs the test",
     description:
       "The laboratory updates the exam status and uploads the results. The new document is linked to the original order.",
-    image: "/images/storyboard/issue2.jpeg",
+    image: "/images/storyboard/Paso3.png",
   },
   {
     step: 4,
     title: "Doctor verifies results",
     description:
       "The patient returns to the medical center. The doctor verifies the results instantly through HealthProof.",
-    image: "/images/storyboard/issue1.jpeg",
+    image: "/images/storyboard/Paso4.png",
   },
 ];
 

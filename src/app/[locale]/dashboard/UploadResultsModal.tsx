@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { sileo } from "sileo";
+import { useTranslations } from "next-intl";
 import { generateEncryptionKey } from "@/services/encryption/key-management";
 import { uploadEncryptedFile } from "@/services/storage/upload";
 
@@ -36,6 +37,7 @@ function storeResult(doc: UploadedDoc) {
 }
 
 export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
+  const t = useTranslations("uploadModal");
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -62,14 +64,14 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
       setResult(doc);
 
       sileo.success({
-        title: "Upload complete",
-        description: `${file.name} encrypted and uploaded to IPFS.`,
+        title: t("uploadComplete"),
+        description: t("uploadCompleteDesc", { fileName: file.name }),
         duration: 4000,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Upload failed";
+      const message = err instanceof Error ? err.message : t("uploadFailed");
       sileo.error({
-        title: "Upload failed",
+        title: t("uploadFailed"),
         description: message,
       });
     } finally {
@@ -81,7 +83,7 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="neu-shell mx-4 w-full max-w-lg border border-white/70 p-5 sm:p-8">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-800">Upload Results</h2>
+          <h2 className="text-lg font-bold text-slate-800">{t("title")}</h2>
           <button
             className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
             onClick={onClose}
@@ -96,7 +98,7 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
               viewBox="0 0 24 24"
               width="20"
             >
-              <title>Close</title>
+              <title>{t("close")}</title>
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
@@ -104,10 +106,7 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
 
         {!result ? (
           <>
-            <p className="mt-3 text-sm text-slate-500">
-              Select a file to encrypt and upload to IPFS. The file will be
-              encrypted client-side before upload.
-            </p>
+            <p className="mt-3 text-sm text-slate-500">{t("description")}</p>
 
             <div className="mt-6">
               <button
@@ -117,7 +116,7 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
               >
                 <span className="text-3xl">📁</span>
                 <span className="text-sm font-medium text-slate-600">
-                  {file ? file.name : "Click to select a file"}
+                  {file ? file.name : t("selectFile")}
                 </span>
                 {file && (
                   <span className="text-xs text-slate-400">
@@ -134,10 +133,7 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
               />
             </div>
 
-            <p className="mt-3 text-[11px] text-slate-400">
-              Client mode: The encrypted file is stored on IPFS via Pinata.
-              Metadata is saved locally. No backend required.
-            </p>
+            <p className="mt-3 text-[11px] text-slate-400">{t("clientMode")}</p>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <button
@@ -146,14 +142,14 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
                 onClick={handleUpload}
                 type="button"
               >
-                {uploading ? "Encrypting & Uploading..." : "Encrypt & Upload"}
+                {uploading ? t("encrypting") : t("encryptUpload")}
               </button>
               <button
                 className="rounded-2xl px-4 py-2.5 text-sm font-medium text-slate-500 transition hover:text-slate-700"
                 onClick={onClose}
                 type="button"
               >
-                Cancel
+                {t("cancel")}
               </button>
             </div>
           </>
@@ -162,14 +158,14 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
             <div className="mt-6 flex flex-col items-center gap-3">
               <span className="text-4xl">✅</span>
               <p className="text-sm font-semibold text-slate-800">
-                File uploaded successfully
+                {t("fileUploaded")}
               </p>
             </div>
 
             <div className="mt-4 space-y-2">
               <div className="neu-inset rounded-xl p-3">
                 <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                  File Name
+                  {t("fileName")}
                 </p>
                 <p className="mt-0.5 text-sm text-slate-700 break-all">
                   {result.fileName}
@@ -177,7 +173,7 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
               </div>
               <div className="neu-inset rounded-xl p-3">
                 <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                  SHA-256 Hash
+                  {t("sha256")}
                 </p>
                 <p className="mt-0.5 font-mono text-xs text-slate-600 break-all">
                   {result.fileHash}
@@ -185,7 +181,7 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
               </div>
               <div className="neu-inset rounded-xl p-3">
                 <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                  IPFS CID
+                  {t("ipfsCid")}
                 </p>
                 <p className="mt-0.5 font-mono text-xs text-slate-600 break-all">
                   {result.cid}
@@ -202,14 +198,14 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
                 }}
                 type="button"
               >
-                Upload Another
+                {t("uploadAnother")}
               </button>
               <button
                 className="rounded-2xl px-4 py-2.5 text-sm font-medium text-slate-500 transition hover:text-slate-700"
                 onClick={onClose}
                 type="button"
               >
-                Done
+                {t("done")}
               </button>
             </div>
           </>

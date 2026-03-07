@@ -3,12 +3,16 @@
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import type { UserRole } from "@/types/domain.types";
 import { ROLES } from "@/types/domain.types";
 import { useDbUser } from "@/hooks/useDbUser";
 import { ProfileForm } from "./ProfileForm";
 
 export default function ProfilePage() {
+  const t = useTranslations("dashboard.profile");
+  const tRoles = useTranslations("roles");
+  const tDash = useTranslations("dashboard");
   const router = useRouter();
   const { ready, authenticated, user } = usePrivy();
   const { wallets } = useWallets();
@@ -24,7 +28,7 @@ export default function ProfilePage() {
   if (!ready || !authenticated || !user) {
     return (
       <main className="flex min-h-[calc(100vh-60px)] items-center justify-center">
-        <p className="text-sm text-slate-400">Loading...</p>
+        <p className="text-sm text-slate-400">{tDash("loading")}</p>
       </main>
     );
   }
@@ -32,6 +36,13 @@ export default function ProfilePage() {
   const email = user.email?.address ?? "";
   const role: UserRole = dbUser?.role ?? "patient";
   const roleConfig = ROLES.find((r) => r.key === role);
+
+  const roleLabel =
+    role === "patient"
+      ? tRoles("patient")
+      : role === "laboratory"
+        ? tRoles("laboratory")
+        : tRoles("medicalCenter");
 
   const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
 
@@ -71,25 +82,22 @@ export default function ProfilePage() {
           <span className="text-2xl">{roleConfig?.icon}</span>
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">
-              Profile Settings
+              {t("eyebrow")}
             </p>
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-800">
-              Complete your profile
+              {t("heading")}
             </h1>
           </div>
         </div>
 
-        <p className="mt-3 text-sm text-slate-500">
-          Fill in your details to unlock the full HealthProof experience. Your
-          embedded wallet was automatically created by Privy.
-        </p>
+        <p className="mt-3 text-sm text-slate-500">{t("intro")}</p>
 
         <ProfileForm
           userId={user.id}
           email={email}
           fullName={fullName}
           role={role}
-          roleLabel={roleConfig?.label ?? "User"}
+          roleLabel={roleLabel}
           walletAddress={walletAddress}
         />
       </div>

@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
-import { Nav } from "@/components/layout/Nav";
-import { ToastProvider } from "@/components/providers/ToastProvider";
-import { Providers } from "./providers";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -12,7 +9,7 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "HealthProof — Sovereign Medical Verification",
-  description: "Cliente web oficial para verificación médica soberana",
+  description: "Official web client for sovereign medical verification",
   icons: {
     icon: "/images/logo/healthproof-logo.png",
   },
@@ -24,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -38,13 +35,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${manrope.variable} antialiased`}>
-        <Providers>
-          <ToastProvider />
-          <Nav />
-          {children}
-        </Providers>
-      </body>
+      <body className={`${manrope.variable} antialiased`}>{children}</body>
     </html>
   );
 }

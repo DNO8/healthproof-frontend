@@ -1,0 +1,449 @@
+{
+  "metadata": {
+    "title": "HealthProof — Verificación Médica Soberana",
+    "description": "Cliente web oficial para verificación médica soberana"
+  },
+  "nav": {
+    "home": "Inicio",
+    "contact": "Contacto",
+    "dashboard": "Panel",
+    "profile": "Perfil",
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "protocol": "Protocolo L1 : Avalanche",
+    "openMenu": "Abrir menú",
+    "closeMenu": "Cerrar menú",
+    "signedOut": "Sesión cerrada",
+    "signedOutDescription": "Has cerrado sesión exitosamente."
+  },
+  "hero": {
+    "headline1": "La interoperabilidad se vuelve obligatoria.",
+    "headline2": "¿Tus documentos médicos son verificables?",
+    "svgTitle": "Caminos de conexión entre actores",
+    "captionVerified": "Flujo de trabajo verificable y seguro.",
+    "captionBase": "Construido para la nueva era de",
+    "captionBaseBold": "interoperabilidad de datos de salud y estándares digitales ICD-11",
+    "buttonVerified": "Verificación Activa",
+    "buttonBase": "Verificar en Cadena"
+  },
+  "actors": {
+    "medicalCenter": "Centro Médico",
+    "laboratory": "Laboratorio",
+    "patient": "Paciente",
+    "medicalCenterRole": "Valida resultados",
+    "laboratoryRole": "Emite evidencia",
+    "patientRole": "Control soberano",
+    "medicalCenterSummary": "Verifica permisos y autenticidad antes de atender.",
+    "laboratorySummary": "Entrega resultados clínicos listos para verificación.",
+    "patientSummary": "Tú decides quién accede a tu información y por cuánto tiempo."
+  },
+  "solution": {
+    "eyebrow": "HealthProof",
+    "title": "Una capa de verificación para documentos médicos",
+    "description": "En lugar de confiar en PDFs, correos o validaciones manuales, cada documento recibe un",
+    "descriptionBold": "registro de verificación a prueba de manipulaciones anclado en blockchain.",
+    "enablesTitle": "Lo que HealthProof habilita",
+    "features": [
+      "Órdenes médicas verificables",
+      "Resultados de laboratorio a prueba de manipulación",
+      "Recetas trazables",
+      "Acceso a datos controlado por el paciente",
+      "Interoperabilidad entre instituciones"
+    ],
+    "footer": "Todo sin reemplazar los sistemas hospitalarios existentes. HealthProof",
+    "footerBold": "los conecta"
+  },
+  "regulatory": {
+    "eyebrow": "Por Qué Ahora",
+    "title": "La salud entra en la era de los datos verificables",
+    "intro": "Los sistemas de salud están experimentando un cambio estructural impulsado por:",
+    "drivers": [
+      "Regulaciones de interoperabilidad",
+      "Infraestructura de salud digital",
+      "Sistemas de decisión clínica asistidos por IA",
+      "Nuevos estándares globales de datos"
+    ],
+    "riskIntro": "El riesgo ya no es perder documentos. El riesgo es",
+    "riskBold": "confiar en documentos que no pueden ser verificados.",
+    "alteredPdf": "Un solo PDF alterado puede cambiar:",
+    "riskExamples": [
+      "un diagnóstico",
+      "una receta",
+      "un pago",
+      "una decisión clínica"
+    ],
+    "conclusion": "La salud necesita",
+    "conclusionHighlight": "evidencia verificable",
+    "conclusionEnd": ", no solo datos almacenados."
+  },
+  "useCases": {
+    "eyebrow": "Casos de Uso",
+    "title": "Flujos clínicos construidos sobre evidencia verificable",
+    "splitText": "¡HealthProof lo hace posible en tres simples pasos!",
+    "tabLabels": {
+      "Medical Centers": "MCR",
+      "Laboratories": "LAB",
+      "Patients": "PAC"
+    },
+    "cases": [
+      {
+        "title": "Centros Médicos",
+        "description": "Los médicos emiten órdenes médicas que se registran criptográficamente y son trazables. Cuando los pacientes se mueven entre instituciones, el documento viaja con prueba de autenticidad.",
+        "benefits": [
+          "Eliminar validación manual",
+          "Reducir carga administrativa",
+          "Habilitar interoperabilidad con laboratorios"
+        ]
+      },
+      {
+        "title": "Laboratorios",
+        "description": "Los laboratorios reciben órdenes verificables y adjuntan resultados directamente a la solicitud original. Cada actualización tiene marca de tiempo y es auditable.",
+        "benefits": [
+          "Reducir fraude y disputas documentales",
+          "Verificación más rápida por médicos",
+          "Intercambio seguro con hospitales"
+        ]
+      },
+      {
+        "title": "Pacientes",
+        "description": "Los pacientes controlan el acceso a sus documentos médicos. Ellos aprueban qué institución puede leer o actualizar sus exámenes.",
+        "benefits": [
+          "Portabilidad entre proveedores de salud",
+          "Privacidad por diseño",
+          "Integridad a largo plazo de registros médicos"
+        ]
+      }
+    ],
+    "verifiedHash": "Hash verificado"
+  },
+  "workflow": {
+    "eyebrow": "Cómo Funciona",
+    "title": "Verificación sin exponer datos médicos",
+    "steps": [
+      {
+        "title": "Orden médica emitida",
+        "description": "Un médico crea una orden de examen médico en su sistema. Un hash criptográfico del documento se registra en blockchain."
+      },
+      {
+        "title": "Paciente autoriza acceso al laboratorio",
+        "description": "El paciente otorga al laboratorio permiso para ver la orden. La autorización puede ocurrir mediante código QR o aprobación con un clic."
+      },
+      {
+        "title": "Laboratorio realiza el examen",
+        "description": "El laboratorio actualiza el estado del examen y sube los resultados. El nuevo documento se vincula a la orden original."
+      },
+      {
+        "title": "Médico verifica resultados",
+        "description": "El paciente regresa al centro médico. El médico verifica los resultados instantáneamente a través de HealthProof."
+      }
+    ],
+    "tagline": "El paciente no comparte datos.",
+    "taglineBold": "El paciente comparte",
+    "taglineHighlight": "permisos"
+  },
+  "technology": {
+    "eyebrow": "Tecnología",
+    "title": "Infraestructura de pruebas construida para la salud",
+    "guaranteesTitle": "Garantías blockchain",
+    "guarantees": [
+      "Autenticidad de documentos",
+      "Resistencia a manipulación",
+      "Trazabilidad con marca de tiempo",
+      "Identidad verificable del emisor"
+    ],
+    "offChain": "Los datos médicos sensibles permanecen",
+    "offChainBold1": "fuera de la cadena",
+    "offChainMid": ". Solo",
+    "offChainBold2": "pruebas criptográficas y referencias de documentos",
+    "offChainEnd": "se registran.",
+    "ensuresTitle": "Este enfoque garantiza",
+    "ensures": [
+      "Cumplimiento de privacidad",
+      "Compatibilidad regulatoria",
+      "Interoperabilidad segura"
+    ],
+    "l1": "Cada país puede operar su propia",
+    "l1Bold": "red HealthProof Layer-1",
+    "l1End": "para cumplir con las leyes nacionales de soberanía de datos."
+  },
+  "icd11": {
+    "eyebrow": "ICD-11",
+    "title": "Diseñando la transición global a ICD-11",
+    "intro": "La",
+    "introBold": "Clasificación Internacional de Enfermedades (ICD-11)",
+    "introEnd": "es el nuevo estándar global para datos de salud digital. Adoptada por la Organización Mundial de la Salud, ICD-11 permite el intercambio estandarizado de información de salud entre países y sistemas sanitarios.",
+    "featuresTitle": "ICD-11 introduce",
+    "features": [
+      "Clasificación de enfermedades completamente digital",
+      "Más de 17.000 códigos diagnósticos",
+      "Más de 120.000 términos codificables",
+      "Marcos de interoperabilidad estandarizados"
+    ],
+    "adapt": "Las instituciones de salud deben adaptar su infraestructura digital para soportar estos estándares.",
+    "accelerate": "HealthProof acelera esa transición habilitando",
+    "accelerateBold": "documentación clínica verificable compatible con sistemas de salud interoperables."
+  },
+  "beforeAfter": {
+    "before": "Antes de HealthProof",
+    "after": "Con HealthProof",
+    "beforeItems": [
+      "PDFs enviados por correo",
+      "Validación manual",
+      "Sistemas desconectados",
+      "Sin autenticidad de documentos",
+      "Pacientes atados a instituciones"
+    ],
+    "afterItems": [
+      "Documentos clínicos verificables",
+      "Verificaciones de autenticidad instantáneas",
+      "Instituciones interoperables",
+      "Permisos controlados por el paciente",
+      "Flujos clínicos trazables"
+    ]
+  },
+  "finalCta": {
+    "eyebrow": "Comenzar",
+    "title": "Prepara tu institución para la salud verificable",
+    "description": "La interoperabilidad ya no es opcional. Las instituciones de salud pronto necesitarán demostrar:",
+    "bullets": [
+      "De dónde se originaron los documentos clínicos",
+      "Si fueron alterados",
+      "Quién accedió a ellos",
+      "Cuándo fueron emitidos"
+    ],
+    "footer": "HealthProof proporciona la infraestructura para hacerlo",
+    "footerBold": "de forma segura, privada e instantánea.",
+    "button": "Solicitar una demo técnica"
+  },
+  "team": {
+    "eyebrow": "Equipo",
+    "title": "Co-Fundadores de HealthProof",
+    "description": "HealthProof está construido por un equipo con experiencia en",
+    "descriptionBold": "infraestructura blockchain, innovación en salud y desarrollo de productos digitales."
+  },
+  "painBullets": [
+    "Intercambiar datos clínicos entre instituciones",
+    "Garantizar la integridad de documentos",
+    "Mantener la trazabilidad de registros médicos",
+    "Registrar el consentimiento del paciente",
+    "Asumir responsabilidad legal por filtraciones de datos o manipulación de documentos"
+  ],
+  "auth": {
+    "loading": "Cargando...",
+    "signIn": "Iniciar Sesión",
+    "signUp": "Registrarse",
+    "subtitle": "Accede a tus registros médicos de forma segura",
+    "otpSubtitle": "Ingresa el código que enviamos a tu correo",
+    "signInSubtitle": "Inicia sesión para acceder a tus registros médicos",
+    "selectRole": "Selecciona tu rol",
+    "continueEmail": "Continuar con Email",
+    "or": "o",
+    "continueWallet": "Continuar con Wallet o Google",
+    "emailLabel": "Correo electrónico",
+    "emailPlaceholder": "tu@ejemplo.com",
+    "sendingCode": "Enviando...",
+    "sendCode": "Enviar Código de Verificación",
+    "back": "Volver",
+    "otpLabel": "Código de Verificación",
+    "otpPlaceholder": "000000",
+    "verifying": "Verificando...",
+    "verifySignIn": "Verificar e Iniciar Sesión",
+    "useDifferentEmail": "Usar otro correo",
+    "invalidEmail": "Correo inválido",
+    "invalidEmailDesc": "Por favor ingresa un correo electrónico válido.",
+    "roleRequired": "Rol requerido",
+    "roleRequiredDesc": "Por favor selecciona un rol para continuar.",
+    "codeSent": "Código enviado",
+    "codeSentDesc": "Enviamos un código de verificación a {email}",
+    "errorTitle": "Error",
+    "errorSendCode": "No se pudo enviar el código de verificación. Intenta de nuevo.",
+    "codeRequired": "Código requerido",
+    "codeRequiredDesc": "Por favor ingresa el código de verificación.",
+    "welcome": "¡Bienvenido!",
+    "welcomeDesc": "Has iniciado sesión exitosamente.",
+    "invalidCode": "Código inválido",
+    "invalidCodeDesc": "El código de verificación es incorrecto o ha expirado."
+  },
+  "roles": {
+    "patient": "Paciente",
+    "patientDesc": "Accede y comparte tus registros médicos de forma segura",
+    "laboratory": "Laboratorio",
+    "laboratoryDesc": "Sube y gestiona resultados de exámenes",
+    "medicalCenter": "Centro Médico",
+    "medicalCenterDesc": "Emite órdenes y verifica documentos clínicos"
+  },
+  "dashboard": {
+    "loading": "Cargando...",
+    "welcomeBack": "Bienvenido de nuevo",
+    "welcomeToast": "Bienvenido, {role}",
+    "signedInAs": "Sesión iniciada como {email}",
+    "metrics": {
+      "myDocuments": "Mis Documentos",
+      "activePermissions": "Permisos Activos",
+      "verifications": "Verificaciones",
+      "testsPerformed": "Exámenes Realizados",
+      "resultsUploaded": "Resultados Subidos",
+      "pendingOrders": "Órdenes Pendientes",
+      "ordersIssued": "Órdenes Emitidas",
+      "verifiedResults": "Resultados Verificados",
+      "activePatients": "Pacientes Activos"
+    },
+    "descriptions": {
+      "patient": "Gestiona tus documentos médicos, otorga o revoca permisos de acceso y verifica la integridad de tus registros clínicos.",
+      "laboratory": "Realiza exámenes vinculados a órdenes médicas, sube resultados verificables y gestiona el flujo de trabajo de tu laboratorio.",
+      "medicalCenter": "Emite órdenes médicas, verifica resultados de laboratorio y gestiona los flujos clínicos de tu institución."
+    },
+    "actions": {
+      "title": "Acciones",
+      "shareResults": "Compartir Resultados",
+      "shareResultsDesc": "Genera un código QR temporal para dar acceso a un médico o laboratorio.",
+      "myDocuments": "Mis Documentos",
+      "myDocumentsDesc": "Ver y gestionar tus documentos médicos encriptados.",
+      "activePermissions": "Permisos Activos",
+      "activePermissionsDesc": "Revisa y revoca los permisos de acceso que has otorgado.",
+      "auditLog": "Registro de Auditoría",
+      "auditLogDesc": "Ver el historial on-chain de todos los eventos de acceso.",
+      "connectWallet": "Conectar Wallet",
+      "connectWalletDesc": "Vincula tu wallet para firmar permisos criptográficamente.",
+      "scanQr": "Escanear QR de Paciente",
+      "scanQrDescLab": "Escanea el código QR de un paciente para recibir acceso a sus resultados.",
+      "scanQrDescMc": "Verifica la identidad de un paciente y accede a sus registros autorizados.",
+      "uploadResults": "Subir Resultados",
+      "uploadResultsDesc": "Sube resultados de exámenes encriptados vinculados a una orden médica.",
+      "pendingOrders": "Órdenes Pendientes",
+      "pendingOrdersDesc": "Ver las órdenes médicas asignadas a tu laboratorio.",
+      "resultsHistory": "Historial de Resultados",
+      "resultsHistoryDesc": "Navega todos los resultados subidos por tu laboratorio.",
+      "createOrder": "Crear Orden",
+      "createOrderDesc": "Emite una nueva orden médica para un examen de paciente.",
+      "verifyResults": "Verificar Resultados",
+      "verifyResultsDesc": "Verifica la integridad y el registro on-chain de resultados de laboratorio.",
+      "patientRecords": "Registros de Pacientes",
+      "patientRecordsDesc": "Accede a registros de pacientes autorizados mediante permisos verificados.",
+      "tags": {
+        "backendRequired": "Requiere backend",
+        "contractsRequired": "Requiere contratos",
+        "walletPending": "Integración de wallet pendiente"
+      },
+      "comingSoon": "Próximamente",
+      "comingSoonDesc": "El escáner QR estará disponible cuando el backend esté listo."
+    },
+    "profileBanner": {
+      "title": "Completa tu perfil",
+      "description": "Agrega tu nombre completo y dirección de wallet para desbloquear todas las funciones de HealthProof.",
+      "button": "Completar Perfil"
+    },
+    "profile": {
+      "eyebrow": "Configuración de Perfil",
+      "heading": "Completa tu perfil",
+      "intro": "Completa tus datos para desbloquear la experiencia completa de HealthProof. Tu wallet integrada fue creada automáticamente por Privy.",
+      "emailLabel": "Correo electrónico",
+      "roleLabel": "Rol",
+      "fullNameLabel": "Nombre Completo",
+      "fullNamePlaceholder": "Ingresa tu nombre completo",
+      "walletLabel": "Wallet Integrada",
+      "noWallet": "Sin wallet vinculada aún",
+      "walletHint": "Utilizada para firmas on-chain.",
+      "noWalletHint": "Se creará una wallet cuando necesites funciones on-chain.",
+      "saving": "Guardando...",
+      "saveProfile": "Guardar Perfil",
+      "backToDashboard": "Volver al Panel",
+      "errorTitle": "Error",
+      "updated": "Perfil actualizado",
+      "updatedDesc": "Tu perfil se ha guardado exitosamente."
+    }
+  },
+  "contact": {
+    "title": "Contacto — HealthProof",
+    "description": "Ponte en contacto con el equipo de HealthProof",
+    "eyebrow": "Contacto",
+    "heading": "Contáctanos",
+    "intro": "¿Tienes una pregunta sobre HealthProof, quieres explorar una alianza o necesitas detalles técnicos? Escríbenos y nuestro equipo responderá pronto.",
+    "nameLabel": "Nombre",
+    "namePlaceholder": "Tu nombre",
+    "emailLabel": "Correo electrónico",
+    "emailPlaceholder": "tu@ejemplo.com",
+    "subjectLabel": "Asunto",
+    "subjectPlaceholder": "¿De qué se trata?",
+    "messageLabel": "Mensaje",
+    "messagePlaceholder": "Cuéntanos más...",
+    "sending": "Enviando...",
+    "send": "Enviar mensaje",
+    "nameRequired": "Nombre requerido",
+    "nameRequiredDesc": "Por favor ingresa tu nombre.",
+    "emailRequired": "Correo requerido",
+    "emailRequiredDesc": "Por favor ingresa un correo electrónico válido.",
+    "invalidEmail": "Correo inválido",
+    "invalidEmailDesc": "Por favor ingresa un correo electrónico válido.",
+    "subjectRequired": "Asunto requerido",
+    "subjectRequiredDesc": "Por favor ingresa un asunto para tu mensaje.",
+    "messageRequired": "Mensaje requerido",
+    "messageRequiredDesc": "Por favor escribe tu mensaje antes de enviar.",
+    "sendingMessage": "Enviando mensaje...",
+    "sendingMessageDesc": "Por favor espera un momento.",
+    "failedToSend": "Error al enviar",
+    "messageSent": "¡Mensaje enviado!",
+    "messageSentDesc": "¡Gracias por escribirnos! Nuestro equipo te responderá pronto."
+  },
+  "sectionDividers": {
+    "regulatoryUrgency": "Urgencia Regulatoria",
+    "useCases": "Casos de Uso",
+    "howItWorks": "Cómo Funciona",
+    "technology": "Tecnología",
+    "team": "Equipo",
+    "icd11": "ICD-11",
+    "beforeAfter": "Antes / Después"
+  },
+  "shareModal": {
+    "title": "Compartir Resultados",
+    "close": "Cerrar",
+    "description": "Genera un código QR temporal para conceder acceso a tus datos médicos.",
+    "shareWith": "Compartir con",
+    "doctor": "Doctor",
+    "laboratory": "Laboratorio",
+    "medicalCenter": "Centro Médico",
+    "resourceType": "Tipo de recurso",
+    "examResult": "Resultado de Examen",
+    "medicalOrder": "Orden Médica",
+    "document": "Documento",
+    "expiryInfo": "El QR expira en {minutes} minutos.",
+    "walletSigned": "El payload será firmado con tu wallet integrada.",
+    "noWallet": "Conecta una wallet para permisos firmados.",
+    "generating": "Generando...",
+    "generateQr": "Generar QR",
+    "qrGenerated": "QR Generado",
+    "qrGeneratedDesc": "QR de permiso firmado para {role} creado. Expira en {minutes} minutos.",
+    "errorTitle": "Error",
+    "errorDesc": "Error al firmar el payload del QR. Inténtalo de nuevo.",
+    "selectRecipient": "Selecciona un destinatario",
+    "selectRecipientDesc": "Elige con quién quieres compartir el acceso.",
+    "selectResource": "Selecciona un tipo de recurso",
+    "selectResourceDesc": "Elige qué tipo de recurso compartir.",
+    "qrShowDescription": "Muestra este código QR al destinatario. Contiene un payload de permiso firmado.",
+    "expiresIn": "Expira en {minutes} minutos",
+    "viewPayload": "Ver payload",
+    "copyPayload": "Copiar payload",
+    "copied": "¡Copiado!",
+    "copiedDesc": "Payload del QR copiado al portapapeles.",
+    "generateNew": "Generar nuevo"
+  },
+  "uploadModal": {
+    "title": "Subir Resultados",
+    "close": "Cerrar",
+    "description": "Selecciona un archivo para cifrar y subir a IPFS. El archivo se cifrará del lado del cliente antes de subirlo.",
+    "selectFile": "Haz clic para seleccionar un archivo",
+    "clientMode": "Modo cliente: El archivo cifrado se almacena en IPFS vía Pinata. Los metadatos se guardan localmente. No requiere backend.",
+    "encrypting": "Cifrando y Subiendo...",
+    "encryptUpload": "Cifrar y Subir",
+    "cancel": "Cancelar",
+    "uploadComplete": "Subida completa",
+    "uploadCompleteDesc": "{fileName} cifrado y subido a IPFS.",
+    "uploadFailed": "Error al subir",
+    "fileUploaded": "Archivo subido exitosamente",
+    "fileName": "Nombre del Archivo",
+    "sha256": "Hash SHA-256",
+    "ipfsCid": "CID de IPFS",
+    "uploadAnother": "Subir Otro",
+    "done": "Listo"
+  }
+}

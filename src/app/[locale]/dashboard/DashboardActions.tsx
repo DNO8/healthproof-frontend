@@ -2,130 +2,126 @@
 
 import { useState } from "react";
 import { sileo } from "sileo";
+import { useTranslations } from "next-intl";
 import type { UserRole } from "@/types/domain.types";
 import { useUiStore } from "@/state/ui.store";
 import { ShareResultsModal } from "./ShareResultsModal";
 import { UploadResultsModal } from "./UploadResultsModal";
 
-type ActionCard = {
+type ActionDef = {
   id: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  descKey: string;
   icon: string;
   disabled: boolean;
-  tag?: string;
+  tagKey?: string;
 };
 
-const ROLE_ACTIONS: Record<UserRole, ActionCard[]> = {
+const ROLE_ACTIONS: Record<UserRole, ActionDef[]> = {
   patient: [
     {
       id: "share-results",
-      title: "Share Results",
-      description:
-        "Generate a temporary QR code to grant access to a doctor or lab.",
+      titleKey: "shareResults",
+      descKey: "shareResultsDesc",
       icon: "📤",
       disabled: false,
     },
     {
       id: "my-documents",
-      title: "My Documents",
-      description: "View and manage your encrypted medical documents.",
+      titleKey: "myDocuments",
+      descKey: "myDocumentsDesc",
       icon: "📄",
       disabled: true,
-      tag: "Backend required",
+      tagKey: "tags.backendRequired",
     },
     {
       id: "active-permissions",
-      title: "Active Permissions",
-      description: "Review and revoke access permissions you have granted.",
+      titleKey: "activePermissions",
+      descKey: "activePermissionsDesc",
       icon: "🔐",
       disabled: true,
-      tag: "Backend required",
+      tagKey: "tags.backendRequired",
     },
     {
       id: "audit-log",
-      title: "Audit Log",
-      description: "View the on-chain history of all access events.",
+      titleKey: "auditLog",
+      descKey: "auditLogDesc",
       icon: "📋",
       disabled: true,
-      tag: "Contracts required",
+      tagKey: "tags.contractsRequired",
     },
     {
       id: "connect-wallet",
-      title: "Connect Wallet",
-      description: "Link your wallet to sign permissions cryptographically.",
+      titleKey: "connectWallet",
+      descKey: "connectWalletDesc",
       icon: "🔗",
       disabled: true,
-      tag: "Wallet integration pending",
+      tagKey: "tags.walletPending",
     },
   ],
   laboratory: [
     {
       id: "scan-qr",
-      title: "Scan Patient QR",
-      description:
-        "Scan a patient's QR code to receive access to their results.",
+      titleKey: "scanQr",
+      descKey: "scanQrDescLab",
       icon: "📷",
       disabled: false,
     },
     {
       id: "upload-results",
-      title: "Upload Results",
-      description: "Upload encrypted exam results linked to a medical order.",
+      titleKey: "uploadResults",
+      descKey: "uploadResultsDesc",
       icon: "📤",
       disabled: false,
     },
     {
       id: "pending-orders",
-      title: "Pending Orders",
-      description: "View medical orders assigned to your laboratory.",
+      titleKey: "pendingOrders",
+      descKey: "pendingOrdersDesc",
       icon: "📋",
       disabled: true,
-      tag: "Backend required",
+      tagKey: "tags.backendRequired",
     },
     {
       id: "results-history",
-      title: "Results History",
-      description: "Browse all results uploaded by your laboratory.",
+      titleKey: "resultsHistory",
+      descKey: "resultsHistoryDesc",
       icon: "🗂️",
       disabled: true,
-      tag: "Backend required",
+      tagKey: "tags.backendRequired",
     },
   ],
   medical_center: [
     {
       id: "scan-qr",
-      title: "Scan Patient QR",
-      description:
-        "Verify a patient's identity and access their authorized records.",
+      titleKey: "scanQr",
+      descKey: "scanQrDescMc",
       icon: "📷",
       disabled: false,
     },
     {
       id: "create-order",
-      title: "Create Order",
-      description: "Issue a new medical order for a patient examination.",
+      titleKey: "createOrder",
+      descKey: "createOrderDesc",
       icon: "📝",
       disabled: true,
-      tag: "Backend required",
+      tagKey: "tags.backendRequired",
     },
     {
       id: "verify-results",
-      title: "Verify Results",
-      description:
-        "Check the integrity and on-chain registration of lab results.",
+      titleKey: "verifyResults",
+      descKey: "verifyResultsDesc",
       icon: "✅",
       disabled: true,
-      tag: "Contracts required",
+      tagKey: "tags.contractsRequired",
     },
     {
       id: "patient-records",
-      title: "Patient Records",
-      description:
-        "Access authorized patient records via verified permissions.",
+      titleKey: "patientRecords",
+      descKey: "patientRecordsDesc",
       icon: "🗂️",
       disabled: true,
-      tag: "Backend required",
+      tagKey: "tags.backendRequired",
     },
   ],
 };
@@ -137,6 +133,7 @@ export function DashboardActions({
   role: UserRole;
   userId: string;
 }) {
+  const t = useTranslations("dashboard.actions");
   const actions = ROLE_ACTIONS[role];
   const { isQrModalOpen, openQrModal, closeQrModal } = useUiStore();
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -151,9 +148,8 @@ export function DashboardActions({
         break;
       case "scan-qr":
         sileo.info({
-          title: "Coming soon",
-          description:
-            "QR scanner will be available when the backend is ready.",
+          title: t("comingSoon"),
+          description: t("comingSoonDesc"),
         });
         break;
       default:
@@ -164,7 +160,7 @@ export function DashboardActions({
   return (
     <>
       <div className="mt-8">
-        <h2 className="mb-5 text-lg font-bold text-slate-800">Actions</h2>
+        <h2 className="mb-5 text-lg font-bold text-slate-800">{t("title")}</h2>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {actions.map((action) => (
             <button
@@ -180,12 +176,12 @@ export function DashboardActions({
             >
               <span className="text-2xl">{action.icon}</span>
               <p className="text-sm font-semibold text-slate-800">
-                {action.title}
+                {t(action.titleKey)}
               </p>
-              <p className="text-xs text-slate-500">{action.description}</p>
-              {action.tag && (
+              <p className="text-xs text-slate-500">{t(action.descKey)}</p>
+              {action.tagKey && (
                 <span className="mt-auto rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-medium text-slate-400">
-                  {action.tag}
+                  {t(action.tagKey)}
                 </span>
               )}
             </button>

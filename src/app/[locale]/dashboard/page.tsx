@@ -3,6 +3,7 @@
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import type { UserRole } from "@/types/domain.types";
 import { ROLES } from "@/types/domain.types";
 import { useDbUser } from "@/hooks/useDbUser";
@@ -10,34 +11,35 @@ import { DashboardActions } from "./DashboardActions";
 import { ProfileBanner } from "./ProfileBanner";
 import { WelcomeToast } from "./WelcomeToast";
 
-const ROLE_METRICS: Record<UserRole, { label: string; value: string }[]> = {
-  patient: [
-    { label: "My Documents", value: "0" },
-    { label: "Active Permissions", value: "0" },
-    { label: "Verifications", value: "0" },
-  ],
-  laboratory: [
-    { label: "Tests Performed", value: "0" },
-    { label: "Results Uploaded", value: "0" },
-    { label: "Pending Orders", value: "0" },
-  ],
-  medical_center: [
-    { label: "Orders Issued", value: "0" },
-    { label: "Verified Results", value: "0" },
-    { label: "Active Patients", value: "0" },
-  ],
+type MetricKey =
+  | "myDocuments"
+  | "activePermissions"
+  | "verifications"
+  | "testsPerformed"
+  | "resultsUploaded"
+  | "pendingOrders"
+  | "ordersIssued"
+  | "verifiedResults"
+  | "activePatients";
+
+const ROLE_METRIC_KEYS: Record<UserRole, MetricKey[]> = {
+  patient: ["myDocuments", "activePermissions", "verifications"],
+  laboratory: ["testsPerformed", "resultsUploaded", "pendingOrders"],
+  medical_center: ["ordersIssued", "verifiedResults", "activePatients"],
 };
 
-const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  patient:
-    "Manage your medical documents, grant or revoke access permissions, and verify the integrity of your clinical records.",
-  laboratory:
-    "Perform tests linked to medical orders, upload verifiable results, and manage your laboratory workflow.",
-  medical_center:
-    "Issue medical orders, verify laboratory results, and manage your institution's clinical workflows.",
+const ROLE_DESC_KEYS: Record<
+  UserRole,
+  "patient" | "laboratory" | "medicalCenter"
+> = {
+  patient: "patient",
+  laboratory: "laboratory",
+  medical_center: "medicalCenter",
 };
 
 export default function DashboardPage() {
+  const t = useTranslations("dashboard");
+  const tRoles = useTranslations("roles");
   const router = useRouter();
   const { ready, authenticated, user } = usePrivy();
   const { wallets } = useWallets();
@@ -53,7 +55,7 @@ export default function DashboardPage() {
   if (!ready || !authenticated || !user) {
     return (
       <main className="flex min-h-[calc(100vh-60px)] items-center justify-center">
-        <p className="text-sm text-slate-400">Loading...</p>
+        <p className="text-sm text-slate-400">{t("loading")}</p>
       </main>
     );
   }
@@ -61,8 +63,15 @@ export default function DashboardPage() {
   const email = user.email?.address ?? "";
   const role: UserRole = dbUser?.role ?? "patient";
   const roleConfig = ROLES.find((r) => r.key === role);
-  const metrics = ROLE_METRICS[role];
-  const description = ROLE_DESCRIPTIONS[role];
+  const metricKeys = ROLE_METRIC_KEYS[role];
+  const descKey = ROLE_DESC_KEYS[role];
+
+  const roleLabel =
+    role === "patient"
+      ? tRoles("patient")
+      : role === "laboratory"
+        ? tRoles("laboratory")
+        : tRoles("medicalCenter");
 
   const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
   const walletAddress =
@@ -72,7 +81,7 @@ export default function DashboardPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-      <WelcomeToast email={email} roleLabel={roleConfig?.label ?? "User"} />
+      <WelcomeToast email={email} roleLabel={roleLabel} />
 
       {/* Header */}
       <div className="neu-shell border border-white/70 p-8 sm:p-10">
@@ -80,10 +89,10 @@ export default function DashboardPage() {
           <span className="text-2xl">{roleConfig?.icon}</span>
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">
-              {roleConfig?.label} Dashboard
+              {roleLabel} Dashboard
             </p>
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">
-              Welcome back
+              {t("welcomeBack")}
             </h1>
           </div>
         </div>
@@ -97,20 +106,20 @@ export default function DashboardPage() {
 
         {/* Metrics */}
         <div className="mt-8 grid gap-5 sm:grid-cols-3">
-          {metrics.map((metric) => (
-            <div className="neu-surface rounded-2xl p-6" key={metric.label}>
+          {metricKeys.map((key) => (
+            <div className="neu-surface rounded-2xl p-6" key={key}>
               <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                {metric.label}
+                {t(`metrics.${key}`)}
               </p>
-              <p className="mt-2 text-2xl font-bold text-slate-800">
-                {metric.value}
-              </p>
+              <p className="mt-2 text-2xl font-bold text-slate-800">0</p>
             </div>
           ))}
         </div>
 
         <div className="mt-8 neu-inset rounded-2xl p-6">
-          <p className="text-sm text-slate-600">{description}</p>
+          <p className="text-sm text-slate-600">
+            {t(`descriptions.${descKey}`)}
+          </p>
         </div>
       </div>
 
