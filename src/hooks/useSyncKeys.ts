@@ -3,8 +3,13 @@
 import { useEffect, useRef } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { generateKeyPair, exportPublicKey } from "@/services/encryption/ecdh";
-import { saveKeyPair, hasKeyPair } from "@/services/encryption/keystore";
+import {
+  saveKeyPair,
+  hasKeyPair,
+  getKeyPair,
+} from "@/services/encryption/keystore";
 import { updatePublicKey } from "@/actions/update-public-key";
+import { getUserPublicKey } from "@/actions/get-user-public-key";
 import { clearDbUserCache } from "@/hooks/useDbUser";
 
 const SYNCED_KEY = "hp_keys_synced";
@@ -28,19 +33,31 @@ export function useSyncKeys() {
       try {
         // Check if key pair already exists in IndexedDB
         const exists = await hasKeyPair(userId);
+
+        let publicKeyJwk: string;
+
         if (exists) {
-          sessionStorage.setItem(SYNCED_KEY, userId);
-          return;
+          // Keys in IndexedDB — check if DB also has the public key
+          const dbPk = await getUserPublicKey(userId);
+          if (dbPk) {
+            sessionStorage.setItem(SYNCED_KEY, userId);
+            return;
+          }
+          // DB missing public key — re-export from IndexedDB
+          const kp = await getKeyPair(userId);
+          if (!kp) {
+            calledRef.current = false;
+            return;
+          }
+          publicKeyJwk = await exportPublicKey(kp.publicKey);
+        } else {
+          // Generate new ECDH key pair + store in IndexedDB
+          const keyPair = await generateKeyPair();
+          await saveKeyPair(userId, keyPair);
+          publicKeyJwk = await exportPublicKey(keyPair.publicKey);
         }
 
-        // Generate new ECDH key pair
-        const keyPair = await generateKeyPair();
-
-        // Store in IndexedDB (private key is non-extractable)
-        await saveKeyPair(userId, keyPair);
-
-        // Export public key and save to DB
-        const publicKeyJwk = await exportPublicKey(keyPair.publicKey);
+        // Save public key to DB
         const result = await updatePublicKey({
           id: userId,
           public_key: publicKeyJwk,
@@ -50,7 +67,10 @@ export function useSyncKeys() {
           sessionStorage.setItem(SYNCED_KEY, userId);
           clearDbUserCache();
         } else {
-          console.error("[useSyncKeys] Failed to save public key:", result.error);
+          console.error(
+            "[useSyncKeys] Failed to save public key:",
+            result.error,
+          );
           calledRef.current = false;
         }
       } catch (err) {

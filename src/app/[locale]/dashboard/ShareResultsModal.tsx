@@ -98,14 +98,29 @@ export function ShareResultsModal({
       const encryptedKeysEntries = Object.keys(
         selectedResult.encrypted_keys ?? {},
       );
+      console.log(
+        "[ShareResultsModal] encrypted_keys entries:",
+        encryptedKeysEntries,
+        "patientId:",
+        patientId,
+      );
       const labId = encryptedKeysEntries.find((k) => k !== patientId);
       if (!labId) {
+        console.error(
+          "[ShareResultsModal] Could not find lab key. Keys:",
+          encryptedKeysEntries,
+        );
         throw new Error(t("noLabKeyFound"));
       }
 
       // 3. Get the lab's public key (the sender)
+      console.log("[ShareResultsModal] Fetching public key for labId:", labId);
       const labPubKeyJwk = await getUserPublicKey(labId);
       if (!labPubKeyJwk) {
+        console.error(
+          "[ShareResultsModal] Lab has no public_key in DB. labId:",
+          labId,
+        );
         throw new Error(t("noLabPublicKey"));
       }
 
