@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import type { EncryptedQRData } from "@/types/domain.types";
@@ -16,7 +16,107 @@ type ScanQRModalProps = {
 type DecryptedFile = {
   url: string;
   blob: Blob;
+  mime: string;
 };
+
+const MIME_EXT: Record<string, string> = {
+  "image/png": ".png",
+  "image/jpeg": ".jpg",
+  "image/gif": ".gif",
+  "image/webp": ".webp",
+  "application/pdf": ".pdf",
+  "text/plain": ".txt",
+  "text/csv": ".csv",
+  "application/json": ".json",
+};
+
+async function detectMime(blob: Blob): Promise<string> {
+  const header = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+  if (header[0] === 0x89 && header[1] === 0x50) return "image/png";
+  if (header[0] === 0xff && header[1] === 0xd8) return "image/jpeg";
+  if (header[0] === 0x47 && header[1] === 0x49) return "image/gif";
+  if (header[0] === 0x25 && header[1] === 0x50) return "application/pdf";
+  if (header[0] === 0x52 && header[1] === 0x49) return "image/webp";
+  // Try reading as text
+  try {
+    const text = await blob.slice(0, 512).text();
+    if (/^[\x20-\x7E\t\n\r]+$/.test(text)) {
+      if (text.trimStart().startsWith("{")) return "application/json";
+      return "text/plain";
+    }
+  } catch {
+    /* not text */
+  }
+  return blob.type || "application/octet-stream";
+}
+
+function FilePreview({ file }: { file: DecryptedFile }) {
+  const [textContent, setTextContent] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (
+      file.mime === "text/plain" ||
+      file.mime === "application/json" ||
+      file.mime === "text/csv"
+    ) {
+      file.blob.text().then((t) => {
+        if (file.mime === "application/json") {
+          try {
+            setTextContent(JSON.stringify(JSON.parse(t), null, 2));
+          } catch {
+            setTextContent(t);
+          }
+        } else {
+          setTextContent(t);
+        }
+      });
+    }
+  }, [file]);
+
+  if (file.mime.startsWith("image/")) {
+    return (
+      <div className="mt-4 flex justify-center">
+        {/* biome-ignore lint: blob URL not compatible with next/image */}
+        <img
+          src={file.url}
+          alt="Decrypted result"
+          className="max-h-72 rounded-xl border border-slate-200 object-contain"
+        />
+      </div>
+    );
+  }
+
+  if (file.mime === "application/pdf") {
+    return (
+      <div className="mt-4">
+        <iframe
+          src={file.url}
+          className="h-80 w-full rounded-xl border border-slate-200"
+          title="Decrypted PDF"
+        />
+      </div>
+    );
+  }
+
+  if (textContent !== null) {
+    return (
+      <div className="mt-4">
+        <pre className="neu-inset max-h-72 overflow-auto rounded-xl p-4 text-xs text-slate-700">
+          {textContent}
+        </pre>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-300 p-6">
+      <span className="text-2xl">📄</span>
+      <p className="text-xs text-slate-400">
+        {file.mime} &middot; {(file.blob.size / 1024).toFixed(1)} KB
+      </p>
+    </div>
+  );
+}
 
 function parseEncryptedQR(raw: string): EncryptedQRData | null {
   try {
@@ -81,7 +181,10 @@ export function ScanQRModal({ onClose, doctorId }: ScanQRModalProps) {
       });
 
       if ("error" in permResult && permResult.error) {
-        console.error("[ScanQRModal] Permission save failed:", permResult.error);
+        console.error(
+          "[ScanQRModal] Permission save failed:",
+          permResult.error,
+        );
       }
 
       // 2. Download and decrypt the file
@@ -93,7 +196,10 @@ export function ScanQRModal({ onClose, doctorId }: ScanQRModalProps) {
         myUserId: doctorId,
       });
 
-      setDecryptedFile({ url: result.url, blob: result.blob });
+      const mime = await detectMime(result.blob);
+      const typedBlob = new Blob([result.blob], { type: mime });
+      const typedUrl = URL.createObjectURL(typedBlob);
+      setDecryptedFile({ url: typedUrl, blob: typedBlob, mime });
 
       sileo.success({
         title: t("decrypted"),
@@ -114,15 +220,19 @@ export function ScanQRModal({ onClose, doctorId }: ScanQRModalProps) {
 
   function handleDownload() {
     if (!decryptedFile) return;
+    const ext = MIME_EXT[decryptedFile.mime] ?? "";
+    const name = `result-${resultMeta?.crypto.result_id.slice(0, 8) ?? "file"}${ext}`;
     const a = document.createElement("a");
     a.href = decryptedFile.url;
-    a.download = `result-${resultMeta?.crypto.result_id.slice(0, 8) ?? "file"}`;
+    a.download = name;
     a.click();
   }
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="neu-shell mx-4 w-full max-w-lg border border-white/70 p-5 sm:p-8">
+      <div
+        className={`neu-shell mx-4 w-full border border-white/70 p-5 sm:p-8 ${decryptedFile ? "max-w-2xl" : "max-w-lg"}`}
+      >
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-800">{t("title")}</h2>
           <button
@@ -193,33 +303,41 @@ export function ScanQRModal({ onClose, doctorId }: ScanQRModalProps) {
               </p>
             </div>
 
+            {/* File preview */}
+            <FilePreview file={decryptedFile} />
+
             {resultMeta && (
-              <div className="mt-4 space-y-2">
-                <div className="neu-inset rounded-xl p-3">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    {t("patientLabel")}
-                  </p>
-                  <p className="mt-0.5 font-mono text-xs text-slate-600 break-all">
-                    {resultMeta.payload.patient_id}
-                  </p>
+              <details className="mt-4">
+                <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-700">
+                  {t("viewDetails")}
+                </summary>
+                <div className="mt-2 space-y-2">
+                  <div className="neu-inset rounded-xl p-3">
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                      {t("patientLabel")}
+                    </p>
+                    <p className="mt-0.5 font-mono text-xs text-slate-600 break-all">
+                      {resultMeta.payload.patient_id}
+                    </p>
+                  </div>
+                  <div className="neu-inset rounded-xl p-3">
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                      {t("cidLabel")}
+                    </p>
+                    <p className="mt-0.5 font-mono text-xs text-slate-600 break-all">
+                      {resultMeta.crypto.cid}
+                    </p>
+                  </div>
+                  <div className="neu-inset rounded-xl p-3">
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                      {t("signatureLabel")}
+                    </p>
+                    <p className="mt-0.5 font-mono text-xs text-slate-600 break-all">
+                      {resultMeta.signature.slice(0, 30)}...
+                    </p>
+                  </div>
                 </div>
-                <div className="neu-inset rounded-xl p-3">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    {t("cidLabel")}
-                  </p>
-                  <p className="mt-0.5 font-mono text-xs text-slate-600 break-all">
-                    {resultMeta.crypto.cid}
-                  </p>
-                </div>
-                <div className="neu-inset rounded-xl p-3">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    {t("signatureLabel")}
-                  </p>
-                  <p className="mt-0.5 font-mono text-xs text-slate-600 break-all">
-                    {resultMeta.signature.slice(0, 30)}...
-                  </p>
-                </div>
-              </div>
+              </details>
             )}
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">

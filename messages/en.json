@@ -483,7 +483,8 @@
     "cidLabel": "IPFS CID",
     "signatureLabel": "Signature",
     "downloadFile": "Download File",
-    "done": "Done"
+    "done": "Done",
+    "viewDetails": "View details"
   },
   "uploadModal": {
     "title": "Upload Results",

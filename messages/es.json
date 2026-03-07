@@ -483,7 +483,8 @@
     "cidLabel": "CID de IPFS",
     "signatureLabel": "Firma",
     "downloadFile": "Descargar Archivo",
-    "done": "Listo"
+    "done": "Listo",
+    "viewDetails": "Ver detalles"
   },
   "uploadModal": {
     "title": "Subir Resultados",

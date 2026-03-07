@@ -37,13 +37,6 @@ export function useSyncKeys() {
         let publicKeyJwk: string;
 
         if (exists) {
-          // Keys in IndexedDB — check if DB also has the public key
-          const dbPk = await getUserPublicKey(userId);
-          if (dbPk) {
-            sessionStorage.setItem(SYNCED_KEY, userId);
-            return;
-          }
-          // DB missing public key — re-export from IndexedDB
           const kp = await getKeyPair(userId);
           if (!kp) {
             calledRef.current = false;
@@ -57,7 +50,14 @@ export function useSyncKeys() {
           publicKeyJwk = await exportPublicKey(keyPair.publicKey);
         }
 
-        // Save public key to DB
+        // Always ensure DB matches IndexedDB (prevents stale key mismatches)
+        const dbPk = await getUserPublicKey(userId);
+        if (dbPk === publicKeyJwk) {
+          sessionStorage.setItem(SYNCED_KEY, userId);
+          return;
+        }
+
+        // DB missing or stale — update
         const result = await updatePublicKey({
           id: userId,
           public_key: publicKeyJwk,
