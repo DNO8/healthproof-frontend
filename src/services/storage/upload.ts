@@ -1,12 +1,26 @@
 import { encryptFile, hashFile, hashData } from "@/services/encryption/encrypt";
 import { encodeIv } from "@/services/encryption/key-management";
-import { uploadToIpfs } from "@/services/storage/ipfs";
-import type { IpfsUploadResult } from "@/services/storage/ipfs";
+import {
+  uploadToIpfsAction,
+  type IpfsUploadResult,
+} from "@/actions/upload-to-ipfs";
 
 export interface UploadResult {
   fileHash: string;
   ipfs: IpfsUploadResult;
   iv: string;
+}
+
+async function sendToIpfs(
+  data: ArrayBuffer,
+  fileName: string,
+): Promise<IpfsUploadResult> {
+  const formData = new FormData();
+  formData.append(
+    "file",
+    new File([data], fileName, { type: "application/octet-stream" }),
+  );
+  return uploadToIpfsAction(formData);
 }
 
 export async function uploadEncryptedFile(
@@ -16,7 +30,7 @@ export async function uploadEncryptedFile(
   const fileHash = await hashFile(file);
   const { encrypted, iv } = await encryptFile(file, encryptionKey);
 
-  const ipfs = await uploadToIpfs(encrypted, `${fileHash}-${file.name}.enc`);
+  const ipfs = await sendToIpfs(encrypted, `${fileHash}-${file.name}.enc`);
 
   return {
     fileHash,
@@ -41,7 +55,7 @@ export async function uploadEncryptedJson(
     encryptionKey,
   );
 
-  const ipfs = await uploadToIpfs(encrypted, `${fileHash}-${name}.enc`);
+  const ipfs = await sendToIpfs(encrypted, `${fileHash}-${name}.enc`);
 
   return {
     fileHash,
@@ -49,5 +63,3 @@ export async function uploadEncryptedJson(
     iv: encodeIv(iv),
   };
 }
-
-export { uploadJsonToIpfs } from "@/services/storage/ipfs";

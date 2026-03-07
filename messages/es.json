@@ -427,11 +427,30 @@
     "copiedDesc": "Payload del QR copiado al portapapeles.",
     "generateNew": "Generar nuevo"
   },
+  "errors": {
+    "notFound": {
+      "code": "404",
+      "title": "Página no encontrada",
+      "description": "La ruta que buscas no existe o fue movida. Puede ser una URL inválida o una página que aún no ha sido construida.",
+      "goHome": "Volver al Inicio",
+      "goBack": "Volver Atrás",
+      "hint": "Si crees que esto es un error, por favor contacta a nuestro equipo."
+    },
+    "serverError": {
+      "code": "500",
+      "title": "Algo salió mal",
+      "description": "Ocurrió un error inesperado al procesar tu solicitud. Nuestra infraestructura está diseñada para ser resiliente — probablemente es un problema temporal.",
+      "tryAgain": "Intentar de Nuevo",
+      "goHome": "Volver al Inicio",
+      "hint": "Si el problema persiste, por favor contacta a nuestro equipo de soporte."
+    }
+  },
   "uploadModal": {
     "title": "Subir Resultados",
     "close": "Cerrar",
     "description": "Selecciona un archivo para cifrar y subir a IPFS. El archivo se cifrará del lado del cliente antes de subirlo.",
     "selectFile": "Haz clic para seleccionar un archivo",
+    "dragHint": "o arrastra y suelta un archivo aquí",
     "clientMode": "Modo cliente: El archivo cifrado se almacena en IPFS vía Pinata. Los metadatos se guardan localmente. No requiere backend.",
     "encrypting": "Cifrando y Subiendo...",
     "encryptUpload": "Cifrar y Subir",

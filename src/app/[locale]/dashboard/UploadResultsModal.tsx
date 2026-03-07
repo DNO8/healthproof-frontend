@@ -42,6 +42,28 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<UploadedDoc | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const dragCounter = useRef(0);
+
+  function handleDragEnter(e: React.DragEvent) {
+    e.preventDefault();
+    dragCounter.current++;
+    if (dragCounter.current === 1) setDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    dragCounter.current--;
+    if (dragCounter.current === 0) setDragging(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    dragCounter.current = 0;
+    setDragging(false);
+    const dropped = e.dataTransfer.files?.[0];
+    if (dropped) setFile(dropped);
+  }
 
   async function handleUpload() {
     if (!file) return;
@@ -80,7 +102,14 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-100 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={handleDrop}
+      role="dialog"
+    >
       <div className="neu-shell mx-4 w-full max-w-lg border border-white/70 p-5 sm:p-8">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-800">{t("title")}</h2>
@@ -110,14 +139,23 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
 
             <div className="mt-6">
               <button
-                className="neu-surface flex w-full cursor-pointer flex-col items-center gap-2 rounded-2xl border border-dashed border-slate-300 p-8 transition hover:border-sky-300 hover:bg-sky-50/30"
+                className={`neu-surface flex w-full cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-8 transition ${
+                  dragging
+                    ? "border-sky-400 bg-sky-50/50 ring-2 ring-sky-200"
+                    : "border-slate-300 hover:border-sky-300 hover:bg-sky-50/30"
+                }`}
                 onClick={() => fileRef.current?.click()}
                 type="button"
               >
-                <span className="text-3xl">📁</span>
+                <span className="text-3xl">{dragging ? "⬇️" : "📁"}</span>
                 <span className="text-sm font-medium text-slate-600">
                   {file ? file.name : t("selectFile")}
                 </span>
+                {!file && (
+                  <span className="text-xs text-slate-400">
+                    {t("dragHint")}
+                  </span>
+                )}
                 {file && (
                   <span className="text-xs text-slate-400">
                     {(file.size / 1024).toFixed(1)} KB

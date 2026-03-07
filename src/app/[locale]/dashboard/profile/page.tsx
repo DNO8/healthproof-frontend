@@ -33,7 +33,8 @@ export default function ProfilePage() {
     );
   }
 
-  const email = user.email?.address ?? "";
+  const email =
+    user.email?.address ?? user.google?.email ?? dbUser?.email ?? "";
   const role: UserRole = dbUser?.role ?? "patient";
   const roleConfig = ROLES.find((r) => r.key === role);
 
@@ -73,7 +74,7 @@ export default function ProfilePage() {
     linkedWalletAddress ||
     "";
 
-  const fullName = dbUser?.full_name ?? "";
+  const fullName = dbUser?.full_name ?? user.google?.name ?? "";
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">

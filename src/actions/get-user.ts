@@ -2,12 +2,22 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
+// DB role value → frontend UserRole
+const DB_TO_ROLE: Record<string, string> = {
+  PATIENT: "patient",
+  LAB: "laboratory",
+  DOCTOR: "medical_center",
+  ADMIN: "patient",
+};
+
 export async function getDbUser(privyId: string) {
   const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from("users")
-    .select("id, email, role, wallet_address, full_name, is_verified, created_at")
+    .select(
+      "id, email, role, wallet_address, full_name, is_verified, created_at",
+    )
     .eq("id", privyId)
     .single();
 
@@ -15,10 +25,12 @@ export async function getDbUser(privyId: string) {
     return null;
   }
 
+  const dbRole = (data.role as string).toUpperCase();
+
   return {
     id: data.id as string,
     email: data.email as string,
-    role: (data.role as string).toLowerCase(),
+    role: DB_TO_ROLE[dbRole] ?? "patient",
     wallet_address: data.wallet_address as string | null,
     full_name: data.full_name as string | null,
     is_verified: data.is_verified as boolean,

@@ -427,11 +427,30 @@
     "copiedDesc": "QR payload copied to clipboard.",
     "generateNew": "Generate new"
   },
+  "errors": {
+    "notFound": {
+      "code": "404",
+      "title": "Page not found",
+      "description": "The route you're looking for doesn't exist or has been moved. This may be an invalid URL or a page that hasn't been built yet.",
+      "goHome": "Back to Home",
+      "goBack": "Go Back",
+      "hint": "If you believe this is an error, please contact our team."
+    },
+    "serverError": {
+      "code": "500",
+      "title": "Something went wrong",
+      "description": "An unexpected error occurred while processing your request. Our infrastructure is designed for resilience — this is likely a temporary issue.",
+      "tryAgain": "Try Again",
+      "goHome": "Back to Home",
+      "hint": "If the problem persists, please contact our support team."
+    }
+  },
   "uploadModal": {
     "title": "Upload Results",
     "close": "Close",
     "description": "Select a file to encrypt and upload to IPFS. The file will be encrypted client-side before upload.",
     "selectFile": "Click to select a file",
+    "dragHint": "or drag and drop a file here",
     "clientMode": "Client mode: The encrypted file is stored on IPFS via Pinata. Metadata is saved locally. No backend required.",
     "encrypting": "Encrypting & Uploading...",
     "encryptUpload": "Encrypt & Upload",

@@ -60,7 +60,8 @@ export default function DashboardPage() {
     );
   }
 
-  const email = user.email?.address ?? "";
+  const email =
+    user.email?.address ?? user.google?.email ?? dbUser?.email ?? "";
   const role: UserRole = dbUser?.role ?? "patient";
   const roleConfig = ROLES.find((r) => r.key === role);
   const metricKeys = ROLE_METRIC_KEYS[role];

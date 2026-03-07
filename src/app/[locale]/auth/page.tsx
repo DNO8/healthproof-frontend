@@ -2,18 +2,19 @@
 
 import { useLoginWithEmail, usePrivy } from "@privy-io/react-auth";
 import Image from "next/image";
-import { Link, useRouter } from "@/i18n/navigation";
-import { useEffect, useState } from "react";
+import { Link } from "@/i18n/navigation";
+import { useEffect, useRef, useState } from "react";
 import { sileo } from "sileo";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ROLES, type UserRole } from "@/types/domain.types";
 
 export default function AuthPage() {
   const t = useTranslations("auth");
   const tRoles = useTranslations("roles");
-  const router = useRouter();
+  const locale = useLocale();
   const { ready, authenticated, login: privyLogin } = usePrivy();
   const { sendCode, loginWithCode } = useLoginWithEmail();
+  const redirectedRef = useRef(false);
 
   const [mode, setMode] = useState<"signin" | "signup">("signup");
   const [step, setStep] = useState<"form" | "otp">("form");
@@ -22,11 +23,14 @@ export default function AuthPage() {
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [isPending, setIsPending] = useState(false);
 
+  const dashboardPath = `/${locale}/dashboard`;
+
   useEffect(() => {
-    if (ready && authenticated) {
-      router.push("/dashboard");
+    if (ready && authenticated && !redirectedRef.current) {
+      redirectedRef.current = true;
+      window.location.href = dashboardPath;
     }
-  }, [ready, authenticated, router]);
+  }, [ready, authenticated, dashboardPath]);
 
   const roleLabels: Record<UserRole, { label: string; desc: string }> = {
     patient: { label: tRoles("patient"), desc: tRoles("patientDesc") },
@@ -94,7 +98,7 @@ export default function AuthPage() {
         description: t("welcomeDesc"),
         duration: 4000,
       });
-      router.push("/dashboard");
+      window.location.href = dashboardPath;
     } catch {
       sileo.error({
         title: t("invalidCode"),
