@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useLogout } from "@privy-io/react-auth";
+import { sileo } from "sileo";
 import type { UserRole } from "@/types/domain.types";
 import { upsertUser } from "@/actions/upsert-user";
 import { clearDbUserCache } from "@/hooks/useDbUser";
@@ -31,6 +32,7 @@ function extractName(user: ReturnType<typeof usePrivy>["user"]): string | null {
 
 export function useUpsertUser() {
   const { ready, authenticated, user } = usePrivy();
+  const { logout } = useLogout();
   const calledRef = useRef(false);
 
   const userId = user?.id;
@@ -63,10 +65,21 @@ export function useUpsertUser() {
       full_name: fullName,
     })
       .then((result) => {
-        if (result.success) {
+        if ("success" in result && result.success) {
           sessionStorage.setItem(SESSION_KEY, userId);
           localStorage.removeItem(ROLE_KEY);
           clearDbUserCache();
+        } else if ("code" in result && result.code === "ACCOUNT_EXISTS") {
+          localStorage.removeItem(ROLE_KEY);
+          sileo.error({
+            title: "Account already exists",
+            description:
+              "An account with this email is already registered. Please sign in instead.",
+            duration: 6000,
+          });
+          logout().then(() => {
+            window.location.href = "/auth";
+          });
         } else {
           console.error("upsertUser failed:", result.error);
           calledRef.current = false;
@@ -76,5 +89,5 @@ export function useUpsertUser() {
         console.error("Failed to upsert user:", err);
         calledRef.current = false;
       });
-  }, [ready, authenticated, userId, email, fullName]);
+  }, [ready, authenticated, userId, email, fullName, logout]);
 }

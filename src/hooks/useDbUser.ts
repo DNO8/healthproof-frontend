@@ -15,6 +15,7 @@ interface DbUser {
   full_name: string | null;
   is_verified: boolean;
   created_at: string;
+  public_key: string | null;
 }
 
 function getCached(userId: string): DbUser | null {
@@ -43,7 +44,7 @@ export function clearDbUserCache() {
 export function useDbUser() {
   const { ready, authenticated, user } = usePrivy();
   const userId = user?.id;
-  const fetchedRef = useRef(false);
+  const fetchedForRef = useRef<string | null>(null);
 
   const [dbUser, setDbUser] = useState<DbUser | null>(() =>
     userId ? getCached(userId) : null,
@@ -73,15 +74,16 @@ export function useDbUser() {
       return;
     }
 
-    if (getCached(userId)) {
-      setDbUser(getCached(userId));
+    const cached = getCached(userId);
+    if (cached) {
+      setDbUser(cached);
       setLoading(false);
-      fetchedRef.current = true;
+      fetchedForRef.current = userId;
       return;
     }
 
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
+    if (fetchedForRef.current === userId) return;
+    fetchedForRef.current = userId;
     refetch();
   }, [ready, authenticated, userId, refetch]);
 

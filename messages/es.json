@@ -328,6 +328,7 @@
       "comingSoon": "Próximamente",
       "comingSoonDesc": "El escáner QR estará disponible cuando el backend esté listo."
     },
+    "walletProvisioning": "Configurando tu wallet segura…",
     "profileBanner": {
       "title": "Completa tu perfil",
       "description": "Agrega tu nombre completo y dirección de wallet para desbloquear todas las funciones de HealthProof.",
@@ -463,6 +464,12 @@
     "sha256": "Hash SHA-256",
     "ipfsCid": "CID de IPFS",
     "uploadAnother": "Subir Otro",
-    "done": "Listo"
+    "done": "Listo",
+    "patientId": "ID del Paciente",
+    "patientIdPlaceholder": "did:privy:... o identificador del paciente",
+    "patientRequired": "ID del paciente requerido",
+    "patientRequiredDesc": "Ingresa el ID del paciente para cifrar el resultado para él.",
+    "noLabKeys": "Claves de cifrado no encontradas. Por favor cierra sesión y vuelve a iniciar para regenerarlas.",
+    "noPatientKey": "El paciente no tiene clave de cifrado. El paciente debe iniciar sesión al menos una vez para generar su par de claves."
   }
 }

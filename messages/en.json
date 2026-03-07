@@ -328,6 +328,7 @@
       "comingSoon": "Coming soon",
       "comingSoonDesc": "QR scanner will be available when the backend is ready."
     },
+    "walletProvisioning": "Setting up your secure wallet…",
     "profileBanner": {
       "title": "Complete your profile",
       "description": "Add your full name and wallet address to unlock all HealthProof features.",
@@ -463,6 +464,12 @@
     "sha256": "SHA-256 Hash",
     "ipfsCid": "IPFS CID",
     "uploadAnother": "Upload Another",
-    "done": "Done"
+    "done": "Done",
+    "patientId": "Patient ID",
+    "patientIdPlaceholder": "did:privy:... or patient identifier",
+    "patientRequired": "Patient ID required",
+    "patientRequiredDesc": "Enter the patient's ID to encrypt the result for them.",
+    "noLabKeys": "Encryption keys not found. Please log out and log back in to regenerate.",
+    "noPatientKey": "Patient has no encryption key. The patient must log in at least once to generate their key pair."
   }
 }

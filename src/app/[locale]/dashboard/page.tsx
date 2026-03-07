@@ -43,7 +43,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { ready, authenticated, user } = usePrivy();
   const { wallets } = useWallets();
-  const { dbUser } = useDbUser();
+  const { dbUser, loading: dbLoading } = useDbUser();
 
   useEffect(() => {
     if (ready && !authenticated) {
@@ -52,7 +52,7 @@ export default function DashboardPage() {
     }
   }, [ready, authenticated, router]);
 
-  if (!ready || !authenticated || !user) {
+  if (!ready || !authenticated || !user || dbLoading) {
     return (
       <main className="flex min-h-[calc(100vh-60px)] items-center justify-center">
         <p className="text-sm text-slate-400">{t("loading")}</p>
@@ -99,9 +99,14 @@ export default function DashboardPage() {
         </div>
         <p className="mt-2 text-sm text-slate-500">{email}</p>
 
-        {walletAddress && (
+        {walletAddress ? (
           <p className="mt-1 text-xs font-mono text-slate-400">
             {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+          </p>
+        ) : (
+          <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-400">
+            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-sky-500" />
+            {t("walletProvisioning")}
           </p>
         )}
 

@@ -65,6 +65,7 @@ export interface Permission {
   resource_type: ResourceType;
   resource_id: string;
   status: PermissionStatus;
+  encrypted_key: string | null;
   onchain_tx_hash: string | null;
   created_at: string;
   updated_at: string;
@@ -97,6 +98,9 @@ export interface ExamResult {
   patient_id: string;
   result_hash: string;
   encrypted_url: string;
+  cid: string | null;
+  iv: string | null;
+  encrypted_keys: Record<string, { data: string; iv: string }> | null;
   status: ExamResultStatus;
   onchain_tx_hash: string | null;
   created_at: string;

@@ -17,24 +17,27 @@ export async function upsertUser(data: {
   roleExplicit: boolean;
   wallet_address: string | null;
   full_name: string | null;
-}) {
+}): Promise<
+  | { success: true; existingRole?: string }
+  | { success?: undefined; error: string; code?: string }
+> {
   const supabase = createAdminClient();
 
-  // Check if user already exists
-  const { data: existing } = await supabase
+  // 1. Check if this Privy ID already has a row
+  const { data: existingById } = await supabase
     .from("users")
     .select("id, role, full_name, wallet_address")
     .eq("id", data.id)
     .single();
 
-  if (existing) {
+  if (existingById) {
+    // Existing user by Privy ID — NEVER overwrite role.
+    // Only fill in missing non-role fields.
     const updates: Record<string, string | boolean> = {};
     if (data.email) updates.email = data.email;
-    // If the user explicitly selected a role during signup, always apply it
-    if (data.roleExplicit) updates.role = ROLE_TO_DB[data.role];
-    if (!existing.full_name && data.full_name)
+    if (!existingById.full_name && data.full_name)
       updates.full_name = data.full_name;
-    if (!existing.wallet_address && data.wallet_address)
+    if (!existingById.wallet_address && data.wallet_address)
       updates.wallet_address = data.wallet_address;
 
     if (Object.keys(updates).length > 0) {
@@ -49,10 +52,26 @@ export async function upsertUser(data: {
       }
     }
 
-    return { success: true };
+    return { success: true, existingRole: existingById.role as string };
   }
 
-  // New user — insert with all fields
+  // 2. Check if an account with this email already exists under a different Privy ID
+  if (data.email) {
+    const { data: existingByEmail } = await supabase
+      .from("users")
+      .select("id, email, role")
+      .eq("email", data.email)
+      .single();
+
+    if (existingByEmail) {
+      return {
+        error: "ACCOUNT_EXISTS",
+        code: "ACCOUNT_EXISTS",
+      };
+    }
+  }
+
+  // 3. New user — insert with all fields
   const { error } = await supabase.from("users").insert({
     id: data.id,
     email: data.email,

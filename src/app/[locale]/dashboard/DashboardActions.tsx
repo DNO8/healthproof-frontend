@@ -194,7 +194,10 @@ export function DashboardActions({
       )}
 
       {isUploadOpen && (
-        <UploadResultsModal onClose={() => setIsUploadOpen(false)} />
+        <UploadResultsModal
+          onClose={() => setIsUploadOpen(false)}
+          labId={userId}
+        />
       )}
     </>
   );

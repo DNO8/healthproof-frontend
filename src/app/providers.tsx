@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { setTokenGetter } from "@/services/api/interceptors";
 import { useUpsertUser } from "@/hooks/useUpsertUser";
 import { useSyncWallet } from "@/hooks/useSyncWallet";
+import { useSyncKeys } from "@/hooks/useSyncKeys";
 import { wagmiConfig } from "@/lib/wagmi";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ function PrivyTokenSync({ children }: { children: React.ReactNode }) {
 
   useUpsertUser();
   useSyncWallet();
+  useSyncKeys();
 
   return <>{children}</>;
 }

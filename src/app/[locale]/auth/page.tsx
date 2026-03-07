@@ -245,8 +245,10 @@ export default function AuthPage() {
                 className="neu-surface w-full rounded-2xl border border-white/60 px-8 py-3 text-sm font-medium text-slate-600 transition hover:text-slate-800 active:translate-y-px disabled:opacity-60"
                 disabled={mode === "signup" && !selectedRole}
                 onClick={() => {
-                  if (selectedRole) {
+                  if (mode === "signup" && selectedRole) {
                     localStorage.setItem("hp_selected_role", selectedRole);
+                  } else {
+                    localStorage.removeItem("hp_selected_role");
                   }
                   privyLogin();
                 }}

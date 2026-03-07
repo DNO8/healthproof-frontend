@@ -3,11 +3,15 @@
 import { useRef, useState } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
-import { generateEncryptionKey } from "@/services/encryption/key-management";
-import { uploadEncryptedFile } from "@/services/storage/upload";
+import { uploadHybridEncryptedFile } from "@/services/storage/upload";
+import { getKeyPair } from "@/services/encryption/keystore";
+import { exportPublicKey } from "@/services/encryption/ecdh";
+import { getUserPublicKey } from "@/actions/get-user-public-key";
+import { saveExamResult } from "@/actions/save-exam-result";
 
 type UploadResultsModalProps = {
   onClose: () => void;
+  labId: string;
 };
 
 type UploadedDoc = {
@@ -36,10 +40,14 @@ function storeResult(doc: UploadedDoc) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
 }
 
-export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
+export function UploadResultsModal({
+  onClose,
+  labId,
+}: UploadResultsModalProps) {
   const t = useTranslations("uploadModal");
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [patientId, setPatientId] = useState("");
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<UploadedDoc | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -68,10 +76,50 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
   async function handleUpload() {
     if (!file) return;
 
+    const trimmedPatientId = patientId.trim();
+    if (!trimmedPatientId) {
+      sileo.warning({
+        title: t("patientRequired"),
+        description: t("patientRequiredDesc"),
+      });
+      return;
+    }
+
     setUploading(true);
     try {
-      const key = await generateEncryptionKey();
-      const uploadResult = await uploadEncryptedFile(file, key);
+      // Get lab's key pair from IndexedDB
+      const labKeys = await getKeyPair(labId);
+      if (!labKeys) {
+        throw new Error(t("noLabKeys"));
+      }
+
+      // Get patient's public key from DB
+      const patientPubKeyJwk = await getUserPublicKey(trimmedPatientId);
+      if (!patientPubKeyJwk) {
+        throw new Error(t("noPatientKey"));
+      }
+
+      // Get lab's own public key for self-wrapping
+      const labPubKeyJwk = await exportPublicKey(labKeys.publicKey);
+
+      // Hybrid encrypt: AES-GCM + wrap key for lab & patient
+      const uploadResult = await uploadHybridEncryptedFile(
+        file,
+        labKeys.privateKey,
+        [
+          { userId: labId, publicKeyJwk: labPubKeyJwk },
+          { userId: trimmedPatientId, publicKeyJwk: patientPubKeyJwk },
+        ],
+      );
+
+      // Save to DB
+      await saveExamResult({
+        exam_id: null,
+        cid: uploadResult.ipfs.cid,
+        iv: uploadResult.iv,
+        file_hash: uploadResult.fileHash,
+        encrypted_keys: uploadResult.encryptedKeys,
+      });
 
       const doc: UploadedDoc = {
         id: crypto.randomUUID(),
@@ -137,7 +185,24 @@ export function UploadResultsModal({ onClose }: UploadResultsModalProps) {
           <>
             <p className="mt-3 text-sm text-slate-500">{t("description")}</p>
 
-            <div className="mt-6">
+            <div className="mt-5">
+              <label
+                className="mb-1.5 block text-xs font-medium text-slate-700"
+                htmlFor="patientId"
+              >
+                {t("patientId")}
+              </label>
+              <input
+                id="patientId"
+                className="neu-inset w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                placeholder={t("patientIdPlaceholder")}
+                value={patientId}
+                onChange={(e) => setPatientId(e.target.value)}
+                type="text"
+              />
+            </div>
+
+            <div className="mt-4">
               <button
                 className={`neu-surface flex w-full cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-8 transition ${
                   dragging
