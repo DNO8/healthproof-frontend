@@ -32,35 +32,15 @@ export function HeroCarouselSection({
     const h2 = headline2Ref.current;
     if (!h1 || !h2) return;
 
-    gsap.set(h2, { autoAlpha: 0, y: 20 });
-    gsap.set(h1, { autoAlpha: 1, y: 0 });
+    gsap.set(h2, { autoAlpha: 0 });
+    gsap.set(h1, { autoAlpha: 1 });
 
     const tl = gsap.timeline({ repeat: -1 });
 
-    tl.to(h1, {
-      autoAlpha: 0,
-      y: -20,
-      duration: 0.6,
-      ease: "power2.inOut",
-      delay: 3,
-    })
-      .to(
-        h2,
-        { autoAlpha: 1, y: 0, duration: 0.6, ease: "power2.inOut" },
-        "<0.1",
-      )
-      .to(h2, {
-        autoAlpha: 0,
-        y: -20,
-        duration: 0.6,
-        ease: "power2.inOut",
-        delay: 3,
-      })
-      .to(
-        h1,
-        { autoAlpha: 1, y: 0, duration: 0.6, ease: "power2.inOut" },
-        "<0.1",
-      );
+    tl.to(h1, { autoAlpha: 0, duration: 1.2, ease: "sine.inOut", delay: 3 })
+      .to(h2, { autoAlpha: 1, duration: 1.2, ease: "sine.inOut" }, "<0.3")
+      .to(h2, { autoAlpha: 0, duration: 1.2, ease: "sine.inOut", delay: 3 })
+      .to(h1, { autoAlpha: 1, duration: 1.2, ease: "sine.inOut" }, "<0.3");
 
     return () => {
       tl.kill();
