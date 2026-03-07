@@ -112,13 +112,16 @@ export function UploadResultsModal({
         ],
       );
 
-      // Save to DB
+      // Save to DB — include uploader's public key so patients can always unwrap
       await saveExamResult({
         exam_id: null,
         cid: uploadResult.ipfs.cid,
         iv: uploadResult.iv,
         file_hash: uploadResult.fileHash,
-        encrypted_keys: uploadResult.encryptedKeys,
+        encrypted_keys: {
+          ...uploadResult.encryptedKeys,
+          _uploader: { id: labId, publicKey: labPubKeyJwk },
+        },
       });
 
       const doc: UploadedDoc = {

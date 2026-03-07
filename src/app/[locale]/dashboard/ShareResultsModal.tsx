@@ -94,46 +94,44 @@ export function ShareResultsModal({
         throw new Error(t("noRecipientKey"));
       }
 
-      // 2. Find who encrypted this result for the patient (the lab)
-      const encryptedKeysEntries = Object.keys(
-        selectedResult.encrypted_keys ?? {},
-      );
-      console.log(
-        "[ShareResultsModal] encrypted_keys entries:",
-        encryptedKeysEntries,
-        "patientId:",
-        patientId,
-      );
-      const labId = encryptedKeysEntries.find((k) => k !== patientId);
-      if (!labId) {
-        console.error(
-          "[ShareResultsModal] Could not find lab key. Keys:",
-          encryptedKeysEntries,
+      // 2. Get the uploader's public key (stored at upload time)
+      const uploaderMeta = (
+        selectedResult.encrypted_keys as Record<string, unknown>
+      )?._uploader as { id: string; publicKey: string } | undefined;
+
+      let senderPublicKeyJwk: string;
+
+      if (uploaderMeta?.publicKey) {
+        // Use the exact public key from upload time (guaranteed correct)
+        senderPublicKeyJwk = uploaderMeta.publicKey;
+      } else {
+        // Fallback for old results: find lab ID and fetch from DB
+        const encryptedKeysEntries = Object.keys(
+          selectedResult.encrypted_keys ?? {},
         );
-        throw new Error(t("noLabKeyFound"));
+        const labId = encryptedKeysEntries.find(
+          (k) => k !== patientId && k !== "_uploader",
+        );
+        if (!labId) {
+          throw new Error(t("noLabKeyFound"));
+        }
+        const labPubKeyJwk = await getUserPublicKey(labId);
+        if (!labPubKeyJwk) {
+          throw new Error(t("noLabPublicKey"));
+        }
+        senderPublicKeyJwk = labPubKeyJwk;
       }
 
-      // 3. Get the lab's public key (the sender)
-      console.log("[ShareResultsModal] Fetching public key for labId:", labId);
-      const labPubKeyJwk = await getUserPublicKey(labId);
-      if (!labPubKeyJwk) {
-        console.error(
-          "[ShareResultsModal] Lab has no public_key in DB. labId:",
-          labId,
-        );
-        throw new Error(t("noLabPublicKey"));
-      }
-
-      // 4. Re-wrap the AES key for the recipient
+      // 3. Re-wrap the AES key for the recipient
       const myWrappedKey = selectedResult.encrypted_keys[patientId];
       const rewrapped = await rewrapKeyForRecipient({
         myUserId: patientId,
         myWrappedKey,
-        senderPublicKeyJwk: labPubKeyJwk,
+        senderPublicKeyJwk,
         recipientPublicKeyJwk: recipientPubKeyJwk,
       });
 
-      // 5. Get my public key to include in QR
+      // 4. Get my public key to include in QR
       const myKeys = await getKeyPair(patientId);
       if (!myKeys) {
         throw new Error(t("noPatientKeys"));

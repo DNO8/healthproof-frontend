@@ -7,7 +7,7 @@ export async function saveExamResult(data: {
   cid: string;
   iv: string;
   file_hash: string;
-  encrypted_keys: Record<string, { data: string; iv: string }>;
+  encrypted_keys: Record<string, unknown>;
 }) {
   const supabase = createAdminClient();
 
