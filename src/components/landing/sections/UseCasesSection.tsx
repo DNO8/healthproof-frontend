@@ -23,7 +23,7 @@ const USE_CASE_SLIDER_ITEMS: FileSliderItem[] = USE_CASES.map((uc) => ({
   tabLabel: TAB_LABELS[uc.title] ?? "USE",
 }));
 
-const SPLIT_TEXT = "Now, in just 3 steps. How is that possible?";
+const SPLIT_TEXT = "HealthProof makes it possible in three simple steps!";
 
 function AnimatedHeadline() {
   const containerRef = useRef<HTMLDivElement>(null);

@@ -6,7 +6,7 @@ export function TeamSection() {
   return (
     <ScrollReveal y={50} duration={0.8}>
       <div className="neu-shell border border-white/70 p-6 sm:p-10">
-        <SectionTitle eyebrow="Team" title="Team" />
+        <SectionTitle eyebrow="Team" title="HealtProof Co-Founders" />
 
         <p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-slate-600 sm:text-base">
           HealthProof is built by a team with experience in{" "}

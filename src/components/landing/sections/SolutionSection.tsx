@@ -6,7 +6,7 @@ export function SolutionSection() {
     <ScrollReveal y={50} duration={0.8}>
       <div className="neu-shell border border-white/70 p-6 sm:p-10">
         <SectionTitle
-          eyebrow="The Solution"
+          eyebrow="HealthProof"
           title="A verification layer for medical documents"
         />
 

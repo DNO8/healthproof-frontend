@@ -25,7 +25,7 @@ export const ACTORS: Actor[] = [
   {
     name: "Patient",
     role: "Sovereign control",
-    image: "/images/hero/paciente-nene.png",
+    image: "/images/hero/patient.png",
     summary: "You decide who accesses your information and for how long.",
   },
 ];
@@ -38,9 +38,10 @@ export const PRE_BLOCKCHAIN_ASSETS = [
 
 export const POST_BLOCKCHAIN_ASSETS = [
   "/images/icons/post-blockchain/avalanche.png",
-  "/images/icons/post-blockchain/candado.png",
-  "/images/icons/post-blockchain/security.png",
-  "/images/icons/post-blockchain/verify.png",
+  "/images/icons/post-blockchain/blockchain.png",
+  "/images/icons/post-blockchain/smartphone.png",
+  "/images/icons/post-blockchain/verification.png",
+  "/images/icons/post-blockchain/ficha-digital.png",
 ];
 
 export const HERO_CIRCLE_DECORS: DecorShape[] = [
@@ -118,12 +119,6 @@ export const ACTOR_LABEL_POSITIONS: Record<string, { className: string }> = {
     className:
       "right-[2%] bottom-[30%] text-right sm:right-[16%] sm:bottom-[28%]",
   },
-};
-
-export const ACTOR_PAIN_ROLES: Record<string, string> = {
-  "Medical Center": "Bureaucracy and slow validation",
-  Laboratory: "Results across scattered channels",
-  Patient: "Little control over their history",
 };
 
 // §1 Hero — Pain bullets

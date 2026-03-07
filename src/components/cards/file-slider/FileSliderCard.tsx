@@ -127,7 +127,7 @@ export function FileSliderCard({
         >
           <div className="mt-3 flex items-center gap-2">
             <span className="inline-block h-2 w-2 rounded-full bg-(--hp-success)" />
-            <span className="text-xs text-(--hp-muted)">Hash verificado</span>
+            <span className="text-xs text-(--hp-muted)">Verified hash</span>
           </div>
         </CardFile>
       </div>
