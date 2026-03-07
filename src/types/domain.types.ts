@@ -58,6 +58,16 @@ export interface QRData extends SignedPermission {
   type: "healthproof_permission";
 }
 
+export interface EncryptedQRData extends QRData {
+  crypto: {
+    result_id: string;
+    cid: string;
+    iv: string;
+    encrypted_key: { data: string; iv: string };
+    patient_public_key: string;
+  };
+}
+
 export interface Permission {
   id: string;
   patient_id: string;

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import type { UserRole } from "@/types/domain.types";
 import { useUiStore } from "@/state/ui.store";
 import { ShareResultsModal } from "./ShareResultsModal";
 import { UploadResultsModal } from "./UploadResultsModal";
+import { ScanQRModal } from "./ScanQRModal";
 
 type ActionDef = {
   id: string;
@@ -137,6 +137,7 @@ export function DashboardActions({
   const actions = ROLE_ACTIONS[role];
   const { isQrModalOpen, openQrModal, closeQrModal } = useUiStore();
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isScanOpen, setIsScanOpen] = useState(false);
 
   function handleActionClick(actionId: string) {
     switch (actionId) {
@@ -147,10 +148,7 @@ export function DashboardActions({
         setIsUploadOpen(true);
         break;
       case "scan-qr":
-        sileo.info({
-          title: t("comingSoon"),
-          description: t("comingSoonDesc"),
-        });
+        setIsScanOpen(true);
         break;
       default:
         break;
@@ -198,6 +196,10 @@ export function DashboardActions({
           onClose={() => setIsUploadOpen(false)}
           labId={userId}
         />
+      )}
+
+      {isScanOpen && (
+        <ScanQRModal onClose={() => setIsScanOpen(false)} doctorId={userId} />
       )}
     </>
   );

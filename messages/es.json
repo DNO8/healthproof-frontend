@@ -426,7 +426,20 @@
     "copyPayload": "Copiar payload",
     "copied": "¡Copiado!",
     "copiedDesc": "Payload del QR copiado al portapapeles.",
-    "generateNew": "Generar nuevo"
+    "generateNew": "Generar nuevo",
+    "selectResult": "Selecciona un resultado para compartir",
+    "loadingResults": "Cargando tus resultados…",
+    "noResults": "No se encontraron resultados cifrados. Los resultados deben ser subidos primero.",
+    "selectResultTitle": "Selecciona un resultado",
+    "selectResultDesc": "Elige qué resultado de examen quieres compartir.",
+    "recipientId": "ID del Destinatario",
+    "recipientIdPlaceholder": "did:privy:... del doctor o destinatario",
+    "recipientRequired": "ID del destinatario requerido",
+    "recipientRequiredDesc": "Ingresa el ID del destinatario para cifrar la clave de acceso para él.",
+    "noRecipientKey": "El destinatario no tiene clave de cifrado. Debe iniciar sesión al menos una vez.",
+    "noLabKeyFound": "No se pudo determinar quién subió originalmente este resultado.",
+    "noLabPublicKey": "No se encontró la clave de cifrado del laboratorio.",
+    "noPatientKeys": "No se encontraron tus claves de cifrado. Por favor cierra sesión y vuelve a iniciar."
   },
   "errors": {
     "notFound": {
@@ -445,6 +458,32 @@
       "goHome": "Volver al Inicio",
       "hint": "Si el problema persiste, por favor contacta a nuestro equipo de soporte."
     }
+  },
+  "scanModal": {
+    "title": "Escanear QR / Pegar Payload",
+    "close": "Cerrar",
+    "description": "Pega el payload del QR compartido por un paciente para verificar y descifrar su resultado.",
+    "qrPayload": "Payload del QR",
+    "qrPlaceholder": "Pega el payload JSON aquí…",
+    "pasteRequired": "Payload requerido",
+    "pasteRequiredDesc": "Pega el payload del QR para procesarlo.",
+    "invalidQr": "QR inválido",
+    "invalidQrDesc": "El payload no es un QR de permiso HealthProof válido.",
+    "expired": "QR Expirado",
+    "expiredDesc": "Este QR de permiso ha expirado. Pide al paciente uno nuevo.",
+    "processing": "Verificando y Descifrando…",
+    "verifyDecrypt": "Verificar y Descifrar",
+    "cancel": "Cancelar",
+    "decrypted": "Descifrado exitoso",
+    "decryptedDesc": "El resultado del examen ha sido descifrado y está listo para ver.",
+    "processErrorTitle": "Error al descifrar",
+    "processError": "No se pudo descifrar el resultado. Inténtalo de nuevo.",
+    "fileDecrypted": "Resultado descifrado exitosamente",
+    "patientLabel": "Paciente",
+    "cidLabel": "CID de IPFS",
+    "signatureLabel": "Firma",
+    "downloadFile": "Descargar Archivo",
+    "done": "Listo"
   },
   "uploadModal": {
     "title": "Subir Resultados",

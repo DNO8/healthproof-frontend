@@ -426,7 +426,20 @@
     "copyPayload": "Copy payload",
     "copied": "Copied!",
     "copiedDesc": "QR payload copied to clipboard.",
-    "generateNew": "Generate new"
+    "generateNew": "Generate new",
+    "selectResult": "Select a result to share",
+    "loadingResults": "Loading your results…",
+    "noResults": "No encrypted results found. Results must be uploaded first.",
+    "selectResultTitle": "Select a result",
+    "selectResultDesc": "Choose which exam result you want to share.",
+    "recipientId": "Recipient ID",
+    "recipientIdPlaceholder": "did:privy:... of the doctor or recipient",
+    "recipientRequired": "Recipient ID required",
+    "recipientRequiredDesc": "Enter the recipient's ID to encrypt the access key for them.",
+    "noRecipientKey": "Recipient has no encryption key. They must log in at least once.",
+    "noLabKeyFound": "Could not determine the original uploader for this result.",
+    "noLabPublicKey": "The lab's encryption key could not be found.",
+    "noPatientKeys": "Your encryption keys were not found. Please log out and log back in."
   },
   "errors": {
     "notFound": {
@@ -445,6 +458,32 @@
       "goHome": "Back to Home",
       "hint": "If the problem persists, please contact our support team."
     }
+  },
+  "scanModal": {
+    "title": "Scan QR / Paste Payload",
+    "close": "Close",
+    "description": "Paste the QR payload shared by a patient to verify and decrypt their result.",
+    "qrPayload": "QR Payload",
+    "qrPlaceholder": "Paste the JSON payload here…",
+    "pasteRequired": "Payload required",
+    "pasteRequiredDesc": "Paste the QR payload to process it.",
+    "invalidQr": "Invalid QR",
+    "invalidQrDesc": "The payload is not a valid HealthProof permission QR.",
+    "expired": "QR Expired",
+    "expiredDesc": "This permission QR has expired. Ask the patient for a new one.",
+    "processing": "Verifying & Decrypting…",
+    "verifyDecrypt": "Verify & Decrypt",
+    "cancel": "Cancel",
+    "decrypted": "Decrypted successfully",
+    "decryptedDesc": "The exam result has been decrypted and is ready to view.",
+    "processErrorTitle": "Decryption failed",
+    "processError": "Could not decrypt the result. Please try again.",
+    "fileDecrypted": "Result decrypted successfully",
+    "patientLabel": "Patient",
+    "cidLabel": "IPFS CID",
+    "signatureLabel": "Signature",
+    "downloadFile": "Download File",
+    "done": "Done"
   },
   "uploadModal": {
     "title": "Upload Results",
