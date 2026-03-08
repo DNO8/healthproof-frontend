@@ -68,13 +68,13 @@ export function UseCasesSection() {
     description: string;
     benefits: string[];
   }>;
-  const tabLabels = t.raw("tabLabels") as Record<string, string>;
+  const tabLabels = t.raw("tabLabels") as string[];
 
-  const sliderItems: FileSliderItem[] = cases.map((uc) => ({
+  const sliderItems: FileSliderItem[] = cases.map((uc, i) => ({
     id: uc.title.toLowerCase().replace(/\s+/g, "-"),
     title: uc.title,
     description: uc.description,
-    tabLabel: tabLabels[uc.title] ?? "USE",
+    tabLabel: tabLabels[i] ?? "—",
   }));
 
   return (

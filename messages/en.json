@@ -80,11 +80,7 @@
     "eyebrow": "Use Cases",
     "title": "Clinical workflows built on verifiable evidence",
     "splitText": "HealthProof makes it possible in three simple steps!",
-    "tabLabels": {
-      "Medical Centers": "MCR",
-      "Laboratories": "LAB",
-      "Patients": "PAT"
-    },
+    "tabLabels": ["MCR", "PAT", "LAB"],
     "cases": [
       {
         "title": "Medical Centers",
@@ -96,21 +92,21 @@
         ]
       },
       {
-        "title": "Laboratories",
-        "description": "Laboratories receive verifiable orders and attach test results directly to the original request. Every update is timestamped and auditable.",
-        "benefits": [
-          "Reduce fraud and document disputes",
-          "Faster verification by physicians",
-          "Secure exchange with hospitals"
-        ]
-      },
-      {
         "title": "Patients",
         "description": "Patients control access to their medical documents. They approve which institution can read or update their exams.",
         "benefits": [
           "Portability across healthcare providers",
           "Privacy by design",
           "Secure long-term medical record integrity"
+        ]
+      },
+      {
+        "title": "Laboratories",
+        "description": "Laboratories receive verifiable orders and attach test results directly to the original request. Every update is timestamped and auditable.",
+        "benefits": [
+          "Reduce fraud and document disputes",
+          "Faster verification by physicians",
+          "Secure exchange with hospitals"
         ]
       }
     ],

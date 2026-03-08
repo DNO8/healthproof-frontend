@@ -80,11 +80,7 @@
     "eyebrow": "Casos de Uso",
     "title": "Flujos clínicos construidos sobre evidencia verificable",
     "splitText": "¡HealthProof lo hace posible en tres simples pasos!",
-    "tabLabels": {
-      "Medical Centers": "MCR",
-      "Laboratories": "LAB",
-      "Patients": "PAC"
-    },
+    "tabLabels": ["MCR", "PAC", "LAB"],
     "cases": [
       {
         "title": "Centros Médicos",
@@ -96,21 +92,21 @@
         ]
       },
       {
-        "title": "Laboratorios",
-        "description": "Los laboratorios reciben órdenes verificables y adjuntan resultados directamente a la solicitud original. Cada actualización tiene marca de tiempo y es auditable.",
-        "benefits": [
-          "Reducir fraude y disputas documentales",
-          "Verificación más rápida por médicos",
-          "Intercambio seguro con hospitales"
-        ]
-      },
-      {
         "title": "Pacientes",
         "description": "Los pacientes controlan el acceso a sus documentos médicos. Ellos aprueban qué institución puede leer o actualizar sus exámenes.",
         "benefits": [
           "Portabilidad entre proveedores de salud",
           "Privacidad por diseño",
           "Integridad a largo plazo de registros médicos"
+        ]
+      },
+      {
+        "title": "Laboratorios",
+        "description": "Los laboratorios reciben órdenes verificables y adjuntan resultados directamente a la solicitud original. Cada actualización tiene marca de tiempo y es auditable.",
+        "benefits": [
+          "Reducir fraude y disputas documentales",
+          "Verificación más rápida por médicos",
+          "Intercambio seguro con hospitales"
         ]
       }
     ],

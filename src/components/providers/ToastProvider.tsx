@@ -25,8 +25,12 @@ export function ToastProvider() {
         theme="light"
       />
       <style>{`
+        [data-sileo-viewport] {
+          position: fixed !important;
+          z-index: 200 !important;
+        }
         @media (max-width: 640px) {
-          [data-sileo-toaster] {
+          [data-sileo-viewport] {
             left: 50% !important;
             right: auto !important;
             transform: translateX(-50%);
