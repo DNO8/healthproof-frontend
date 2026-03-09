@@ -10,7 +10,7 @@ export async function updateWalletAddress(data: {
 
   const { error } = await supabase
     .from("users")
-    .update({ wallet_address: data.wallet_address })
+    .update({ wallet_address: data.wallet_address.toLowerCase() })
     .eq("id", data.id);
 
   if (error) {

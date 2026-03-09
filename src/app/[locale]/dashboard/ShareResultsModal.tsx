@@ -9,9 +9,11 @@ import type { GrantedToRole, EncryptedQRData } from "@/types/domain.types";
 import { QR_EXPIRY_MINUTES } from "@/lib/constants";
 import { buildPermissionPayload } from "@/features/permissions";
 import {
-  listExamResultsForUser,
-  type ExamResultRow,
-} from "@/actions/get-exam-result";
+  listDocumentSecretsForWallet,
+  type DocumentSecretRow,
+} from "@/actions/get-document-secret";
+import { getDbUser } from "@/actions/get-user";
+import { grantPermissionOnChain } from "@/actions/grant-permission-onchain";
 import { getUserPublicKey } from "@/actions/get-user-public-key";
 import { rewrapKeyForRecipient } from "@/services/encryption/rewrap";
 import { exportPublicKey } from "@/services/encryption/ecdh";
@@ -22,16 +24,10 @@ const GRANTED_ROLES: {
   key: GrantedToRole;
   labelKey: string;
   icon: string;
-  dbRole: string;
 }[] = [
-  { key: "doctor", labelKey: "doctor", icon: "🩺", dbRole: "DOCTOR" },
-  { key: "laboratory", labelKey: "laboratory", icon: "🔬", dbRole: "LAB" },
-  {
-    key: "medical_center",
-    labelKey: "medicalCenter",
-    icon: "🏥",
-    dbRole: "DOCTOR",
-  },
+  { key: "doctor", labelKey: "doctor", icon: "🩺" },
+  { key: "lab", labelKey: "laboratory", icon: "🔬" },
+  { key: "institution", labelKey: "medicalCenter", icon: "🏥" },
 ];
 
 export function ShareResultsModal({
@@ -45,8 +41,8 @@ export function ShareResultsModal({
   const { wallets } = useWallets();
   const [grantedTo, setGrantedTo] = useState<GrantedToRole | null>(null);
   const [recipientId, setRecipientId] = useState("");
-  const [results, setResults] = useState<ExamResultRow[]>([]);
-  const [selectedResult, setSelectedResult] = useState<ExamResultRow | null>(
+  const [results, setResults] = useState<DocumentSecretRow[]>([]);
+  const [selectedResult, setSelectedResult] = useState<DocumentSecretRow | null>(
     null,
   );
   const [loadingResults, setLoadingResults] = useState(true);
@@ -58,7 +54,14 @@ export function ShareResultsModal({
   const fetchResults = useCallback(async () => {
     setLoadingResults(true);
     try {
-      const rows = await listExamResultsForUser(patientId);
+      // Resolve wallet address from Privy DID
+      const dbUser = await getDbUser(patientId);
+      const wallet = dbUser?.wallet_address;
+      if (!wallet) {
+        setResults([]);
+        return;
+      }
+      const rows = await listDocumentSecretsForWallet(wallet);
       setResults(rows);
     } catch (err) {
       console.error("[ShareResultsModal] Error fetching results:", err);
@@ -100,7 +103,7 @@ export function ShareResultsModal({
     try {
       console.log("[QR:1] patientId:", patientId);
       console.log("[QR:1] recipientId:", trimmedRecipient);
-      console.log("[QR:1] selectedResult.id:", selectedResult.id);
+      console.log("[QR:1] selectedResult.document_id:", selectedResult.document_id);
       console.log(
         "[QR:1] encrypted_keys keys:",
         Object.keys(selectedResult.encrypted_keys ?? {}),
@@ -120,47 +123,25 @@ export function ShareResultsModal({
         throw new Error(t("noRecipientKey"));
       }
 
-      // 2. Get the uploader's public key (stored at upload time)
-      const uploaderMeta = (
-        selectedResult.encrypted_keys as Record<string, unknown>
-      )?._uploader as { id: string; publicKey: string } | undefined;
+      // 2. Get the uploader's public key via uploader_wallet column
+      const uploaderWallet = selectedResult.uploader_wallet;
+      console.log("[QR:3] uploaderWallet:", uploaderWallet);
+
+      const uploaderPubKeyJwk = await getUserPublicKey(uploaderWallet);
       console.log(
-        "[QR:3] uploaderMeta:",
-        uploaderMeta
-          ? { id: uploaderMeta.id, hasPublicKey: !!uploaderMeta.publicKey }
-          : "NOT_FOUND",
+        "[QR:3] uploaderPubKeyJwk:",
+        uploaderPubKeyJwk ? `${uploaderPubKeyJwk.slice(0, 40)}...` : "NULL",
       );
-
-      let senderPublicKeyJwk: string;
-
-      if (uploaderMeta?.publicKey) {
-        senderPublicKeyJwk = uploaderMeta.publicKey;
-        console.log("[QR:3] Using _uploader publicKey");
-      } else {
-        console.log("[QR:3] Fallback: looking for lab ID in encrypted_keys");
-        const encryptedKeysEntries = Object.keys(
-          selectedResult.encrypted_keys ?? {},
-        );
-        const labId = encryptedKeysEntries.find(
-          (k) => k !== patientId && k !== "_uploader",
-        );
-        console.log("[QR:3] labId:", labId);
-        if (!labId) {
-          throw new Error(t("noLabKeyFound"));
-        }
-        const labPubKeyJwk = await getUserPublicKey(labId);
-        console.log(
-          "[QR:3] labPubKeyJwk:",
-          labPubKeyJwk ? `${labPubKeyJwk.slice(0, 40)}...` : "NULL",
-        );
-        if (!labPubKeyJwk) {
-          throw new Error(t("noLabPublicKey"));
-        }
-        senderPublicKeyJwk = labPubKeyJwk;
+      if (!uploaderPubKeyJwk) {
+        throw new Error(t("noLabPublicKey"));
       }
+      const senderPublicKeyJwk = uploaderPubKeyJwk;
 
       // 3. Re-wrap the AES key for the recipient
-      const myWrappedKey = selectedResult.encrypted_keys[patientId];
+      // Look up key by patient_wallet or patientId (Privy DID)
+      const myWrappedKey =
+        selectedResult.encrypted_keys[selectedResult.patient_wallet] ??
+        selectedResult.encrypted_keys[patientId];
       console.log(
         "[QR:4] myWrappedKey:",
         myWrappedKey
@@ -200,30 +181,37 @@ export function ShareResultsModal({
       const myPublicKeyJwk = await exportPublicKey(myKeys.publicKey);
       console.log("[QR:7] myPublicKeyJwk length:", myPublicKeyJwk.length);
 
-      // 5. Build permission payload
+      // 5. Resolve wallet address
+      let walletAddress = patientId;
+      let provider: Awaited<
+        ReturnType<NonNullable<typeof embeddedWallet>["getEthereumProvider"]>
+      > | null = null;
+      if (embeddedWallet) {
+        provider = await embeddedWallet.getEthereumProvider();
+        const accounts = (await provider.request({
+          method: "eth_accounts",
+        })) as string[];
+        walletAddress = accounts[0] ?? embeddedWallet.address;
+      }
+
+      // 6. Build permission payload
       const payload = buildPermissionPayload({
-        patientId,
+        patientWallet: walletAddress,
+        granteeWallet: trimmedRecipient,
         grantedToRole: grantedTo,
-        resourceType: "RESULT",
-        resourceId: selectedResult.id,
+        documentId: selectedResult.document_id,
       });
       console.log(
         "[QR:8] payload built:",
         JSON.stringify(payload).slice(0, 80),
       );
 
-      // 6. Sign with wallet
+      // 7. Sign with wallet
       const message = JSON.stringify(payload);
       let signature = "unsigned";
-      let walletAddress = patientId;
 
-      if (embeddedWallet) {
+      if (provider) {
         console.log("[QR:9] Signing with wallet...");
-        const provider = await embeddedWallet.getEthereumProvider();
-        const accounts = (await provider.request({
-          method: "eth_accounts",
-        })) as string[];
-        walletAddress = accounts[0] ?? embeddedWallet.address;
         signature = (await provider.request({
           method: "personal_sign",
           params: [message, walletAddress],
@@ -233,15 +221,27 @@ export function ShareResultsModal({
         console.log("[QR:9] No embedded wallet, skipping sign");
       }
 
-      // 7. Build encrypted QR data
+      // 7.5 Grant permission on-chain
+      const grantResult = await grantPermissionOnChain({
+        patientWallet: walletAddress,
+        granteeWallet: trimmedRecipient,
+        documentId: selectedResult.document_id,
+      });
+      if ("error" in grantResult) {
+        console.warn("[ShareResultsModal] On-chain grant failed:", grantResult.error);
+      } else {
+        console.log("[QR:9.5] On-chain grant tx:", grantResult.txHash);
+      }
+
+      // 8. Build encrypted QR data
       const qr: EncryptedQRData = {
         type: "healthproof_permission",
         payload,
         signature,
         wallet: walletAddress,
         crypto: {
-          result_id: selectedResult.id,
-          cid: selectedResult.cid,
+          document_id: selectedResult.document_id,
+          cid: selectedResult.document_id,
           iv: selectedResult.iv,
           encrypted_key: rewrapped,
           patient_public_key: myPublicKeyJwk,
@@ -324,16 +324,16 @@ export function ShareResultsModal({
                   {results.map((r) => (
                     <button
                       className={`w-full rounded-xl px-3 py-2.5 text-left transition-all duration-200 ${
-                        selectedResult?.id === r.id
+                        selectedResult?.document_id === r.document_id
                           ? "neu-pressed border border-sky-200 text-sky-700"
                           : "neu-surface border border-transparent text-slate-600 hover:border-slate-200"
                       }`}
-                      key={r.id}
+                      key={r.document_id}
                       onClick={() => setSelectedResult(r)}
                       type="button"
                     >
                       <p className="truncate font-mono text-[11px]">
-                        CID: {r.cid.slice(0, 20)}...
+                        CID: {r.document_id.slice(0, 20)}...
                       </p>
                       <p className="mt-0.5 text-[10px] text-slate-400">
                         {new Date(r.created_at).toLocaleDateString()}
@@ -377,15 +377,11 @@ export function ShareResultsModal({
             {grantedTo && (
               <div className="mt-5">
                 <UserSelect
-                  dbRole={
-                    GRANTED_ROLES.find((r) => r.key === grantedTo)?.dbRole ??
-                    "DOCTOR"
-                  }
                   value={recipientId}
                   onChange={setRecipientId}
                   label={t("recipientId")}
                   placeholder={t("recipientIdPlaceholder")}
-                  excludeId={patientId}
+                  filterRole={grantedTo}
                 />
               </div>
             )}

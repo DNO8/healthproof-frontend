@@ -2,40 +2,27 @@ import type {
   PermissionPayload,
   QRData,
   GrantedToRole,
-  ResourceType,
 } from "@/types/domain.types";
-import { signMessage } from "@/services/blockchain/signer";
+import { PermissionScope } from "@/types/domain.types";
 import { generateNonce, expiresIn } from "@/lib/utils";
 import { QR_EXPIRY_MINUTES } from "@/lib/constants";
 
 export function buildPermissionPayload(opts: {
-  patientId: string;
+  patientWallet: string;
+  granteeWallet: string;
   grantedToRole: GrantedToRole;
-  resourceType: ResourceType;
-  resourceId: string;
+  documentId: string;
+  scope?: PermissionScope;
   expiryMinutes?: number;
 }): PermissionPayload {
   return {
-    patient_id: opts.patientId,
+    patient_wallet: opts.patientWallet,
+    grantee_wallet: opts.granteeWallet,
     granted_to_role: opts.grantedToRole,
-    resource_type: opts.resourceType,
-    resource_id: opts.resourceId,
+    scope: opts.scope ?? PermissionScope.DOCUMENT,
+    document_id: opts.documentId,
     expires_at: expiresIn(opts.expiryMinutes ?? QR_EXPIRY_MINUTES),
     nonce: generateNonce(),
-  };
-}
-
-export async function generateSignedQR(
-  payload: PermissionPayload,
-): Promise<QRData> {
-  const message = JSON.stringify(payload);
-  const { signature, address } = await signMessage({ message });
-
-  return {
-    type: "healthproof_permission",
-    payload,
-    signature,
-    wallet: address,
   };
 }
 

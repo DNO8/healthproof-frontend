@@ -7,6 +7,10 @@ import { useUiStore } from "@/state/ui.store";
 import { ShareResultsModal } from "./ShareResultsModal";
 import { UploadResultsModal } from "./UploadResultsModal";
 import { ScanQRModal } from "./ScanQRModal";
+import { CreateOrderModal } from "./CreateOrderModal";
+import { ManageEpisodeModal } from "./ManageEpisodeModal";
+import { AdminPanel } from "./AdminPanel";
+import { MyDocumentsModal } from "./MyDocumentsModal";
 
 type ActionDef = {
   id: string;
@@ -17,7 +21,7 @@ type ActionDef = {
   tagKey?: string;
 };
 
-const ROLE_ACTIONS: Record<UserRole, ActionDef[]> = {
+const ROLE_ACTIONS: Partial<Record<UserRole, ActionDef[]>> = {
   patient: [
     {
       id: "share-results",
@@ -31,8 +35,7 @@ const ROLE_ACTIONS: Record<UserRole, ActionDef[]> = {
       titleKey: "myDocuments",
       descKey: "myDocumentsDesc",
       icon: "📄",
-      disabled: true,
-      tagKey: "tags.backendRequired",
+      disabled: false,
     },
     {
       id: "active-permissions",
@@ -40,7 +43,7 @@ const ROLE_ACTIONS: Record<UserRole, ActionDef[]> = {
       descKey: "activePermissionsDesc",
       icon: "🔐",
       disabled: true,
-      tagKey: "tags.backendRequired",
+      tagKey: "tags.contractsRequired",
     },
     {
       id: "audit-log",
@@ -50,16 +53,8 @@ const ROLE_ACTIONS: Record<UserRole, ActionDef[]> = {
       disabled: true,
       tagKey: "tags.contractsRequired",
     },
-    {
-      id: "connect-wallet",
-      titleKey: "connectWallet",
-      descKey: "connectWalletDesc",
-      icon: "🔗",
-      disabled: true,
-      tagKey: "tags.walletPending",
-    },
   ],
-  laboratory: [
+  lab: [
     {
       id: "scan-qr",
       titleKey: "scanQr",
@@ -91,7 +86,7 @@ const ROLE_ACTIONS: Record<UserRole, ActionDef[]> = {
       tagKey: "tags.backendRequired",
     },
   ],
-  medical_center: [
+  doctor: [
     {
       id: "scan-qr",
       titleKey: "scanQr",
@@ -104,24 +99,21 @@ const ROLE_ACTIONS: Record<UserRole, ActionDef[]> = {
       titleKey: "createOrder",
       descKey: "createOrderDesc",
       icon: "📝",
-      disabled: true,
-      tagKey: "tags.backendRequired",
+      disabled: false,
     },
     {
-      id: "verify-results",
-      titleKey: "verifyResults",
-      descKey: "verifyResultsDesc",
-      icon: "✅",
-      disabled: true,
-      tagKey: "tags.contractsRequired",
+      id: "manage-episodes",
+      titleKey: "manageEpisodes",
+      descKey: "manageEpisodesDesc",
+      icon: "🏥",
+      disabled: false,
     },
     {
-      id: "patient-records",
-      titleKey: "patientRecords",
-      descKey: "patientRecordsDesc",
-      icon: "🗂️",
-      disabled: true,
-      tagKey: "tags.backendRequired",
+      id: "admin-panel",
+      titleKey: "adminPanel",
+      descKey: "adminPanelDesc",
+      icon: "⚙️",
+      disabled: false,
     },
   ],
 };
@@ -134,10 +126,14 @@ export function DashboardActions({
   userId: string;
 }) {
   const t = useTranslations("dashboard.actions");
-  const actions = ROLE_ACTIONS[role];
+  const actions = ROLE_ACTIONS[role] ?? [];
   const { isQrModalOpen, openQrModal, closeQrModal } = useUiStore();
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isScanOpen, setIsScanOpen] = useState(false);
+  const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
+  const [isEpisodesOpen, setIsEpisodesOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isMyDocsOpen, setIsMyDocsOpen] = useState(false);
 
   function handleActionClick(actionId: string) {
     switch (actionId) {
@@ -149,6 +145,18 @@ export function DashboardActions({
         break;
       case "scan-qr":
         setIsScanOpen(true);
+        break;
+      case "my-documents":
+        setIsMyDocsOpen(true);
+        break;
+      case "create-order":
+        setIsCreateOrderOpen(true);
+        break;
+      case "manage-episodes":
+        setIsEpisodesOpen(true);
+        break;
+      case "admin-panel":
+        setIsAdminOpen(true);
         break;
       default:
         break;
@@ -200,6 +208,28 @@ export function DashboardActions({
 
       {isScanOpen && (
         <ScanQRModal onClose={() => setIsScanOpen(false)} doctorId={userId} />
+      )}
+
+      {isCreateOrderOpen && (
+        <CreateOrderModal
+          onClose={() => setIsCreateOrderOpen(false)}
+          doctorId={userId}
+        />
+      )}
+
+      {isEpisodesOpen && (
+        <ManageEpisodeModal
+          onClose={() => setIsEpisodesOpen(false)}
+          doctorId={userId}
+        />
+      )}
+
+      {isAdminOpen && (
+        <AdminPanel onClose={() => setIsAdminOpen(false)} />
+      )}
+
+      {isMyDocsOpen && (
+        <MyDocumentsModal onClose={() => setIsMyDocsOpen(false)} />
       )}
     </>
   );

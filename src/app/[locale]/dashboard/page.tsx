@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import type { UserRole } from "@/types/domain.types";
 import { ROLES } from "@/types/domain.types";
 import { useDbUser } from "@/hooks/useDbUser";
+import { useOnChainRole } from "@/hooks/useOnChainRole";
 import { DashboardActions } from "./DashboardActions";
 import { ProfileBanner } from "./ProfileBanner";
 import { WelcomeToast } from "./WelcomeToast";
@@ -22,19 +23,26 @@ type MetricKey =
   | "verifiedResults"
   | "activePatients";
 
-const ROLE_METRIC_KEYS: Record<UserRole, MetricKey[]> = {
+const ROLE_METRIC_KEYS: Partial<Record<UserRole, MetricKey[]>> = {
   patient: ["myDocuments", "activePermissions", "verifications"],
-  laboratory: ["testsPerformed", "resultsUploaded", "pendingOrders"],
-  medical_center: ["ordersIssued", "verifiedResults", "activePatients"],
+  lab: ["testsPerformed", "resultsUploaded", "pendingOrders"],
+  doctor: ["ordersIssued", "verifiedResults", "activePatients"],
 };
 
-const ROLE_DESC_KEYS: Record<
-  UserRole,
-  "patient" | "laboratory" | "medicalCenter"
+const ROLE_DESC_KEYS: Partial<
+  Record<UserRole, "patient" | "laboratory" | "medicalCenter">
 > = {
   patient: "patient",
-  laboratory: "laboratory",
-  medical_center: "medicalCenter",
+  lab: "laboratory",
+  doctor: "medicalCenter",
+};
+
+const ROLE_LABEL_KEYS: Partial<
+  Record<UserRole, "patient" | "laboratory" | "medicalCenter">
+> = {
+  patient: "patient",
+  lab: "laboratory",
+  doctor: "medicalCenter",
 };
 
 export default function DashboardPage() {
@@ -45,6 +53,12 @@ export default function DashboardPage() {
   const { wallets } = useWallets();
   const { dbUser, loading: dbLoading } = useDbUser();
 
+  const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
+  const walletAddress =
+    dbUser?.wallet_address || embeddedWallet?.address || null;
+
+  const { role, loading: roleLoading } = useOnChainRole(walletAddress);
+
   useEffect(() => {
     if (ready && !authenticated) {
       const loggingOut = sessionStorage.getItem("hp_logging_out");
@@ -52,7 +66,7 @@ export default function DashboardPage() {
     }
   }, [ready, authenticated, router]);
 
-  if (!ready || !authenticated || !user || dbLoading) {
+  if (!ready || !authenticated || !user || dbLoading || roleLoading) {
     return (
       <main className="flex min-h-[calc(100vh-60px)] items-center justify-center">
         <p className="text-sm text-slate-400">{t("loading")}</p>
@@ -62,21 +76,12 @@ export default function DashboardPage() {
 
   const email =
     user.email?.address ?? user.google?.email ?? dbUser?.email ?? "";
-  const role: UserRole = dbUser?.role ?? "patient";
-  const roleConfig = ROLES.find((r) => r.key === role);
-  const metricKeys = ROLE_METRIC_KEYS[role];
-  const descKey = ROLE_DESC_KEYS[role];
+  const effectiveRole: UserRole = role ?? "patient";
+  const roleConfig = ROLES.find((r) => r.key === effectiveRole);
+  const metricKeys = ROLE_METRIC_KEYS[effectiveRole] ?? ROLE_METRIC_KEYS.patient!;
+  const descKey = ROLE_DESC_KEYS[effectiveRole] ?? "patient";
+  const roleLabel = tRoles(ROLE_LABEL_KEYS[effectiveRole] ?? "patient");
 
-  const roleLabel =
-    role === "patient"
-      ? tRoles("patient")
-      : role === "laboratory"
-        ? tRoles("laboratory")
-        : tRoles("medicalCenter");
-
-  const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
-  const walletAddress =
-    dbUser?.wallet_address || embeddedWallet?.address || null;
   const displayName = dbUser?.full_name ?? null;
   const isProfileComplete = Boolean(displayName && walletAddress);
 
@@ -131,7 +136,7 @@ export default function DashboardPage() {
 
       <ProfileBanner isComplete={isProfileComplete} />
 
-      <DashboardActions role={role} userId={user.id} />
+      <DashboardActions role={effectiveRole} userId={user.id} />
     </main>
   );
 }

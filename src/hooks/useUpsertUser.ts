@@ -3,13 +3,10 @@
 import { useEffect, useRef } from "react";
 import { usePrivy, useLogout } from "@privy-io/react-auth";
 import { sileo } from "sileo";
-import type { UserRole } from "@/types/domain.types";
 import { upsertUser } from "@/actions/upsert-user";
 import { clearDbUserCache } from "@/hooks/useDbUser";
 
-const ROLE_KEY = "hp_selected_role";
 const SESSION_KEY = "hp_upserted";
-const VALID_ROLES: UserRole[] = ["patient", "laboratory", "medical_center"];
 
 function extractEmail(
   user: ReturnType<typeof usePrivy>["user"],
@@ -43,34 +40,22 @@ export function useUpsertUser() {
     if (!ready || !authenticated || !userId) return;
     if (calledRef.current) return;
 
-    const storedRole = localStorage.getItem(ROLE_KEY) as UserRole | null;
-    const roleExplicit = Boolean(
-      storedRole && VALID_ROLES.includes(storedRole),
-    );
-
-    // Skip if already upserted this session AND no explicit role pending
     const alreadyDone = sessionStorage.getItem(SESSION_KEY);
-    if (alreadyDone === userId && !roleExplicit) return;
+    if (alreadyDone === userId) return;
 
     calledRef.current = true;
-
-    const role: UserRole = roleExplicit ? (storedRole as UserRole) : "patient";
 
     upsertUser({
       id: userId,
       email: email ?? "",
-      role,
-      roleExplicit,
       wallet_address: null,
       full_name: fullName,
     })
       .then((result) => {
         if ("success" in result && result.success) {
           sessionStorage.setItem(SESSION_KEY, userId);
-          localStorage.removeItem(ROLE_KEY);
           clearDbUserCache();
         } else if ("code" in result && result.code === "ACCOUNT_EXISTS") {
-          localStorage.removeItem(ROLE_KEY);
           sileo.error({
             title: "Account already exists",
             description:

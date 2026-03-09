@@ -7,7 +7,16 @@ import { useTranslations } from "next-intl";
 import type { UserRole } from "@/types/domain.types";
 import { ROLES } from "@/types/domain.types";
 import { useDbUser } from "@/hooks/useDbUser";
+import { useOnChainRole } from "@/hooks/useOnChainRole";
 import { ProfileForm } from "./ProfileForm";
+
+const ROLE_LABEL_KEYS: Partial<
+  Record<UserRole, "patient" | "laboratory" | "medicalCenter">
+> = {
+  patient: "patient",
+  lab: "laboratory",
+  doctor: "medicalCenter",
+};
 
 export default function ProfilePage() {
   const t = useTranslations("dashboard.profile");
@@ -17,33 +26,6 @@ export default function ProfilePage() {
   const { ready, authenticated, user } = usePrivy();
   const { wallets } = useWallets();
   const { dbUser } = useDbUser();
-
-  useEffect(() => {
-    if (ready && !authenticated) {
-      const loggingOut = sessionStorage.getItem("hp_logging_out");
-      if (!loggingOut) router.replace("/auth");
-    }
-  }, [ready, authenticated, router]);
-
-  if (!ready || !authenticated || !user) {
-    return (
-      <main className="flex min-h-[calc(100vh-60px)] items-center justify-center">
-        <p className="text-sm text-slate-400">{tDash("loading")}</p>
-      </main>
-    );
-  }
-
-  const email =
-    user.email?.address ?? user.google?.email ?? dbUser?.email ?? "";
-  const role: UserRole = dbUser?.role ?? "patient";
-  const roleConfig = ROLES.find((r) => r.key === role);
-
-  const roleLabel =
-    role === "patient"
-      ? tRoles("patient")
-      : role === "laboratory"
-        ? tRoles("laboratory")
-        : tRoles("medicalCenter");
 
   const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
 
@@ -74,6 +56,28 @@ export default function ProfilePage() {
     linkedWalletAddress ||
     "";
 
+  const { role: onChainRole } = useOnChainRole(walletAddress || null);
+
+  useEffect(() => {
+    if (ready && !authenticated) {
+      const loggingOut = sessionStorage.getItem("hp_logging_out");
+      if (!loggingOut) router.replace("/auth");
+    }
+  }, [ready, authenticated, router]);
+
+  if (!ready || !authenticated || !user) {
+    return (
+      <main className="flex min-h-[calc(100vh-60px)] items-center justify-center">
+        <p className="text-sm text-slate-400">{tDash("loading")}</p>
+      </main>
+    );
+  }
+
+  const email =
+    user.email?.address ?? user.google?.email ?? dbUser?.email ?? "";
+  const effectiveRole: UserRole = onChainRole ?? "patient";
+  const roleConfig = ROLES.find((r) => r.key === effectiveRole);
+  const roleLabel = tRoles(ROLE_LABEL_KEYS[effectiveRole] ?? "patient");
   const fullName = dbUser?.full_name ?? user.google?.name ?? "";
 
   return (
@@ -97,7 +101,7 @@ export default function ProfilePage() {
           userId={user.id}
           email={email}
           fullName={fullName}
-          role={role}
+          role={effectiveRole}
           roleLabel={roleLabel}
           walletAddress={walletAddress}
         />

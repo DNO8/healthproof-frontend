@@ -1,0 +1,245 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "identityAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "episodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "patient",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "timestamp",
+        "type": "uint64"
+      }
+    ],
+    "name": "ClinicalEpisodeClosed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "episodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "patient",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "doctor",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "institution",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "episodeType",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "timestamp",
+        "type": "uint64"
+      }
+    ],
+    "name": "ClinicalEpisodeOpened",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "episodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "closeEpisode",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "episodes",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "patient",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "openedBy",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "institution",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "episodeType",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "classification",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "openedAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "episodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getEpisode",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "patient",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "openedBy",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "institution",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "episodeType",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "classification",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "openedAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct ClinicalEpisodeRegistry.ClinicalEpisode",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "identityRegistry",
+    "outputs": [
+      {
+        "internalType": "contract IdentityRegistry",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "episodeId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "patient",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "institution",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "episodeType",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "classification",
+        "type": "bytes32"
+      }
+    ],
+    "name": "openEpisode",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

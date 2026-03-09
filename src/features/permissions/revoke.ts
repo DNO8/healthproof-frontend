@@ -1,14 +1,11 @@
-import { apiClient } from "@/services/api/client";
-import { API_ROUTES } from "@/lib/constants";
-import { usePermissionsStore } from "@/state/permissions.store";
+import { revokePermissionOnChain } from "@/actions/revoke-permission-onchain";
 
-export async function revokePermission(permissionId: string): Promise<void> {
-  await apiClient.post(API_ROUTES.PERMISSIONS.REVOKE, {
-    permission_id: permissionId,
-  });
+// Revocation is on-chain via PermissionManager.revokePermission().
+// DB permission_keys row stays but on-chain active=false is the source of truth.
 
-  usePermissionsStore.getState().revokePermission(permissionId);
-
-  // TODO: optional on-chain revocation
-  // await revokeAccess({ patient, grantee, resourceHash })
+export async function revokePermission(data: {
+  patientWallet: string;
+  granteeWallet: string;
+}): Promise<{ success: true; txHash: string } | { error: string }> {
+  return revokePermissionOnChain(data);
 }

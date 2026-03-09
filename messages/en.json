@@ -316,6 +316,10 @@
       "verifyResultsDesc": "Check the integrity and on-chain registration of lab results.",
       "patientRecords": "Patient Records",
       "patientRecordsDesc": "Access authorized patient records via verified permissions.",
+      "manageEpisodes": "Clinical Episodes",
+      "manageEpisodesDesc": "Open, lookup, and close clinical episodes for patients.",
+      "adminPanel": "Admin Panel",
+      "adminPanelDesc": "Manage protocol settings, entities, and system administration.",
       "tags": {
         "backendRequired": "Backend required",
         "contractsRequired": "Contracts required",

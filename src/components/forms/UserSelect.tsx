@@ -2,49 +2,54 @@
 
 import { useState, useEffect } from "react";
 import {
-  listUsersByRole,
-  type UserOption,
-} from "@/actions/list-users-by-role";
+  listUsersByOnChainRole,
+  type FilteredUserOption,
+} from "@/actions/list-users-by-onchain-role";
+import type { UserRole } from "@/types/domain.types";
 
-type UserSelectProps = {
-  dbRole: string;
+export type UserSelectProps = {
   value: string;
-  onChange: (userId: string) => void;
+  onChange: (walletAddress: string) => void;
   label: string;
   placeholder: string;
-  excludeId?: string;
+  filterRole?: UserRole;
+  excludeWallet?: string;
 };
 
 export function UserSelect({
-  dbRole,
   value,
   onChange,
   label,
   placeholder,
-  excludeId,
+  filterRole,
+  excludeWallet,
 }: UserSelectProps) {
-  const [users, setUsers] = useState<UserOption[]>([]);
+  const [users, setUsers] = useState<FilteredUserOption[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    listUsersByRole(dbRole)
-      .then((list) => {
-        setUsers(excludeId ? list.filter((u) => u.id !== excludeId) : list);
-      })
+    listUsersByOnChainRole(filterRole, excludeWallet)
+      .then(setUsers)
       .finally(() => setLoading(false));
-  }, [dbRole, excludeId]);
+  }, [filterRole, excludeWallet]);
+
+  function formatLabel(u: FilteredUserOption) {
+    const name = u.full_name || u.email || "Unknown";
+    const shortWallet = `${u.wallet_address.slice(0, 6)}…${u.wallet_address.slice(-4)}`;
+    return `${name} (${shortWallet})`;
+  }
 
   return (
     <div>
       <label
         className="mb-1.5 block text-xs font-medium text-slate-700"
-        htmlFor={`user-select-${dbRole}`}
+        htmlFor="user-select"
       >
         {label}
       </label>
       <select
-        id={`user-select-${dbRole}`}
+        id="user-select"
         className="neu-inset w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-200 disabled:opacity-50"
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -54,8 +59,8 @@ export function UserSelect({
           {loading ? "Loading…" : placeholder}
         </option>
         {users.map((u) => (
-          <option key={u.id} value={u.id}>
-            {u.full_name || u.email || u.id.slice(0, 20)}
+          <option key={u.wallet_address} value={u.wallet_address}>
+            {formatLabel(u)}
           </option>
         ))}
       </select>

@@ -7,7 +7,9 @@ import { uploadHybridEncryptedFile } from "@/services/storage/upload";
 import { getKeyPair } from "@/services/encryption/keystore";
 import { exportPublicKey } from "@/services/encryption/ecdh";
 import { getUserPublicKey } from "@/actions/get-user-public-key";
-import { saveExamResult } from "@/actions/save-exam-result";
+import { saveDocumentSecret } from "@/actions/save-document-secret";
+import { getDbUser } from "@/actions/get-user";
+import { registerDocumentOnChain } from "@/actions/register-document-onchain";
 import { UserSelect } from "@/components/forms/UserSelect";
 
 type UploadResultsModalProps = {
@@ -113,17 +115,30 @@ export function UploadResultsModal({
         ],
       );
 
-      // Save to DB — include uploader's public key so patients can always unwrap
-      await saveExamResult({
-        exam_id: null,
-        cid: uploadResult.ipfs.cid,
+      // Resolve wallet addresses for DB storage
+      // patientId is already a wallet address from UserSelect
+      const labUser = await getDbUser(labId);
+      const labWallet = labUser?.wallet_address ?? "";
+      const patientWallet = trimmedPatientId;
+
+      // Save encryption secrets to document_secrets table
+      await saveDocumentSecret({
+        document_id: uploadResult.ipfs.cid,
+        uploader_wallet: labWallet,
+        patient_wallet: patientWallet,
         iv: uploadResult.iv,
-        file_hash: uploadResult.fileHash,
-        encrypted_keys: {
-          ...uploadResult.encryptedKeys,
-          _uploader: { id: labId, publicKey: labPubKeyJwk },
-        },
+        encrypted_keys: uploadResult.encryptedKeys,
       });
+
+      // Register document on-chain
+      const onChainResult = await registerDocumentOnChain({
+        cid: uploadResult.ipfs.cid,
+        fileHash: uploadResult.fileHash,
+        patientWallet: patientWallet,
+      });
+      if ("error" in onChainResult) {
+        console.warn("[UploadResultsModal] On-chain registration failed:", onChainResult.error);
+      }
 
       const doc: UploadedDoc = {
         id: crypto.randomUUID(),
@@ -191,12 +206,11 @@ export function UploadResultsModal({
 
             <div className="mt-5">
               <UserSelect
-                dbRole="PATIENT"
                 value={patientId}
                 onChange={setPatientId}
                 label={t("patientId")}
                 placeholder={t("patientIdPlaceholder")}
-                excludeId={labId}
+                filterRole="patient"
               />
             </div>
 

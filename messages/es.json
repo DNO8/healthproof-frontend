@@ -316,6 +316,10 @@
       "verifyResultsDesc": "Verifica la integridad y el registro on-chain de resultados de laboratorio.",
       "patientRecords": "Registros de Pacientes",
       "patientRecordsDesc": "Accede a registros de pacientes autorizados mediante permisos verificados.",
+      "manageEpisodes": "Episodios Clínicos",
+      "manageEpisodesDesc": "Abrir, consultar y cerrar episodios clínicos de pacientes.",
+      "adminPanel": "Panel de Admin",
+      "adminPanelDesc": "Gestionar configuración del protocolo, entidades y administración del sistema.",
       "tags": {
         "backendRequired": "Requiere backend",
         "contractsRequired": "Requiere contratos",

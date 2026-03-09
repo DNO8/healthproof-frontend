@@ -32,13 +32,10 @@ export default function AuthPage() {
     }
   }, [ready, authenticated, dashboardPath]);
 
-  const roleLabels: Record<UserRole, { label: string; desc: string }> = {
+  const roleLabels: Partial<Record<UserRole, { label: string; desc: string }>> = {
     patient: { label: tRoles("patient"), desc: tRoles("patientDesc") },
-    laboratory: { label: tRoles("laboratory"), desc: tRoles("laboratoryDesc") },
-    medical_center: {
-      label: tRoles("medicalCenter"),
-      desc: tRoles("medicalCenterDesc"),
-    },
+    doctor: { label: tRoles("medicalCenter"), desc: tRoles("medicalCenterDesc") },
+    lab: { label: tRoles("laboratory"), desc: tRoles("laboratoryDesc") },
   };
 
   async function handleSendCode() {
@@ -193,7 +190,7 @@ export default function AuthPage() {
                         >
                           <span className="text-2xl">{role.icon}</span>
                           <span className="text-[11px] font-semibold leading-tight">
-                            {roleLabels[role.key].label}
+                            {roleLabels[role.key]?.label}
                           </span>
                         </button>
                       );
@@ -201,7 +198,7 @@ export default function AuthPage() {
                   </div>
                   {selectedRole && (
                     <p className="mt-2 text-center text-[11px] text-slate-400">
-                      {roleLabels[selectedRole].desc}
+                      {roleLabels[selectedRole]?.desc}
                     </p>
                   )}
                 </div>

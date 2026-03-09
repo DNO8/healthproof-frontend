@@ -2,39 +2,44 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// DB role value → frontend UserRole
-const DB_TO_ROLE: Record<string, string> = {
-  PATIENT: "patient",
-  LAB: "laboratory",
-  DOCTOR: "medical_center",
-  ADMIN: "patient",
-};
-
-export async function getDbUser(privyId: string) {
+export async function getDbUser(idOrWallet: string) {
   const supabase = createAdminClient();
 
+  // Try lookup by Privy DID first
   const { data, error } = await supabase
     .from("users")
-    .select(
-      "id, email, role, wallet_address, full_name, is_verified, created_at, public_key",
-    )
-    .eq("id", privyId)
+    .select("id, email, wallet_address, full_name, created_at, public_key")
+    .eq("id", idOrWallet)
     .single();
 
-  if (error || !data) {
+  if (!error && data) {
+    return {
+      id: data.id as string,
+      email: (data.email as string) ?? "",
+      wallet_address: data.wallet_address as string | null,
+      full_name: data.full_name as string | null,
+      created_at: data.created_at as string,
+      public_key: (data.public_key as string | null) ?? null,
+    };
+  }
+
+  // Fall back to wallet_address lookup
+  const { data: byWallet, error: walletErr } = await supabase
+    .from("users")
+    .select("id, email, wallet_address, full_name, created_at, public_key")
+    .eq("wallet_address", idOrWallet)
+    .single();
+
+  if (walletErr || !byWallet) {
     return null;
   }
 
-  const dbRole = (data.role as string).toUpperCase();
-
   return {
-    id: data.id as string,
-    email: data.email as string,
-    role: DB_TO_ROLE[dbRole] ?? "patient",
-    wallet_address: data.wallet_address as string | null,
-    full_name: data.full_name as string | null,
-    is_verified: data.is_verified as boolean,
-    created_at: data.created_at as string,
-    public_key: (data.public_key as string | null) ?? null,
+    id: byWallet.id as string,
+    email: (byWallet.email as string) ?? "",
+    wallet_address: byWallet.wallet_address as string | null,
+    full_name: byWallet.full_name as string | null,
+    created_at: byWallet.created_at as string,
+    public_key: (byWallet.public_key as string | null) ?? null,
   };
 }

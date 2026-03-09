@@ -1,0 +1,168 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "identityAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "documentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "patient",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "issuer",
+        "type": "address"
+      }
+    ],
+    "name": "DocumentRegistered",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "documents",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "patient",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "issuer",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "institution",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "documentType",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "clinicalHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "episodeId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "string",
+        "name": "cid",
+        "type": "string"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "standard",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "classification",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "createdAt",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "identityRegistry",
+    "outputs": [
+      {
+        "internalType": "contract IdentityRegistry",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "documentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "patient",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "institution",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "documentType",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "clinicalHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "episodeId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "string",
+        "name": "cid",
+        "type": "string"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "standard",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "classification",
+        "type": "bytes32"
+      }
+    ],
+    "name": "registerDocument",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

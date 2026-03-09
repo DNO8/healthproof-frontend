@@ -2,18 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
-import type { UserRole } from "@/types/domain.types";
 import { getDbUser } from "@/actions/get-user";
 
 const CACHE_KEY = "hp_db_user";
 
-interface DbUser {
+export interface DbUser {
   id: string;
   email: string;
-  role: UserRole;
   wallet_address: string | null;
   full_name: string | null;
-  is_verified: boolean;
   created_at: string;
   public_key: string | null;
 }
@@ -57,9 +54,8 @@ export function useDbUser() {
     try {
       const data = await getDbUser(userId);
       if (data) {
-        const normalized: DbUser = { ...data, role: data.role as UserRole };
-        setDbUser(normalized);
-        setCache(normalized);
+        setDbUser(data as DbUser);
+        setCache(data as DbUser);
       }
     } catch (err) {
       console.error("getDbUser failed:", err);

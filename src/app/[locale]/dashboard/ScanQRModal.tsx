@@ -5,7 +5,8 @@ import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import type { EncryptedQRData } from "@/types/domain.types";
 import { isExpired } from "@/features/permissions";
-import { createPermission } from "@/actions/create-permission";
+import { savePermissionKey } from "@/actions/save-permission-key";
+import { checkAccessOnChain } from "@/actions/check-access-onchain";
 import { downloadAndDecrypt } from "@/services/storage/download";
 
 type ScanQRModalProps = {
@@ -170,14 +171,12 @@ export function ScanQRModal({ onClose, doctorId }: ScanQRModalProps) {
     setResultMeta(qr);
 
     try {
-      // 1. Save permission to DB
-      const permResult = await createPermission({
-        patient_id: qr.payload.patient_id,
-        granted_to_id: doctorId,
-        resource_type: qr.payload.resource_type as "RESULT" | "ORDER",
-        resource_id: qr.payload.resource_id,
+      // 1. Save permission key to DB
+      const permResult = await savePermissionKey({
+        document_id: qr.crypto.document_id,
+        patient_wallet: qr.payload.patient_wallet ?? qr.wallet,
+        grantee_wallet: qr.payload.grantee_wallet ?? doctorId,
         encrypted_key: JSON.stringify(qr.crypto.encrypted_key),
-        onchain_tx_hash: qr.signature,
       });
 
       if ("error" in permResult && permResult.error) {
@@ -187,7 +186,19 @@ export function ScanQRModal({ onClose, doctorId }: ScanQRModalProps) {
         );
       }
 
-      // 2. Download and decrypt the file
+      // 2. Verify on-chain access
+      const patientWallet = qr.payload.patient_wallet ?? qr.wallet;
+      const granteeWallet = qr.payload.grantee_wallet ?? doctorId;
+      const hasAccess = await checkAccessOnChain({
+        patientWallet,
+        requesterWallet: granteeWallet,
+        documentId: qr.crypto.document_id,
+      });
+      if (!hasAccess) {
+        console.warn("[ScanQRModal] On-chain access check returned false — proceeding with QR trust");
+      }
+
+      // 3. Download and decrypt the file
       const result = await downloadAndDecrypt({
         cid: qr.crypto.cid,
         iv: qr.crypto.iv,
@@ -221,7 +232,7 @@ export function ScanQRModal({ onClose, doctorId }: ScanQRModalProps) {
   function handleDownload() {
     if (!decryptedFile) return;
     const ext = MIME_EXT[decryptedFile.mime] ?? "";
-    const name = `result-${resultMeta?.crypto.result_id.slice(0, 8) ?? "file"}${ext}`;
+    const name = `result-${resultMeta?.crypto.document_id.slice(0, 8) ?? "file"}${ext}`;
     const a = document.createElement("a");
     a.href = decryptedFile.url;
     a.download = name;
@@ -317,7 +328,7 @@ export function ScanQRModal({ onClose, doctorId }: ScanQRModalProps) {
                       {t("patientLabel")}
                     </p>
                     <p className="mt-0.5 font-mono text-xs text-slate-600 break-all">
-                      {resultMeta.payload.patient_id}
+                      {resultMeta.payload.patient_wallet}
                     </p>
                   </div>
                   <div className="neu-inset rounded-xl p-3">
