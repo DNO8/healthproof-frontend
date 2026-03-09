@@ -1,278 +1,397 @@
-# HealthProof Frontend
+# HealthProof — Decentralized Medical Data Sovereignty Protocol
 
-> Cliente web oficial del protocolo **HealthProof** — infraestructura L1 sobre Avalanche para verificación médica soberana.
+> **Patient-centric, blockchain-verified, end-to-end encrypted medical records.**
 
-Este frontend permite a **pacientes**, **laboratorios** y **centros médicos** interactuar con el protocolo de forma segura, cifrada y verificable. No es una simple dApp: es un cliente de infraestructura clínica.
-
----
-
-## Stack Tecnológico
-
-| Capa | Tecnología | Versión |
-|------|-----------|---------|
-| **Framework** | Next.js (App Router, Turbopack) | 16.1.6 |
-| **UI** | React | 19.2.3 |
-| **Lenguaje** | TypeScript | 5.x |
-| **Estilos** | Tailwind CSS | 4.x |
-| **Animaciones** | GSAP | 3.14.x |
-| **Tipografía** | Manrope (Google Fonts) | — |
-| **Linter/Formatter** | Biome | 2.2.0 |
-| **Compilador** | React Compiler (babel plugin) | 1.0.0 |
-
-### Dependencias previstas (módulos futuros)
-
-- **Wagmi** + **Ethers** — conexión wallet y firma de transacciones
-- **React Query** — cache y sincronización de datos
-- **Zustand** — estado global (`auth.store`, `permissions.store`, `ui.store`)
-- **Axios** — cliente HTTP con interceptores
-- **Sileo** — notificaciones
-- **Privy / Web3Auth** — wallet abstraction
+HealthProof is a decentralized protocol that gives patients full sovereignty over their clinical data. Medical documents are encrypted client-side, stored on IPFS, and registered on-chain via Avalanche smart contracts. Access is granted through cryptographic permissions — not through centralized databases that institutions control.
 
 ---
 
-## Arquitectura del Proyecto
+## Table of Contents
+
+- [Overview](#overview)
+- [Protocol Architecture](#protocol-architecture)
+- [Clinical Workflow](#clinical-workflow)
+- [On-Chain Contracts](#on-chain-contracts)
+- [Hybrid Encryption System](#hybrid-encryption-system)
+- [Off-Chain Storage](#off-chain-storage)
+- [Role-Based Access](#role-based-access)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Environment Variables](#environment-variables)
+- [Getting Started](#getting-started)
+- [Available Scripts](#available-scripts)
+- [Testnet Deployment](#testnet-deployment)
+
+---
+
+## Overview
+
+Traditional electronic health record (EHR) systems store medical data in siloed, institution-controlled databases. Patients have little visibility or control over who accesses their information, and data portability between providers is severely limited.
+
+HealthProof addresses these problems by:
+
+- **Storing clinical documents encrypted on IPFS** — no institution holds the plaintext.
+- **Recording provenance on Avalanche** — every document registration, permission grant, and clinical event is immutably logged on-chain.
+- **Granting patients cryptographic control** — only the patient (or their authorized delegate) can decrypt and share their records via ECDH key exchange and QR-based permission flows.
+- **Enforcing role-based identity on-chain** — doctors, laboratories, and institutions are registered and verified in the `IdentityRegistry` smart contract before they can participate in clinical workflows.
+
+---
+
+## Protocol Architecture
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                     Frontend (Next.js)                    │
+│  Privy Auth · Embedded Wallets · ECDH Encryption · IPFS  │
+└────────────────────────┬─────────────────────────────────┘
+                         │ Server Actions (viem)
+                         ▼
+┌──────────────────────────────────────────────────────────┐
+│                  HealthProofGateway                       │
+│           Unified entry point for the protocol           │
+└────────────────────────┬─────────────────────────────────┘
+                         │
+              ┌──────────▼──────────┐
+              │  HealthProofKernel  │
+              │  Module registry    │
+              │  Pause / Governance │
+              └──────────┬──────────┘
+                         │
+     ┌───────────┬───────┼───────┬────────────┐
+     ▼           ▼       ▼       ▼            ▼
+  Identity   Clinical  Medical  Medical   Permission
+  Registry   Episode   Order    Document   Manager
+             Registry  Registry Registry
+```
+
+The protocol follows a **modular Kernel pattern**. The `HealthProofKernel` acts as a registry of modules. The `HealthProofGateway` is the single entry point that routes operations to the appropriate module. Each module is a standalone contract responsible for a specific domain.
+
+---
+
+## Clinical Workflow
+
+The end-to-end clinical flow involves three actors: **Doctor**, **Laboratory**, and **Patient**.
+
+```
+ DOCTOR                    LABORATORY                 PATIENT
+   │                           │                         │
+   ├─ 1. Open Episode ─────────┤                         │
+   ├─ 2. Create Order ─────────┤                         │
+   │                           │                         │
+   │                           ├─ 3. Upload Results ─────┤
+   │                           │    (Encrypt + IPFS +    │
+   │                           │     register on-chain)  │
+   │                           │                         │
+   │                           │     4. View Documents ──┤
+   │                           │                         │
+   │     6. Scan QR ◄──────────┼──── 5. Share via QR ────┤
+   │    (Decrypt + View)       │    (Grant permission +  │
+   │                           │     re-wrap ECDH key)   │
+```
+
+1. **Doctor** opens a clinical episode and creates a medical order for a specific exam.
+2. **Laboratory** receives the patient (out-of-band in MVP), performs the exam, encrypts the results client-side with AES-256-GCM, uploads the ciphertext to IPFS, and registers the document hash on-chain.
+3. **Patient** views their documents in the dashboard (decrypted locally using their ECDH private key stored in IndexedDB).
+4. **Patient** shares results with the doctor by generating a QR code that contains a re-wrapped AES key and an on-chain permission grant.
+5. **Doctor** scans the QR, verifies the on-chain permission, unwraps the AES key, and decrypts the document.
+
+---
+
+## On-Chain Contracts
+
+All contracts are deployed on **Avalanche Fuji C-Chain** (chainId `43113`) and written in Solidity `^0.8.20`.
+
+| Contract | Responsibility |
+|----------|----------------|
+| **IdentityRegistry** | Register and verify entities (patients, doctors, labs, institutions) with on-chain roles |
+| **GuardianRegistry** | Manage legal guardians for minors or incapacitated patients |
+| **PermissionManager** | Grant and revoke scoped access permissions for medical resources |
+| **ClinicalEpisodeRegistry** | Open, track, and close clinical episodes |
+| **MedicalOrderRegistry** | Create medical orders for exams, assign laboratories, track order status |
+| **MedicalDocumentRegistry** | Register document metadata (CID, hash) on-chain for provenance |
+| **HealthcareNetworkRegistry** | Register healthcare institutions and their network relationships |
+| **AuditTrail** | Immutable event log for protocol-wide auditing |
+| **HealthProofKernel** | Module registry, protocol pause, admin/governance roles |
+| **HealthProofGateway** | Single entry point that routes calls through the Kernel to modules |
+| **HealthProofProtocol** | Orchestrator for permissions, documents, and audit trail |
+
+### On-Chain Role Enum
+
+```solidity
+enum Role { PATIENT, DOCTOR, LAB, INSTITUTION, CERTIFIER, ADMIN }
+```
+
+Roles are assigned during identity registration and verified on-chain. The frontend reads roles from the `IdentityRegistry` to render role-specific dashboards.
+
+---
+
+## Hybrid Encryption System
+
+HealthProof implements a **ECDH P-256 hybrid encryption** scheme to ensure that no server or third party ever sees medical data in plaintext.
+
+```
+┌─────────────┐     AES-256-GCM      ┌────────────┐
+│  Raw File   │ ──────────────────► │ Ciphertext │ ──► IPFS
+└─────────────┘                      └────────────┘
+       │
+  AES Session Key
+       │
+       ├─── Wrap for Lab ──────► ECDH(lab.pub, lab.priv) → encrypted_key[lab]
+       └─── Wrap for Patient ──► ECDH(lab.priv, patient.pub) → encrypted_key[patient]
+```
+
+- **Upload:** The lab generates a random AES-256-GCM session key, encrypts the file, then wraps the session key for each authorized party using ECDH key agreement (P-256) + HKDF derivation.
+- **Download:** The recipient unwraps the AES key using their private ECDH key (stored as a non-extractable `CryptoKey` in IndexedDB), then decrypts the file locally.
+- **Sharing:** The patient re-wraps the AES key for a new recipient (e.g., a doctor) using `rewrapKeyForRecipient`, without ever exposing the plaintext key to the server.
+
+### Key Management
+
+| Component | Storage | Purpose |
+|-----------|---------|---------|
+| ECDH Private Key | IndexedDB (`non-extractable`) | Decrypt / re-wrap AES keys |
+| ECDH Public Key | Supabase `users.public_key` | Enable other parties to wrap keys for this user |
+| AES Session Key | Never persisted in plaintext | Per-document encryption |
+| Wrapped Keys | Supabase `document_secrets.encrypted_keys` (JSONB) | Encrypted AES keys per recipient |
+
+---
+
+## Off-Chain Storage
+
+The protocol uses a minimal off-chain database (Supabase / PostgreSQL) to store **only non-sensitive metadata and encrypted key material**. No plaintext medical data is ever stored in the database.
+
+### Database Schema (3 tables)
+
+```
+users
+  ├── id (TEXT PK)              — Privy DID (did:privy:xxx)
+  ├── wallet_address (UNIQUE)   — Embedded wallet (lowercase)
+  ├── email, full_name
+  ├── public_key (TEXT)         — ECDH P-256 public key (JWK)
+  └── created_at
+
+document_secrets
+  ├── document_id (UNIQUE)      — IPFS CID
+  ├── uploader_wallet (FK)      — Lab that uploaded
+  ├── patient_wallet (FK)       — Patient owner
+  ├── iv (VARCHAR)              — AES-GCM initialization vector
+  ├── encrypted_keys (JSONB)    — { wallet: { data, iv } } per recipient
+  └── created_at
+
+permission_keys
+  ├── document_id (FK)          — References document_secrets
+  ├── patient_wallet (FK)       — Granting patient
+  ├── grantee_wallet (FK)       — Receiving party
+  ├── encrypted_key (TEXT)      — Re-wrapped AES key for grantee
+  └── created_at
+```
+
+All role management, permissions, orders, and clinical episodes live **on-chain**. The database serves as a caching and key-distribution layer only.
+
+---
+
+## Role-Based Access
+
+The frontend renders distinct dashboards based on the user's on-chain role, queried from the `IdentityRegistry` at login.
+
+### Patient Dashboard
+
+| Action | Description | Status |
+|--------|-------------|--------|
+| Share Results | Generate QR to grant access to a doctor or lab | Active |
+| My Documents | View all documents where the patient is the owner | Active |
+| Active Permissions | List and revoke granted permissions | Planned |
+| Audit Log | View on-chain history of access events | Planned |
+
+### Doctor Dashboard
+
+| Action | Description | Status |
+|--------|-------------|--------|
+| Scan Patient QR | Scan QR to receive access and decrypt results | Active |
+| Create Order | Issue a medical order linked to a clinical episode | Active |
+| Clinical Episodes | Open, lookup, and close clinical episodes | Active |
+| Admin Panel | Protocol administration (entities, pause) | Active |
+
+### Laboratory Dashboard
+
+| Action | Description | Status |
+|--------|-------------|--------|
+| Scan Patient QR | Receive patient access via QR scan | Active |
+| Upload Results | Encrypt and upload exam results to IPFS | Active |
+| Pending Orders | View assigned medical orders | Planned |
+| Results History | Browse uploaded results | Planned |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Framework** | Next.js 16 (App Router, Server Actions, React Compiler) |
+| **Language** | TypeScript 5 |
+| **Styling** | Tailwind CSS 4, Neumorphism design system |
+| **Auth** | Privy (email, wallet, social login + embedded wallets) |
+| **Blockchain** | Avalanche C-Chain (Fuji testnet), Solidity ^0.8.20 |
+| **Client-Side Chain** | viem + wagmi |
+| **Encryption** | Web Crypto API (AES-256-GCM, ECDH P-256, HKDF) |
+| **File Storage** | IPFS via Pinata |
+| **Database** | Supabase (PostgreSQL) |
+| **i18n** | next-intl (English, Spanish) |
+| **State** | Zustand |
+| **Notifications** | Sileo |
+| **Linter** | Biome |
+
+---
+
+## Project Structure
 
 ```
 src/
-├── app/                        # Rutas (App Router)
-│   ├── layout.tsx              # Layout raíz (Manrope, metadata, lang=es)
-│   ├── page.tsx                # Página principal → LandingPage
-│   ├── globals.css             # Variables CSS, utilidades neumorphism
-│   ├── providers.tsx           # Providers globales (placeholder)
-│   ├── auth/layout.tsx         # Layout autenticación (placeholder)
-│   └── dashboard/layout.tsx    # Layout dashboard (placeholder)
+├── actions/                  # Next.js Server Actions (on-chain + off-chain)
+│   ├── register-entity-onchain.ts
+│   ├── medical-orders-onchain.ts
+│   ├── clinical-episodes-onchain.ts
+│   ├── register-document-onchain.ts
+│   ├── grant-permission-onchain.ts
+│   ├── revoke-permission-onchain.ts
+│   ├── list-users-by-onchain-role.ts
+│   ├── save-document-secret.ts
+│   ├── upload-to-ipfs.ts
+│   └── ...
 │
-├── components/
-│   ├── ui/                     # Componentes reutilizables
-│   │   ├── Button.tsx          # Botón con variantes primary/success
-│   │   ├── Card.tsx            # Tarjeta neumorphism
-│   │   ├── Input.tsx           # Input con estilo neumorphism
-│   │   ├── MetricCard.tsx      # Tarjeta de métricas
-│   │   ├── ModuleCard.tsx      # Tarjeta de módulo del protocolo
-│   │   ├── RoleCard.tsx        # Tarjeta de rol (paciente/lab/centro)
-│   │   ├── FlowStep.tsx        # Paso de flujo visual
-│   │   ├── PaletteCard.tsx     # Visualización de color de paleta
-│   │   ├── SectionTitle.tsx    # Título de sección
-│   │   ├── SectionDivider.tsx  # Divisor decorativo
-│   │   ├── DecorativeShapes.tsx # SVGs decorativos (cruces, círculos)
-│   │   └── index.ts            # Barrel exports
-│   │
-│   ├── landing/                # Landing page modular
-│   │   ├── LandingPage.tsx     # Composición principal
-│   │   ├── constants.ts        # Constantes, actores, transforms, dome
-│   │   ├── types.ts            # Tipos del landing
-│   │   ├── index.ts            # Barrel export
-│   │   └── sections/
-│   │       ├── HeroCarouselSection.tsx   # Carrusel 3D con actores
-│   │       ├── BeforeAfterSection.tsx    # Antes/después de HealthProof
-│   │       ├── StorytellingSection.tsx   # Capítulos narrativos
-│   │       ├── TrustSignalsSection.tsx   # Indicadores de confianza
-│   │       ├── TestimonialsSection.tsx   # Testimonios
-│   │       ├── FinalCtaSection.tsx       # CTA final
-│   │       └── index.ts
-│   │
-│   ├── cards/                  # Tarjetas especializadas (placeholder)
-│   ├── feedback/               # Componentes de feedback (placeholder)
-│   ├── forms/                  # Formularios (placeholder)
-│   └── layout/                 # Layout compartido (placeholder)
+├── app/[locale]/
+│   ├── page.tsx              # Landing page (storytelling + neumorphism)
+│   ├── auth/page.tsx         # Role selection → Privy authentication
+│   └── dashboard/
+│       ├── page.tsx          # Role-aware dashboard (patient/doctor/lab)
+│       ├── DashboardActions.tsx
+│       ├── CreateOrderModal.tsx
+│       ├── ManageEpisodeModal.tsx
+│       ├── UploadResultsModal.tsx
+│       ├── ShareResultsModal.tsx
+│       ├── MyDocumentsModal.tsx
+│       ├── ScanQRModal.tsx
+│       └── AdminPanel.tsx
 │
-├── features/                   # Lógica de negocio por dominio
-│   ├── auth/                   # Autenticación y sesión
-│   ├── documents/              # Gestión de documentos médicos
-│   ├── indentity/              # Identidad soberana del paciente
-│   ├── medical-orders/         # Órdenes médicas
-│   ├── patient/                # Módulo paciente
-│   ├── permissions/            # Permisos criptográficos
-│   └── audit/                  # Auditoría y trazabilidad
+├── components/               # Shared UI components
+├── features/                 # Domain feature modules
+├── hooks/                    # Custom React hooks
+│   ├── useOnChainRole.ts     # Read role from IdentityRegistry
+│   ├── useRegisterIdentity.ts # Auto-register on-chain identity
+│   ├── useSyncWallet.ts      # Sync embedded wallet to DB
+│   └── useSyncKeys.ts        # Generate & store ECDH keys
 │
-├── hooks/                      # Hooks personalizados
-│   ├── useCarouselAnimation.ts # Animación GSAP del carrusel 3D
-│   ├── useReducedMotion.ts     # Detección prefers-reduced-motion
-│   ├── useMediaQuery.ts        # Media queries reactivas
-│   ├── useDebounce.ts          # Debounce genérico
-│   └── useMounted.ts           # Estado de montaje del componente
+├── lib/
+│   ├── contracts.ts          # Contract addresses + chain config
+│   ├── abis/                 # Contract ABIs (JSON)
+│   └── supabase/             # Supabase client (admin + server)
 │
-├── services/                   # Infraestructura transversal
-│   ├── api/
-│   │   ├── client.ts           # Cliente HTTP base
-│   │   └── interceptors.ts     # Interceptores de request/response
-│   ├── blockchain/
-│   │   ├── provider.ts         # Proveedor RPC
-│   │   ├── signer.ts           # Firma de transacciones
-│   │   ├── contacts.ts         # Instancias de contratos
-│   │   └── events.ts           # Listener de eventos on-chain
-│   ├── encryption/
-│   │   ├── encrypt.ts          # Cifrado de documentos
-│   │   ├── decrypt.ts          # Descifrado de documentos
-│   │   └── key-management.ts   # Gestión de claves
-│   └── storage/
-│       └── upload.ts           # Subida de archivos
+├── services/
+│   ├── encryption/           # ECDH, AES-GCM, key wrapping, rewrap
+│   └── storage/              # IPFS upload, hybrid encrypted upload, download
 │
-├── state/                      # Estado global (Zustand)
-│   ├── auth.store.ts           # Estado de autenticación
-│   ├── permissions.store.ts    # Estado de permisos
-│   └── ui.store.ts             # Estado de UI
-│
-├── types/                      # Tipos globales
-│   ├── api.types.ts            # Tipos de API
-│   ├── blockchain.types.ts     # Tipos de blockchain
-│   └── domain.types.ts         # Tipos de dominio clínico
-│
-└── lib/                        # Utilidades
-    ├── constants.ts            # Constantes globales
-    ├── env.ts                  # Variables de entorno tipadas
-    └── utils.ts                # Funciones utilitarias
+├── state/                    # Zustand stores (auth, permissions, UI)
+└── types/                    # TypeScript types (domain, API, blockchain)
 ```
 
 ---
 
-## Sistema de Diseño
+## Environment Variables
 
-HealthProof utiliza un lenguaje visual basado en **neumorphism clínico**: estética moderna, minimalismo suave, alta legibilidad y sensación de confianza.
-
-### Paleta de Colores Oficial
-
-#### Background
-
-| Nombre | HEX | RGB | CSS Variable | Uso |
-|--------|-----|-----|-------------|-----|
-| **Soft Off-White** | `#F5F7FA` | `rgb(245, 247, 250)` | `--hp-bg` | Fondo principal. Lienzo clínico sin blanco puro agresivo |
-| **Light Gray** | `#E5E7EB` | `rgb(229, 231, 235)` | `--hp-layer` | Tarjetas, capas secundarias, contenedores |
-
-#### Primary
-
-| Nombre | HEX | RGB | CSS Variable | Uso |
-|--------|-----|-----|-------------|-----|
-| **Pastel Dark Blue** | `#93C5FD` | `rgb(147, 197, 253)` | `--hp-primary` | Botones principales, acciones críticas, estados activos. Color institucional |
-| **Pastel Cyan-Blue** | `#BFDBFE` | `rgb(191, 219, 254)` | `--hp-primary-soft` | Gradientes, hover states, highlights |
-
-#### Accent
-
-| Nombre | HEX | RGB | CSS Variable | Uso |
-|--------|-----|-----|-------------|-----|
-| **Soft Green** | `#A7F3D0` | `rgb(167, 243, 208)` | `--hp-success` | Estados positivos, verificaciones correctas, métricas saludables |
-| **Soft Gray** | `#9CA3AF` | `rgb(156, 163, 175)` | `--hp-muted` | Texto secundario, íconos, bordes, estados neutros |
-
-#### Soporte
-
-| Nombre | HEX | CSS Variable | Uso |
-|--------|-----|-------------|-----|
-| **Dark Text** | `#1F2937` | `--hp-text` | Texto principal |
-| **Border** | `#DBE1EA` | `--hp-border` | Bordes de tarjetas y superficies |
-
-### Estilo Visual: Neumorphism
-
-Toda la aplicación utiliza Neumorphism como lenguaje visual principal, definido como utilidades CSS en `globals.css`:
-
-| Clase | Propósito | Sombra |
-|-------|----------|--------|
-| `.neu-shell` | Contenedores principales | `20px 20px 60px #d1d9e6, -20px -20px 60px #ffffff` |
-| `.neu-surface` | Tarjetas y superficies elevadas | `10px 10px 20px #d1d9e6, -10px -10px 20px #ffffff` |
-| `.neu-inset` | Elementos hundidos / inputs | `inset 4px 4px 8px #d1d9e6, inset -4px -4px 8px #ffffff` |
-| `.neu-chip` | Chips y badges | `6px 6px 12px #d1d9e6, -6px -6px 12px #ffffff` |
-| `.neu-pressed` | Estado presionado | `inset 5px 5px 10px #d1d9e6, inset -5px -5px 10px #ffffff` |
-| `.neu-focus-ring` | Foco accesible | `outline-color: rgba(147, 197, 253, 0.95)` |
-
-**Radios de borde:**
-- `--hp-radius-lg`: `20px`
-- `--hp-radius-xl`: `28px`
-- `--hp-radius-2xl`: `40px`
-
-**Principios:**
-- Sombras suaves internas y externas
-- Bordes redondeados amplios
-- Elementos que "emergen" del fondo
-- Profundidad ligera y orgánica
-- Sin contornos duros
-- Menor fatiga visual
-
----
-
-## Landing Page
-
-La landing page es una experiencia narrativa compuesta por secciones modulares:
-
-1. **HeroCarouselSection** — Carrusel 3D interactivo con los tres actores (Paciente, Laboratorio, Centro Médico), animación orbital de assets con GSAP, domo de puntos decorativos y transición de estado pre/post verificación
-2. **BeforeAfterSection** — Comparativa visual del estado actual vs. HealthProof
-3. **StorytellingSection** — Capítulos narrativos a pantalla completa con imágenes de storyboard
-4. **TrustSignalsSection** — Indicadores cuantitativos de confianza
-5. **TestimonialsSection** — Testimonios por rol
-6. **FinalCtaSection** — Llamado a la acción final
-
-### Animaciones (GSAP)
-
-- **Orbital 3D**: Assets giran en una elipse tridimensional con profundidad en eje Z, velocidades diferenciadas por ícono y entrada inmediata sin delay
-- **Domo decorativo**: Grilla de puntos `#93C5FD` que se activa con fade-in al verificar
-- **Transiciones de texto**: Fade suave con `@keyframes fadeIn` al cambiar entre estados pre/post verificación
-- **Accesibilidad**: Detección de `prefers-reduced-motion` con posicionamiento estático como fallback
-
----
-
-## Roles Soportados
-
-| Rol | Descripción |
-|-----|------------|
-| **Paciente** | Soberanía sobre su historial. Delegación de acceso vía QR |
-| **Laboratorio** | Emisión de evidencia clínica verificable |
-| **Centro Médico** | Validación de resultados y gestión de órdenes |
-
----
-
-## Seguridad
-
-- Los documentos médicos **nunca** se almacenan en texto plano
-- Se genera hash criptográfico antes del registro on-chain
-- Los permisos son gestionados criptográficamente
-- El paciente mantiene soberanía total sobre el acceso a sus datos
-- Cifrado/descifrado en cliente (`services/encryption/`)
-
----
-
-## Filosofía
-
-HealthProof **no almacena datos médicos en blockchain**. La blockchain:
-
-- Certifica integridad
-- Registra permisos
-- Garantiza trazabilidad
-- Provee timestamp verificable
-
-El frontend es el puente entre el usuario clínico y la infraestructura criptográfica.
-
----
-
-## Scripts
-
-```bash
-npm run dev       # Servidor de desarrollo (Turbopack)
-npm run build     # Build de producción
-npm run start     # Servidor de producción
-npm run lint      # Linting con Biome
-npm run format    # Formateo con Biome
-```
-
-## Variables de Entorno
+Create a `.env` file in the project root:
 
 ```env
-NEXT_PUBLIC_RPC_URL=
-NEXT_PUBLIC_CHAIN_ID=
-NEXT_PUBLIC_CONTRACT_ADDRESS=
-NEXT_PUBLIC_BACKEND_URL=
+# Privy
+NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Blockchain (server-side only)
+DEPLOYER_PRIVATE_KEY=0x...
+
+# IPFS
+PINATA_JWT_SECRET=your_pinata_jwt
 ```
+
+> **Security:** `DEPLOYER_PRIVATE_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are server-side only and must never be exposed to the client.
 
 ---
 
-## Estado del Proyecto
+## Getting Started
 
-**MVP en desarrollo.**
+```bash
+# 1. Install dependencies
+npm install
 
-- [x] Landing page con storytelling y animaciones 3D
-- [x] Sistema de diseño neumorphism completo
-- [x] Componentes UI reutilizables
-- [x] Estructura modular por dominio
-- [x] Responsive design (mobile + desktop)
-- [ ] Integración wallet (Privy / Web3Auth)
-- [ ] Dashboard por rol
-- [ ] Registro de hashes on-chain
-- [ ] Gestión de permisos criptográficos
-- [ ] Subnet privada Avalanche
+# 2. Configure environment
+cp .env.example .env
+# Fill in the required values
+
+# 3. Run development server
+npm run dev
+
+# 4. Open in browser
+open http://localhost:3000
+```
+
+### First-Time Setup
+
+1. Register as a **Patient**, **Doctor**, or **Lab** on the auth page.
+2. The system automatically creates an embedded wallet (Privy), registers your identity on-chain, and generates your ECDH key pair.
+3. Your on-chain role determines which dashboard and actions are available.
+
+---
+
+## Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | Run Biome linter |
+| `npm run format` | Format code with Biome |
+
+---
+
+## Testnet Deployment
+
+**Network:** Avalanche Fuji C-Chain — `chainId 43113`
+
+| Contract | Address |
+|----------|---------|
+| IdentityRegistry | [`0x9f196FC83abcBB47391f9D4aF9998E7a5c458D71`](https://testnet.snowtrace.io/address/0x9f196FC83abcBB47391f9D4aF9998E7a5c458D71) |
+| GuardianRegistry | [`0xBFe33f7014E3619f39359E14dDcdF25D386D408C`](https://testnet.snowtrace.io/address/0xBFe33f7014E3619f39359E14dDcdF25D386D408C) |
+| PermissionManager | [`0x322890CE0C0971e879003dD3A77f686e90f2E61F`](https://testnet.snowtrace.io/address/0x322890CE0C0971e879003dD3A77f686e90f2E61F) |
+| ClinicalEpisodeRegistry | [`0xD33a12d276e5a588dc87e8ab7D57F56c6aaA954f`](https://testnet.snowtrace.io/address/0xD33a12d276e5a588dc87e8ab7D57F56c6aaA954f) |
+| MedicalOrderRegistry | [`0xAa1381cECAA42ae0313ed1E987fA66007bD3bA26`](https://testnet.snowtrace.io/address/0xAa1381cECAA42ae0313ed1E987fA66007bD3bA26) |
+| MedicalDocumentRegistry | [`0x7f1D7C04C2e4f3DaD7BB8c10c852B6d51Ad8c251`](https://testnet.snowtrace.io/address/0x7f1D7C04C2e4f3DaD7BB8c10c852B6d51Ad8c251) |
+| HealthcareNetworkRegistry | [`0xC409f54D8FbEA73772d454995882442736fA0D91`](https://testnet.snowtrace.io/address/0xC409f54D8FbEA73772d454995882442736fA0D91) |
+| AuditTrail | [`0xFA62c68B31532c72B29a76e17D1e44C4CCe2C709`](https://testnet.snowtrace.io/address/0xFA62c68B31532c72B29a76e17D1e44C4CCe2C709) |
+| HealthProofKernel | [`0xAEFcc18cB8C66c60d488658944B55F1C42a41C72`](https://testnet.snowtrace.io/address/0xAEFcc18cB8C66c60d488658944B55F1C42a41C72) |
+| HealthProofGateway | [`0xdA58547915d85F053A5f2A086135036cAF5B0a5D`](https://testnet.snowtrace.io/address/0xdA58547915d85F053A5f2A086135036cAF5B0a5D) |
+| HealthProofProtocol | [`0xde323389d5Be45a947E354b840b1015d642E2BF2`](https://testnet.snowtrace.io/address/0xde323389d5Be45a947E354b840b1015d642E2BF2) |
+
+---
+
+<p align="center">
+  <strong>HealthProof</strong> — Your data. Your keys. Your health.
+</p>
+
+---
+
+## TX testnet Contracts
+
+IdentityRegistry: [`0x9f196FC83abcBB47391f9D4aF9998E7a5c458D71`](https://snowtrace.io/address/0x9f196FC83abcBB47391f9D4aF9998E7a5c458D71)
+GuardianRegistry: [`0xBFe33f7014E3619f39359E14dDcdF25D386D408C`](https://snowtrace.io/address/0xBFe33f7014E3619f39359E14dDcdF25D386D408C)
+PermissionManager: [`0x322890CE0C0971e879003dD3A77f686e90f2E61F`](https://snowtrace.io/address/0x322890CE0C0971e879003dD3A77f686e90f2E61F)
+ClinicalEpisodeRegistry: [`0xD33a12d276e5a588dc87e8ab7D57F56c6aaA954f`](https://snowtrace.io/address/0xD33a12d276e5a588dc87e8ab7D57F56c6aaA954f)
+MedicalOrderRegistry: [`0xAa1381cECAA42ae0313ed1E987fA66007bD3bA26`](https://snowtrace.io/address/0xAa1381cECAA42ae0313ed1E987fA66007bD3bA26)
+MedicalDocumentRegistry: [`0x7f1D7C04C2e4f3DaD7BB8c10c852B6d51Ad8c251`](https://snowtrace.io/address/0x7f1D7C04C2e4f3DaD7BB8c10c852B6d51Ad8c251)
+HealthcareNetworkRegistry: [`0xC409f54D8FbEA73772d454995882442736fA0D91`](https://snowtrace.io/address/0xC409f54D8FbEA73772d454995882442736fA0D91)
+AuditTrail: [`0xFA62c68B31532c72B29a76e17D1e44C4CCe2C709`](https://snowtrace.io/address/0xFA62c68B31532c72B29a76e17D1e44C4CCe2C709)
+HealthProofKernel: [`0xAEFcc18cB8C66c60d488658944B55F1C42a41C72`](https://snowtrace.io/address/0xAEFcc18cB8C66c60d488658944B55F1C42a41C72)
+HealthProofGateway: [`0xdA58547915d85F053A5f2A086135036cAF5B0a5D`](https://snowtrace.io/address/0xdA58547915d85F053A5f2A086135036cAF5B0a5D)
+HealthProofProtocol: [`0xde323389d5Be45a947E354b840b1015d642E2BF2`](https://snowtrace.io/address/0xde323389d5Be45a947E354b840b1015d642E2BF2)
