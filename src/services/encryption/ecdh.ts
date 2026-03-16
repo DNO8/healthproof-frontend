@@ -8,10 +8,10 @@ const HKDF_INFO = new TextEncoder().encode("HealthProof-ECDH-v1");
 
 // ─── Key Pair Generation ────────────────────────────────
 
-export async function generateKeyPair(): Promise<CryptoKeyPair> {
+export async function generateKeyPair(extractable = false): Promise<CryptoKeyPair> {
   return crypto.subtle.generateKey(
     { name: "ECDH", namedCurve: ECDH_CURVE },
-    false, // private key NOT extractable
+    extractable, // private key extractability
     ["deriveKey", "deriveBits"],
   );
 }
@@ -31,6 +31,16 @@ export async function importPublicKey(jwkString: string): Promise<CryptoKey> {
     { name: "ECDH", namedCurve: ECDH_CURVE },
     true,
     [],
+  );
+}
+
+export async function importPrivateKey(jwk: JsonWebKey): Promise<CryptoKey> {
+  return crypto.subtle.importKey(
+    "jwk",
+    jwk,
+    { name: "ECDH", namedCurve: ECDH_CURVE },
+    false, // not extractable - stays in IndexedDB only
+    ["deriveKey", "deriveBits"],
   );
 }
 

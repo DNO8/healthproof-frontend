@@ -1,6 +1,6 @@
 "use client";
 
-import { PrivyProvider, usePrivy } from "@privy-io/react-auth";
+import { usePrivy, PrivyProvider } from "@privy-io/react-auth";
 import { WagmiProvider } from "@privy-io/wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
@@ -9,6 +9,8 @@ import { useUpsertUser } from "@/hooks/useUpsertUser";
 import { useSyncWallet } from "@/hooks/useSyncWallet";
 import { useSyncKeys } from "@/hooks/useSyncKeys";
 import { useRegisterIdentity } from "@/hooks/useRegisterIdentity";
+import { KeyConflictBanner } from "@/components/feedback/KeyConflictBanner";
+import { KeyRecoveryModal } from "@/components/auth/KeyRecoveryModal";
 import { wagmiConfig } from "@/lib/wagmi";
 
 const queryClient = new QueryClient();
@@ -22,10 +24,20 @@ function PrivyTokenSync({ children }: { children: React.ReactNode }) {
 
   useUpsertUser();
   useSyncWallet();
-  useSyncKeys();
+  const { showRecoveryModal, setShowRecoveryModal } = useSyncKeys();
   useRegisterIdentity();
 
-  return <>{children}</>;
+  return (
+    <>
+      <KeyConflictBanner />
+      <KeyRecoveryModal
+        isOpen={showRecoveryModal}
+        onClose={() => setShowRecoveryModal(false)}
+        onSuccess={() => setShowRecoveryModal(false)}
+      />
+      {children}
+    </>
+  );
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {

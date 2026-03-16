@@ -440,7 +440,44 @@
     "noLabKeyFound": "No se pudo determinar quién subió originalmente este resultado.",
     "noLabPublicKey": "No se encontró la clave de cifrado del laboratorio.",
     "noWrappedKey": "No se encontró tu clave de acceso cifrada para este documento.",
-    "noPatientKeys": "No se encontraron tus claves de cifrado. Por favor cierra sesión y vuelve a iniciar."
+    "noPatientKeys": "No se encontraron tus claves de cifrado. Por favor cierra sesión y vuelve a iniciar.",
+    "keyConflictMissing": "Las claves de cifrado no están en este navegador. Compartir está deshabilitado.",
+    "keyConflictMismatch": "Las claves de cifrado de este navegador no coinciden con tus documentos. Compartir está deshabilitado."
+  },
+  "keyConflict": {
+    "missingLocalKeys": "Claves de cifrado no encontradas",
+    "missingLocalKeysDesc": "Tus claves de cifrado no están disponibles en este navegador, pero tienes documentos cifrados existentes. Compartir y descifrar archivos está deshabilitado hasta que se resuelva.",
+    "keyMismatch": "Claves de cifrado no coinciden",
+    "keyMismatchDesc": "Las claves de cifrado en este navegador no coinciden con las usadas para cifrar tus documentos. Compartir y descifrar archivos está deshabilitado hasta que se resuelva.",
+    "actionRequired": "Acción requerida",
+    "useOriginalBrowser": "Inicia sesión desde el navegador original donde se crearon tus claves.",
+    "contactSupport": "Si ya no tienes acceso a ese navegador, contacta a soporte para resetear tus claves.",
+    "regenerateKeys": "Generar nuevas claves",
+    "regenerateWarning": "⚠️ Advertencia: Esto eliminará permanentemente el acceso a documentos cifrados anteriormente. Solo para usuarios de prueba.",
+    "confirmRegenerate": "¿Estás seguro? Esta acción no se puede deshacer.",
+    "dismiss": "Cerrar"
+  },
+  "keyRecovery": {
+    "title": "Restaurar Claves de Cifrado",
+    "description": "Tus claves de cifrado no se encuentran en este navegador. Ingresa tu contraseña de cuenta para restaurarlas desde el backup.",
+    "info": "Esto es necesario porque tienes documentos cifrados que requieren tus claves de cifrado originales.",
+    "passwordLabel": "Contraseña de Cuenta",
+    "passwordPlaceholder": "Ingresa tu contraseña...",
+    "recover": "Restaurar Claves",
+    "recovering": "Restaurando...",
+    "cancel": "Cancelar",
+    "passwordRequired": "Contraseña requerida",
+    "enterPassword": "Por favor ingresa tu contraseña de cuenta.",
+    "tooManyAttempts": "Demasiados intentos fallidos",
+    "contactSupport": "Por favor contacta a soporte para ayuda con la recuperación de claves.",
+    "noBackup": "No se encontró backup de claves",
+    "noBackupDesc": "Tu cuenta no tiene un backup de tus claves de cifrado. Esto puede ser porque tu cuenta fue creada antes de que los backups automáticos estuvieran habilitados.",
+    "wrongPassword": "Contraseña incorrecta",
+    "attemptsLeft": "{count, plural, =0 {Sin intentos restantes} one {1 intento restante} other {{count} intentos restantes}}",
+    "recoverySuccess": "Claves restauradas exitosamente",
+    "recoverySuccessDesc": "Tus claves de cifrado han sido restauradas. Ahora puedes acceder a tus documentos cifrados.",
+    "recoveryFailed": "Error al restaurar claves",
+    "recoveryFailedDesc": "Ocurrió un error al restaurar tus claves. Por favor intenta de nuevo o contacta a soporte."
   },
   "errors": {
     "notFound": {
@@ -511,6 +548,7 @@
     "patientRequired": "Paciente requerido",
     "patientRequiredDesc": "Selecciona un paciente para cifrar el resultado.",
     "noLabKeys": "Claves de cifrado no encontradas. Por favor cierra sesión y vuelve a iniciar para regenerarlas.",
-    "noPatientKey": "El paciente no tiene clave de cifrado. El paciente debe iniciar sesión al menos una vez para generar su par de claves."
+    "noPatientKey": "El paciente no tiene clave de cifrado. El paciente debe iniciar sesión al menos una vez para generar su par de claves.",
+    "keyConflict": "Las claves de cifrado no están disponibles o no coinciden. Subir archivos está deshabilitado. Inicia sesión desde tu navegador original o contacta a soporte."
   }
 }

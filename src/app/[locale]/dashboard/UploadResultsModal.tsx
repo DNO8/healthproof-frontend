@@ -11,6 +11,7 @@ import { saveDocumentSecret } from "@/actions/save-document-secret";
 import { getDbUser } from "@/actions/get-user";
 import { registerDocumentOnChain } from "@/actions/register-document-onchain";
 import { UserSelect } from "@/components/forms/UserSelect";
+import { useKeyConflictStore } from "@/state/key-conflict.store";
 
 type UploadResultsModalProps = {
   onClose: () => void;
@@ -53,6 +54,7 @@ export function UploadResultsModal({
   const [patientId, setPatientId] = useState("");
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<UploadedDoc | null>(null);
+  const keyConflict = useKeyConflictStore((s) => s.conflict);
   const [dragging, setDragging] = useState(false);
   const dragCounter = useRef(0);
 
@@ -254,10 +256,16 @@ export function UploadResultsModal({
 
             <p className="mt-3 text-[11px] text-slate-400">{t("clientMode")}</p>
 
+            {keyConflict && (
+              <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                ⚠️ {t("keyConflict")}
+              </p>
+            )}
+
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <button
                 className="flex-1 rounded-2xl border border-white/60 bg-(--hp-primary) px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-(--hp-shadow-raised) transition hover:bg-(--hp-primary-soft) disabled:opacity-50"
-                disabled={!file || uploading}
+                disabled={!file || uploading || !!keyConflict}
                 onClick={handleUpload}
                 type="button"
               >

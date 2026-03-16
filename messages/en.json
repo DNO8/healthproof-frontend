@@ -440,7 +440,44 @@
     "noLabKeyFound": "Could not determine the original uploader for this result.",
     "noLabPublicKey": "The lab's encryption key could not be found.",
     "noWrappedKey": "Your encrypted access key was not found for this document.",
-    "noPatientKeys": "Your encryption keys were not found. Please log out and log back in."
+    "noPatientKeys": "Your encryption keys were not found. Please log out and log back in.",
+    "keyConflictMissing": "Encryption keys are missing from this browser. Sharing is disabled.",
+    "keyConflictMismatch": "Encryption keys in this browser don't match your documents. Sharing is disabled."
+  },
+  "keyConflict": {
+    "missingLocalKeys": "Encryption keys missing",
+    "missingLocalKeysDesc": "Your encryption keys are not available in this browser, but you have existing encrypted documents. Sharing and decrypting files is disabled until this is resolved.",
+    "keyMismatch": "Encryption key mismatch",
+    "keyMismatchDesc": "The encryption keys in this browser don't match the ones used to encrypt your documents. Sharing and decrypting files is disabled until this is resolved.",
+    "actionRequired": "Action required",
+    "useOriginalBrowser": "Log in from the original browser where your keys were created.",
+    "contactSupport": "If you no longer have access to that browser, contact support to reset your keys.",
+    "regenerateKeys": "Generate new keys",
+    "regenerateWarning": "⚠️ Warning: This will permanently remove access to previously encrypted documents. For test users only.",
+    "confirmRegenerate": "Are you sure? This action cannot be undone.",
+    "dismiss": "Dismiss"
+  },
+  "keyRecovery": {
+    "title": "Restore Encryption Keys",
+    "description": "Your encryption keys are not found in this browser. Enter your account password to restore them from backup.",
+    "info": "This is needed because you have encrypted documents that require your original encryption keys.",
+    "passwordLabel": "Account Password",
+    "passwordPlaceholder": "Enter your password...",
+    "recover": "Restore Keys",
+    "recovering": "Restoring...",
+    "cancel": "Cancel",
+    "passwordRequired": "Password required",
+    "enterPassword": "Please enter your account password.",
+    "tooManyAttempts": "Too many failed attempts",
+    "contactSupport": "Please contact support for assistance with key recovery.",
+    "noBackup": "No key backup found",
+    "noBackupDesc": "Your account doesn't have a backup of your encryption keys. This may be because your account was created before automatic backups were enabled.",
+    "wrongPassword": "Incorrect password",
+    "attemptsLeft": "{count, plural, =0 {No attempts left} one {1 attempt left} other {{count} attempts left}}",
+    "recoverySuccess": "Keys restored successfully",
+    "recoverySuccessDesc": "Your encryption keys have been restored. You can now access your encrypted documents.",
+    "recoveryFailed": "Failed to restore keys",
+    "recoveryFailedDesc": "An error occurred while restoring your keys. Please try again or contact support."
   },
   "errors": {
     "notFound": {
@@ -511,6 +548,7 @@
     "patientRequired": "Patient required",
     "patientRequiredDesc": "Select a patient to encrypt the result for them.",
     "noLabKeys": "Encryption keys not found. Please log out and log back in to regenerate.",
-    "noPatientKey": "Patient has no encryption key. The patient must log in at least once to generate their key pair."
+    "noPatientKey": "Patient has no encryption key. The patient must log in at least once to generate their key pair.",
+    "keyConflict": "Encryption keys are missing or mismatched. Uploading is disabled. Log in from your original browser or contact support."
   }
 }

@@ -38,6 +38,11 @@ export function ToastProvider() {
             top: 72px !important;
           }
         }
+        @media (min-width: 1440px) {
+          [data-sileo-viewport] {
+            top: 0 !important;
+          }
+        }
         @media (max-width: 640px) {
           [data-sileo-viewport] {
             left: 50% !important;

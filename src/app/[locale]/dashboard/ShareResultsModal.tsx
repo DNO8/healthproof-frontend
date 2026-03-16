@@ -19,6 +19,7 @@ import { rewrapKeyForRecipient } from "@/services/encryption/rewrap";
 import { exportPublicKey } from "@/services/encryption/ecdh";
 import { getKeyPair } from "@/services/encryption/keystore";
 import { UserSelect } from "@/components/forms/UserSelect";
+import { useKeyConflictStore } from "@/state/key-conflict.store";
 
 const GRANTED_ROLES: {
   key: GrantedToRole;
@@ -49,6 +50,7 @@ export function ShareResultsModal({
   const [generating, setGenerating] = useState(false);
 
   const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
+  const keyConflict = useKeyConflictStore((s) => s.conflict);
 
   const fetchResults = useCallback(async () => {
     setLoadingResults(true);
@@ -340,10 +342,20 @@ export function ShareResultsModal({
               {embeddedWallet ? t("walletSigned") : t("noWallet")}
             </p>
 
+            {/* Key conflict warning */}
+            {keyConflict && (
+              <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                ⚠️{" "}
+                {keyConflict === "missing_local_keys"
+                  ? t("keyConflictMissing")
+                  : t("keyConflictMismatch")}
+              </p>
+            )}
+
             {/* Generate button */}
             <button
               className="mt-6 w-full rounded-2xl border border-white/60 bg-(--hp-primary) px-6 py-3 text-sm font-semibold text-slate-800 shadow-(--hp-shadow-raised) transition hover:bg-(--hp-primary-soft) active:translate-y-px disabled:opacity-60"
-              disabled={generating || !selectedResult}
+              disabled={generating || !selectedResult || !!keyConflict}
               onClick={handleGenerate}
               type="button"
             >
