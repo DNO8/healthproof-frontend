@@ -42,9 +42,8 @@ export function ShareResultsModal({
   const [grantedTo, setGrantedTo] = useState<GrantedToRole | null>(null);
   const [recipientId, setRecipientId] = useState("");
   const [results, setResults] = useState<DocumentSecretRow[]>([]);
-  const [selectedResult, setSelectedResult] = useState<DocumentSecretRow | null>(
-    null,
-  );
+  const [selectedResult, setSelectedResult] =
+    useState<DocumentSecretRow | null>(null);
   const [loadingResults, setLoadingResults] = useState(true);
   const [qrData, setQrData] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -101,62 +100,32 @@ export function ShareResultsModal({
     setGenerating(true);
 
     try {
-      console.log("[QR:1] patientId:", patientId);
-      console.log("[QR:1] recipientId:", trimmedRecipient);
-      console.log("[QR:1] selectedResult.document_id:", selectedResult.document_id);
-      console.log(
-        "[QR:1] encrypted_keys keys:",
-        Object.keys(selectedResult.encrypted_keys ?? {}),
-      );
-      console.log(
-        "[QR:1] encrypted_keys full:",
-        JSON.stringify(selectedResult.encrypted_keys),
-      );
-
       // 1. Get recipient's public key from DB
       const recipientPubKeyJwk = await getUserPublicKey(trimmedRecipient);
-      console.log(
-        "[QR:2] recipientPubKeyJwk:",
-        recipientPubKeyJwk ? `${recipientPubKeyJwk.slice(0, 40)}...` : "NULL",
-      );
       if (!recipientPubKeyJwk) {
         throw new Error(t("noRecipientKey"));
       }
 
-      // 2. Get the uploader's public key via uploader_wallet column
-      const uploaderWallet = selectedResult.uploader_wallet;
-      console.log("[QR:3] uploaderWallet:", uploaderWallet);
-
-      const uploaderPubKeyJwk = await getUserPublicKey(uploaderWallet);
-      console.log(
-        "[QR:3] uploaderPubKeyJwk:",
-        uploaderPubKeyJwk ? `${uploaderPubKeyJwk.slice(0, 40)}...` : "NULL",
-      );
-      if (!uploaderPubKeyJwk) {
+      // 2. Get the uploader's public key — prefer the stored key from upload time,
+      //    fall back to current DB key for legacy records without uploader_public_key
+      let senderPublicKeyJwk = selectedResult.uploader_public_key;
+      if (!senderPublicKeyJwk) {
+        senderPublicKeyJwk = await getUserPublicKey(
+          selectedResult.uploader_wallet,
+        );
+      }
+      if (!senderPublicKeyJwk) {
         throw new Error(t("noLabPublicKey"));
       }
-      const senderPublicKeyJwk = uploaderPubKeyJwk;
 
       // 3. Re-wrap the AES key for the recipient
-      // Look up key by patient_wallet or patientId (Privy DID)
       const myWrappedKey =
         selectedResult.encrypted_keys[selectedResult.patient_wallet] ??
         selectedResult.encrypted_keys[patientId];
-      console.log(
-        "[QR:4] myWrappedKey:",
-        myWrappedKey
-          ? { hasData: !!myWrappedKey.data, hasIv: !!myWrappedKey.iv }
-          : "MISSING",
-      );
-      console.log(
-        "[QR:4] senderPublicKeyJwk length:",
-        senderPublicKeyJwk.length,
-      );
-      console.log(
-        "[QR:4] recipientPubKeyJwk length:",
-        recipientPubKeyJwk.length,
-      );
-      console.log("[QR:4] Calling rewrapKeyForRecipient...");
+
+      if (!myWrappedKey) {
+        throw new Error(t("noWrappedKey"));
+      }
 
       const rewrapped = await rewrapKeyForRecipient({
         myUserId: patientId,
@@ -164,22 +133,13 @@ export function ShareResultsModal({
         senderPublicKeyJwk,
         recipientPublicKeyJwk: recipientPubKeyJwk,
       });
-      console.log("[QR:5] rewrapped OK:", {
-        hasData: !!rewrapped.data,
-        hasIv: !!rewrapped.iv,
-      });
 
       // 4. Get my public key to include in QR
       const myKeys = await getKeyPair(patientId);
-      console.log(
-        "[QR:6] myKeys from IndexedDB:",
-        myKeys ? "FOUND" : "MISSING",
-      );
       if (!myKeys) {
         throw new Error(t("noPatientKeys"));
       }
       const myPublicKeyJwk = await exportPublicKey(myKeys.publicKey);
-      console.log("[QR:7] myPublicKeyJwk length:", myPublicKeyJwk.length);
 
       // 5. Resolve wallet address
       let walletAddress = patientId;
@@ -201,24 +161,16 @@ export function ShareResultsModal({
         grantedToRole: grantedTo,
         documentId: selectedResult.document_id,
       });
-      console.log(
-        "[QR:8] payload built:",
-        JSON.stringify(payload).slice(0, 80),
-      );
 
       // 7. Sign with wallet
       const message = JSON.stringify(payload);
       let signature = "unsigned";
 
       if (provider) {
-        console.log("[QR:9] Signing with wallet...");
         signature = (await provider.request({
           method: "personal_sign",
           params: [message, walletAddress],
         })) as string;
-        console.log("[QR:9] Signed. wallet:", walletAddress);
-      } else {
-        console.log("[QR:9] No embedded wallet, skipping sign");
       }
 
       // 7.5 Grant permission on-chain
@@ -228,9 +180,10 @@ export function ShareResultsModal({
         documentId: selectedResult.document_id,
       });
       if ("error" in grantResult) {
-        console.warn("[ShareResultsModal] On-chain grant failed:", grantResult.error);
-      } else {
-        console.log("[QR:9.5] On-chain grant tx:", grantResult.txHash);
+        console.warn(
+          "[ShareResultsModal] On-chain grant failed:",
+          grantResult.error,
+        );
       }
 
       // 8. Build encrypted QR data
@@ -248,11 +201,6 @@ export function ShareResultsModal({
         },
       };
 
-      console.log(
-        "[QR:10] QR built successfully. Size:",
-        JSON.stringify(qr).length,
-        "bytes",
-      );
       setQrData(JSON.stringify(qr));
 
       sileo.success({

@@ -439,6 +439,7 @@
     "noRecipientKey": "El destinatario no tiene clave de cifrado. Debe iniciar sesión al menos una vez.",
     "noLabKeyFound": "No se pudo determinar quién subió originalmente este resultado.",
     "noLabPublicKey": "No se encontró la clave de cifrado del laboratorio.",
+    "noWrappedKey": "No se encontró tu clave de acceso cifrada para este documento.",
     "noPatientKeys": "No se encontraron tus claves de cifrado. Por favor cierra sesión y vuelve a iniciar."
   },
   "errors": {

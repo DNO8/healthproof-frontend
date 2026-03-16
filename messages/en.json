@@ -439,6 +439,7 @@
     "noRecipientKey": "Recipient has no encryption key. They must log in at least once.",
     "noLabKeyFound": "Could not determine the original uploader for this result.",
     "noLabPublicKey": "The lab's encryption key could not be found.",
+    "noWrappedKey": "Your encrypted access key was not found for this document.",
     "noPatientKeys": "Your encryption keys were not found. Please log out and log back in."
   },
   "errors": {

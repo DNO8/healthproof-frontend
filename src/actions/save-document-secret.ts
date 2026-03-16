@@ -8,6 +8,7 @@ export async function saveDocumentSecret(data: {
   patient_wallet: string;
   iv: string;
   encrypted_keys: Record<string, unknown>;
+  uploader_public_key: string;
 }) {
   const supabase = createAdminClient();
 
@@ -17,6 +18,7 @@ export async function saveDocumentSecret(data: {
     patient_wallet: data.patient_wallet.toLowerCase(),
     iv: data.iv,
     encrypted_keys: data.encrypted_keys,
+    uploader_public_key: data.uploader_public_key,
   });
 
   if (error) {

@@ -28,6 +28,15 @@ export function ToastProvider() {
         [data-sileo-viewport] {
           position: fixed !important;
           z-index: 200 !important;
+          pointer-events: none !important;
+        }
+        [data-sileo-viewport] > * {
+          pointer-events: auto !important;
+        }
+        @media (min-width: 641px) {
+          [data-sileo-viewport] {
+            top: 72px !important;
+          }
         }
         @media (max-width: 640px) {
           [data-sileo-viewport] {

@@ -128,6 +128,7 @@ export function UploadResultsModal({
         patient_wallet: patientWallet,
         iv: uploadResult.iv,
         encrypted_keys: uploadResult.encryptedKeys,
+        uploader_public_key: labPubKeyJwk,
       });
 
       // Register document on-chain
@@ -137,7 +138,10 @@ export function UploadResultsModal({
         patientWallet: patientWallet,
       });
       if ("error" in onChainResult) {
-        console.warn("[UploadResultsModal] On-chain registration failed:", onChainResult.error);
+        console.warn(
+          "[UploadResultsModal] On-chain registration failed:",
+          onChainResult.error,
+        );
       }
 
       const doc: UploadedDoc = {
