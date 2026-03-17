@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
+import { sileo } from "sileo";
 import {
   generateKeyPair,
   exportPublicKey,
@@ -20,10 +21,10 @@ import { hasEncryptedData } from "@/actions/check-user-encrypted-data";
 import { clearDbUserCache } from "@/hooks/useDbUser";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
 import { saveEncryptedPrivateKey } from "@/actions/save-encrypted-private-key";
+import { BACKUP_METHOD, createRecoveryPassword, getBackupMethod } from "@/services/encryption/backup-types";
 import {
   encryptPrivateKey,
   decryptPrivateKey,
-  createRecoveryPassword,
 } from "@/services/encryption/key-backup";
 
 const SYNCED_KEY = "hp_keys_synced";
@@ -186,15 +187,16 @@ export function useSyncKeys() {
             `${RECOVERY_ATTEMPTED_KEY}_${userId}`,
           );
 
-          if (!recoveryAttempted && userEmail) {
-            const autoPassword = createRecoveryPassword(userEmail, userId);
+          // Try wallet-based auto-recovery first (works for both OAuth and email users)
+          if (!recoveryAttempted && walletAddress) {
+            const walletPassword = createRecoveryPassword(walletAddress, userId);
             const privateKeyJwk = await decryptPrivateKey(
               userWithBackup.encrypted_private_key,
-              autoPassword,
+              walletPassword,
             );
 
             if (privateKeyJwk) {
-              console.log("[useSyncKeys] Case 2: Auto-recovery successful");
+              console.log("[useSyncKeys] Case 2: Wallet-based auto-recovery successful");
               const privateKey = await importPrivateKey(
                 JSON.parse(privateKeyJwk),
               );
@@ -211,12 +213,49 @@ export function useSyncKeys() {
               clearConflict();
               return;
             }
-            console.log("[useSyncKeys] Case 2: Auto-recovery failed (wrong password)");
+            console.log("[useSyncKeys] Case 2: Wallet-based recovery failed, trying email...");
           }
 
-          // Show manual recovery modal
-          console.log("[useSyncKeys] Case 2: Showing recovery modal");
-          setShowRecoveryModal(true);
+          // Try email-based auto-recovery as fallback
+          if (!recoveryAttempted && userEmail) {
+            const autoPassword = createRecoveryPassword(userEmail, userId);
+            const privateKeyJwk = await decryptPrivateKey(
+              userWithBackup.encrypted_private_key,
+              autoPassword,
+            );
+
+            if (privateKeyJwk) {
+              console.log("[useSyncKeys] Case 2: Email-based auto-recovery successful");
+              const privateKey = await importPrivateKey(
+                JSON.parse(privateKeyJwk),
+              );
+              const publicKey = await crypto.subtle.importKey(
+                "jwk",
+                JSON.parse(userWithBackup.public_key ?? "{}"),
+                { name: "ECDH", namedCurve: "P-256" },
+                false,
+                [],
+              );
+
+              await saveKeyPair(userId, { privateKey, publicKey });
+              sessionStorage.setItem(SYNCED_KEY, userId);
+              clearConflict();
+              return;
+            }
+            console.log("[useSyncKeys] Case 2: Email-based auto-recovery failed");
+          }
+
+          // Show manual recovery modal for email users, conflict for OAuth users
+          if (userEmail) {
+            console.log("[useSyncKeys] Case 2: Showing recovery modal for email user");
+            setShowRecoveryModal(true);
+          } else {
+            console.log("[useSyncKeys] Case 2: OAuth user - recovery failed, showing conflict");
+            sileo.error({
+              title: "Recovery Failed",
+              description: "Could not recover your encryption keys. Please use your original browser or contact support.",
+            });
+          }
           setConflict("missing_local_keys");
           return;
         }
@@ -250,11 +289,10 @@ export function useSyncKeys() {
           keyPair.privateKey,
         );
 
-        // Create automatic backup password
-        const backupPassword = createRecoveryPassword(
-          userEmail ?? walletAddress ?? userId,
-          userId,
-        );
+        // Create automatic backup password using wallet (works for all users including OAuth)
+        const backupPassword = walletAddress 
+          ? createRecoveryPassword(walletAddress, userId)
+          : createRecoveryPassword(userEmail ?? userId, userId);
         const encryptedPrivateKey = await encryptPrivateKey(
           JSON.stringify(privateKeyJwk),
           backupPassword,

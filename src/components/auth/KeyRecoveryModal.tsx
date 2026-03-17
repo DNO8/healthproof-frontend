@@ -65,7 +65,6 @@ export function KeyRecoveryModal({
     setLoading(true);
 
     try {
-      // Get user with encrypted private key
       const userWithBackup = await getUserWithBackup(userId!);
 
       if (!userWithBackup?.encrypted_private_key) {
