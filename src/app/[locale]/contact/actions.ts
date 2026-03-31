@@ -4,7 +4,7 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const CONTACT_TO_EMAIL = "delivered@resend.dev";
+const CONTACT_TO_EMAIL = "contacto@healthproof.cl";
 
 export async function sendContactEmail(formData: FormData) {
   const name = (formData.get("name") as string)?.trim();
@@ -17,7 +17,7 @@ export async function sendContactEmail(formData: FormData) {
   }
 
   const { error } = await resend.emails.send({
-    from: "HealthProof Contact <onboarding@resend.dev>",
+    from: "HealthProof Contact <contacto@healthproof.cl>",
     to: [CONTACT_TO_EMAIL],
     replyTo: email,
     subject: `[HealthProof Contact] ${subject}`,
