@@ -1,9 +1,8 @@
 "use server";
 
 import { createPublicClient, http } from "viem";
-import { avalancheFuji } from "viem/chains";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import IdentityRegistryAbi from "@/lib/abis/IdentityRegistry.json";
 import { ROLE_TO_CONTRACT, CONTRACT_TO_ROLE, type UserRole } from "@/types/domain.types";
 
@@ -19,7 +18,7 @@ function delay(ms: number) {
 
 function getPublicClient() {
   return createPublicClient({
-    chain: avalancheFuji,
+    chain: HEALTHPROOF_CHAIN,
     transport: http(),
   });
 }
@@ -133,3 +132,4 @@ export async function listUsersByOnChainRole(
 
   return results;
 }
+

@@ -1,8 +1,7 @@
 "use server";
 
 import { createPublicClient, http, keccak256, toHex } from "viem";
-import { avalancheFuji } from "viem/chains";
-import { CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import PermissionManagerAbi from "@/lib/abis/PermissionManager.json";
 
 const ZERO_BYTES32 =
@@ -22,7 +21,7 @@ export async function checkAccessOnChain(data: {
 }): Promise<boolean> {
   try {
     const publicClient = createPublicClient({
-      chain: avalancheFuji,
+      chain: HEALTHPROOF_CHAIN,
       transport: http(),
     });
 
@@ -57,3 +56,4 @@ export async function checkAccessOnChain(data: {
     return false;
   }
 }
+

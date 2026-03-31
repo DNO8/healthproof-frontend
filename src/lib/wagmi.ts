@@ -1,11 +1,11 @@
 import { createConfig } from "@privy-io/wagmi";
 import { http } from "wagmi";
-import { avalanche, avalancheFuji } from "viem/chains";
+import { HEALTHPROOF_CHAIN } from "./contracts";
+import { env } from "./env";
 
 export const wagmiConfig = createConfig({
-  chains: [avalanche, avalancheFuji],
+  chains: [HEALTHPROOF_CHAIN],
   transports: {
-    [avalanche.id]: http(),
-    [avalancheFuji.id]: http(),
+    [HEALTHPROOF_CHAIN.id]: http(env.RPC_URL),
   },
 });

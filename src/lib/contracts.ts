@@ -1,20 +1,54 @@
-import { avalancheFuji } from "viem/chains";
+import { defineChain } from "viem";
+import { env } from "./env";
 
-export const HEALTHPROOF_CHAIN = avalancheFuji;
+function asAddress(value: string, key: string): `0x${string}` {
+  if (!/^0x[a-fA-F0-9]{40}$/.test(value)) {
+    throw new Error(`Invalid contract address for ${key}: ${value}`);
+  }
+  return value as `0x${string}`;
+}
+
+export const HEALTHPROOF_CHAIN = defineChain({
+  id: env.CHAIN_ID,
+  name: "Hygieia",
+  nativeCurrency: {
+    name: "HVE",
+    symbol: "HVE",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: { http: [env.RPC_URL] },
+    public: { http: [env.RPC_URL] },
+  },
+});
 
 export const CONTRACT_ADDRESSES = {
-  IdentityRegistry: "0x9f196FC83abcBB47391f9D4aF9998E7a5c458D71",
-  GuardianRegistry: "0xBFe33f7014E3619f39359E14dDcdF25D386D408C",
-  PermissionManager: "0x322890CE0C0971e879003dD3A77f686e90f2E61F",
-  ClinicalEpisodeRegistry: "0xD33a12d276e5a588dc87e8ab7D57F56c6aaA954f",
-  MedicalOrderRegistry: "0xAa1381cECAA42ae0313ed1E987fA66007bD3bA26",
-  MedicalDocumentRegistry: "0x7f1D7C04C2e4f3DaD7BB8c10c852B6d51Ad8c251",
-  HealthcareNetworkRegistry: "0xC409f54D8FbEA73772d454995882442736fA0D91",
-  AuditTrail: "0xFA62c68B31532c72B29a76e17D1e44C4CCe2C709",
-  HealthProofKernel: "0xAEFcc18cB8C66c60d488658944B55F1C42a41C72",
-  HealthProofGateway: "0xdA58547915d85F053A5f2A086135036cAF5B0a5D",
-  HealthProofProtocol: "0xde323389d5Be45a947E354b840b1015d642E2BF2",
+  IdentityRegistry: asAddress(env.IDENTITY_REGISTRY_ADDRESS, "NEXT_PUBLIC_IDENTITY_REGISTRY_ADDRESS"),
+  GuardianRegistry: asAddress(env.GUARDIAN_REGISTRY_ADDRESS, "NEXT_PUBLIC_GUARDIAN_REGISTRY_ADDRESS"),
+  PermissionManager: asAddress(env.PERMISSION_MANAGER_ADDRESS, "NEXT_PUBLIC_PERMISSION_MANAGER_ADDRESS"),
+  ClinicalEpisodeRegistry: asAddress(
+    env.CLINICAL_EPISODE_REGISTRY_ADDRESS,
+    "NEXT_PUBLIC_CLINICAL_EPISODE_REGISTRY_ADDRESS",
+  ),
+  MedicalOrderRegistry: asAddress(
+    env.MEDICAL_ORDER_REGISTRY_ADDRESS,
+    "NEXT_PUBLIC_MEDICAL_ORDER_REGISTRY_ADDRESS",
+  ),
+  MedicalDocumentRegistry: asAddress(
+    env.MEDICAL_DOCUMENT_REGISTRY_ADDRESS,
+    "NEXT_PUBLIC_MEDICAL_DOCUMENT_REGISTRY_ADDRESS",
+  ),
+  HealthcareNetworkRegistry: asAddress(
+    env.HEALTHCARE_NETWORK_REGISTRY_ADDRESS,
+    "NEXT_PUBLIC_HEALTHCARE_NETWORK_REGISTRY_ADDRESS",
+  ),
+  AuditTrail: asAddress(env.AUDIT_TRAIL_ADDRESS, "NEXT_PUBLIC_AUDIT_TRAIL_ADDRESS"),
+  HealthProofKernel: asAddress(env.HEALTH_PROOF_KERNEL_ADDRESS, "NEXT_PUBLIC_HEALTH_PROOF_KERNEL_ADDRESS"),
+  HealthProofGateway: asAddress(env.HEALTH_PROOF_GATEWAY_ADDRESS, "NEXT_PUBLIC_HEALTH_PROOF_GATEWAY_ADDRESS"),
+  HealthProofProtocol: asAddress(env.HEALTH_PROOF_PROTOCOL_ADDRESS, "NEXT_PUBLIC_HEALTH_PROOF_PROTOCOL_ADDRESS"),
 } as const;
 
-export const DEPLOYER_ADDRESS =
-  "0xe81461cB96b1503977E6a88b6509A47615c5bD00" as const;
+export const DEPLOYER_ADDRESS = asAddress(
+  env.DEPLOYER_ADDRESS,
+  "NEXT_PUBLIC_DEPLOYER_ADDRESS",
+);

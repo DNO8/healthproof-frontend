@@ -10,8 +10,7 @@ import {
   fromHex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { avalancheFuji } from "viem/chains";
-import { CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import ClinicalEpisodeRegistryAbi from "@/lib/abis/ClinicalEpisodeRegistry.json";
 import { env } from "@/lib/env";
@@ -29,8 +28,8 @@ function getClients() {
     `0x${pk.replace(/^0x/, "")}` as `0x${string}`,
   );
   return {
-    publicClient: createPublicClient({ chain: avalancheFuji, transport: http() }),
-    walletClient: createWalletClient({ account, chain: avalancheFuji, transport: http() }),
+    publicClient: createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() }),
+    walletClient: createWalletClient({ account, chain: HEALTHPROOF_CHAIN, transport: http() }),
     account,
   };
 }
@@ -162,3 +161,4 @@ export async function getEpisodeOnChain(
     return null;
   }
 }
+

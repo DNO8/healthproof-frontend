@@ -2,9 +2,8 @@
 
 import { createWalletClient, createPublicClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { avalancheFuji } from "viem/chains";
 import { env } from "@/lib/env";
-import { CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import IdentityRegistryAbi from "@/lib/abis/IdentityRegistry.json";
 import GuardianRegistryAbi from "@/lib/abis/GuardianRegistry.json";
 import { ContractRole } from "@/types/domain.types";
@@ -19,12 +18,12 @@ function getClients() {
     `0x${pk.replace(/^0x/, "")}` as `0x${string}`,
   );
   const publicClient = createPublicClient({
-    chain: avalancheFuji,
+    chain: HEALTHPROOF_CHAIN,
     transport: http(),
   });
   const walletClient = createWalletClient({
     account,
-    chain: avalancheFuji,
+    chain: HEALTHPROOF_CHAIN,
     transport: http(),
   });
   return { publicClient, walletClient, account };
@@ -128,3 +127,4 @@ export async function registerDeployerAsGuardian(
     return { error: msg };
   }
 }
+

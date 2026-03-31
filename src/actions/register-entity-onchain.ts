@@ -2,9 +2,8 @@
 
 import { createWalletClient, createPublicClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { avalancheFuji } from "viem/chains";
 import { env } from "@/lib/env";
-import { CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import IdentityRegistryAbi from "@/lib/abis/IdentityRegistry.json";
 import type { ContractRole } from "@/types/domain.types";
 
@@ -23,13 +22,13 @@ function getClients() {
   const account = getDeployerAccount();
 
   const publicClient = createPublicClient({
-    chain: avalancheFuji,
+    chain: HEALTHPROOF_CHAIN,
     transport: http(),
   });
 
   const walletClient = createWalletClient({
     account,
-    chain: avalancheFuji,
+    chain: HEALTHPROOF_CHAIN,
     transport: http(),
   });
 
@@ -150,3 +149,4 @@ export async function getRoleOnChain(wallet: string): Promise<number | null> {
     return null;
   }
 }
+

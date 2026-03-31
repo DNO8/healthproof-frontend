@@ -9,8 +9,7 @@ import {
   stringToHex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { avalancheFuji } from "viem/chains";
-import { CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import MedicalDocumentRegistryAbi from "@/lib/abis/MedicalDocumentRegistry.json";
 import { env } from "@/lib/env";
 
@@ -35,13 +34,13 @@ export async function registerDocumentOnChain(data: {
     const account = privateKeyToAccount(`0x${pk.replace(/^0x/, "")}`);
 
     const publicClient = createPublicClient({
-      chain: avalancheFuji,
+      chain: HEALTHPROOF_CHAIN,
       transport: http(),
     });
 
     const walletClient = createWalletClient({
       account,
-      chain: avalancheFuji,
+      chain: HEALTHPROOF_CHAIN,
       transport: http(),
     });
 
@@ -80,3 +79,4 @@ export async function registerDocumentOnChain(data: {
     return { error: msg };
   }
 }
+
