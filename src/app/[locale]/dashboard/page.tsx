@@ -8,6 +8,7 @@ import type { UserRole } from "@/types/domain.types";
 import { ROLES } from "@/types/domain.types";
 import { useDbUser } from "@/hooks/useDbUser";
 import { useOnChainRole } from "@/hooks/useOnChainRole";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { DashboardActions } from "./DashboardActions";
 import { ProfileBanner } from "./ProfileBanner";
 import { WelcomeToast } from "./WelcomeToast";
@@ -58,6 +59,7 @@ export default function DashboardPage() {
     dbUser?.wallet_address || embeddedWallet?.address || null;
 
   const { role, loading: roleLoading } = useOnChainRole(walletAddress);
+  const { stats, loading: statsLoading } = useDashboardStats(walletAddress, role);
 
   useEffect(() => {
     if (ready && !authenticated) {
@@ -122,7 +124,13 @@ export default function DashboardPage() {
               <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                 {t(`metrics.${key}`)}
               </p>
-              <p className="mt-2 text-2xl font-bold text-slate-800">0</p>
+              <p className="mt-2 text-2xl font-bold text-slate-800">
+                {statsLoading ? (
+                  <span className="inline-block h-6 w-10 animate-pulse rounded-md bg-slate-200" />
+                ) : (
+                  stats[key] ?? 0
+                )}
+              </p>
             </div>
           ))}
         </div>
