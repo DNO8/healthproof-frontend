@@ -2,7 +2,7 @@
 
 > **Patient-centric, blockchain-verified, end-to-end encrypted medical records.**
 
-HealthProof is a decentralized protocol that gives patients full sovereignty over their clinical data. Medical documents are encrypted client-side, stored on IPFS, and registered on-chain via Avalanche smart contracts. Access is granted through cryptographic permissions — not through centralized databases that institutions control.
+HealthProof is a decentralized protocol that gives patients full sovereignty over their clinical data. Medical documents are encrypted client-side, stored on IPFS, and registered on-chain on **Hygieia**, a dedicated Avalanche L1 blockchain. Access is granted through cryptographic permissions — not through centralized databases that institutions control.
 
 ---
 
@@ -20,7 +20,7 @@ HealthProof is a decentralized protocol that gives patients full sovereignty ove
 - [Environment Variables](#environment-variables)
 - [Getting Started](#getting-started)
 - [Available Scripts](#available-scripts)
-- [Testnet Deployment](#testnet-deployment)
+- [Hygieia L1 Deployment](#hygieia-l1-deployment)
 
 ---
 
@@ -31,7 +31,7 @@ Traditional electronic health record (EHR) systems store medical data in siloed,
 HealthProof addresses these problems by:
 
 - **Storing clinical documents encrypted on IPFS** — no institution holds the plaintext.
-- **Recording provenance on Avalanche** — every document registration, permission grant, and clinical event is immutably logged on-chain.
+- **Recording provenance on Hygieia (Avalanche L1)** — every document registration, permission grant, and clinical event is immutably logged on a dedicated healthcare blockchain.
 - **Granting patients cryptographic control** — only the patient (or their authorized delegate) can decrypt and share their records via ECDH key exchange and QR-based permission flows.
 - **Enforcing role-based identity on-chain** — doctors, laboratories, and institutions are registered and verified in the `IdentityRegistry` smart contract before they can participate in clinical workflows.
 
@@ -99,7 +99,7 @@ The end-to-end clinical flow involves three actors: **Doctor**, **Laboratory**, 
 
 ## On-Chain Contracts
 
-All contracts are deployed on **Avalanche Fuji C-Chain** (chainId `43113`) and written in Solidity `^0.8.20`.
+All contracts are deployed on **Hygieia** (Avalanche L1, chainId `21668`) and written in Solidity `^0.8.20`. The L1 runs on a dedicated AWS-hosted node with native currency **HVE**.
 
 | Contract | Responsibility |
 |----------|----------------|
@@ -230,7 +230,7 @@ The frontend renders distinct dashboards based on the user's on-chain role, quer
 | **Language** | TypeScript 5 |
 | **Styling** | Tailwind CSS 4, Neumorphism design system |
 | **Auth** | Privy (email, wallet, social login + embedded wallets) |
-| **Blockchain** | Avalanche C-Chain (Fuji testnet), Solidity ^0.8.20 |
+| **Blockchain** | Hygieia (Avalanche L1, chainId 21668), Solidity ^0.8.20 |
 | **Client-Side Chain** | viem + wagmi |
 | **Encryption** | Web Crypto API (AES-256-GCM, ECDH P-256, HKDF) |
 | **File Storage** | IPFS via Pinata |
@@ -308,8 +308,24 @@ NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-# Blockchain (server-side only)
+# Blockchain — Hygieia L1
+NEXT_PUBLIC_RPC_URL=http://18.223.252.59:9650/ext/bc/.../rpc
+NEXT_PUBLIC_CHAIN_ID=21668
+NEXT_PUBLIC_DEPLOYER_ADDRESS=0x...
 DEPLOYER_PRIVATE_KEY=0x...
+
+# Contract addresses (all NEXT_PUBLIC_*)
+NEXT_PUBLIC_IDENTITY_REGISTRY_ADDRESS=0x...
+NEXT_PUBLIC_GUARDIAN_REGISTRY_ADDRESS=0x...
+NEXT_PUBLIC_PERMISSION_MANAGER_ADDRESS=0x...
+NEXT_PUBLIC_CLINICAL_EPISODE_REGISTRY_ADDRESS=0x...
+NEXT_PUBLIC_MEDICAL_ORDER_REGISTRY_ADDRESS=0x...
+NEXT_PUBLIC_MEDICAL_DOCUMENT_REGISTRY_ADDRESS=0x...
+NEXT_PUBLIC_HEALTHCARE_NETWORK_REGISTRY_ADDRESS=0x...
+NEXT_PUBLIC_AUDIT_TRAIL_ADDRESS=0x...
+NEXT_PUBLIC_HEALTH_PROOF_KERNEL_ADDRESS=0x...
+NEXT_PUBLIC_HEALTH_PROOF_GATEWAY_ADDRESS=0x...
+NEXT_PUBLIC_HEALTH_PROOF_PROTOCOL_ADDRESS=0x...
 
 # IPFS
 PINATA_JWT_SECRET=your_pinata_jwt
@@ -356,23 +372,26 @@ open http://localhost:3000
 
 ---
 
-## Testnet Deployment
+## Hygieia L1 Deployment
 
-**Network:** Avalanche Fuji C-Chain — `chainId 43113`
+**Network:** Hygieia (Avalanche L1) — `chainId 21668`
+**RPC:** `http://18.223.252.59:9650/ext/bc/kZYSkYiknAeZJbwtz4M6tN9YmbriGiLQwLKR4Pr7S2UEXQQuW/rpc`
+**Currency:** HVE (18 decimals)
+**Infrastructure:** AWS-hosted Avalanche node
 
 | Contract | Address |
 |----------|---------|
-| IdentityRegistry | [`0x9f196FC83abcBB47391f9D4aF9998E7a5c458D71`](https://testnet.snowtrace.io/address/0x9f196FC83abcBB47391f9D4aF9998E7a5c458D71) |
-| GuardianRegistry | [`0xBFe33f7014E3619f39359E14dDcdF25D386D408C`](https://testnet.snowtrace.io/address/0xBFe33f7014E3619f39359E14dDcdF25D386D408C) |
-| PermissionManager | [`0x322890CE0C0971e879003dD3A77f686e90f2E61F`](https://testnet.snowtrace.io/address/0x322890CE0C0971e879003dD3A77f686e90f2E61F) |
-| ClinicalEpisodeRegistry | [`0xD33a12d276e5a588dc87e8ab7D57F56c6aaA954f`](https://testnet.snowtrace.io/address/0xD33a12d276e5a588dc87e8ab7D57F56c6aaA954f) |
-| MedicalOrderRegistry | [`0xAa1381cECAA42ae0313ed1E987fA66007bD3bA26`](https://testnet.snowtrace.io/address/0xAa1381cECAA42ae0313ed1E987fA66007bD3bA26) |
-| MedicalDocumentRegistry | [`0x7f1D7C04C2e4f3DaD7BB8c10c852B6d51Ad8c251`](https://testnet.snowtrace.io/address/0x7f1D7C04C2e4f3DaD7BB8c10c852B6d51Ad8c251) |
-| HealthcareNetworkRegistry | [`0xC409f54D8FbEA73772d454995882442736fA0D91`](https://testnet.snowtrace.io/address/0xC409f54D8FbEA73772d454995882442736fA0D91) |
-| AuditTrail | [`0xFA62c68B31532c72B29a76e17D1e44C4CCe2C709`](https://testnet.snowtrace.io/address/0xFA62c68B31532c72B29a76e17D1e44C4CCe2C709) |
-| HealthProofKernel | [`0xAEFcc18cB8C66c60d488658944B55F1C42a41C72`](https://testnet.snowtrace.io/address/0xAEFcc18cB8C66c60d488658944B55F1C42a41C72) |
-| HealthProofGateway | [`0xdA58547915d85F053A5f2A086135036cAF5B0a5D`](https://testnet.snowtrace.io/address/0xdA58547915d85F053A5f2A086135036cAF5B0a5D) |
-| HealthProofProtocol | [`0xde323389d5Be45a947E354b840b1015d642E2BF2`](https://testnet.snowtrace.io/address/0xde323389d5Be45a947E354b840b1015d642E2BF2) |
+| IdentityRegistry | `0xA0cB58636cFc93Ba57b687DD7A6b60B6ccd5932A` |
+| GuardianRegistry | `0x76FBf209C3A5B15365949D1362f56fCf9D0700Ca` |
+| PermissionManager | `0x1B1aa96212feb8718d6983D03633C15eaF92B1CF` |
+| ClinicalEpisodeRegistry | `0x3807004AFa19A77EBbcD1e25dAA443F9b55A565d` |
+| MedicalOrderRegistry | `0x3D02577e25EED5B66379820de3A0884862b32a1d` |
+| MedicalDocumentRegistry | `0xFf47C63A4Cc9066029f1B1022eB240b9481F2d8c` |
+| HealthcareNetworkRegistry | `0xBceB9cB593B6C63Afaa1a00aF594EA1A89d59943` |
+| AuditTrail | `0xE54CFdACB9Cfb7A2838EAACcC1d0758a88379DC8` |
+| HealthProofKernel | `0x00e3A9Fc92DD780906061112d83d8e7791fDbEDb` |
+| HealthProofGateway | `0x263C15A7c1600472E2D12b1308d5845e2700fcaD` |
+| HealthProofProtocol | `0x691b49CaE50E47CD07B8A4aA43594Fb16488ac25` |
 
 ---
 
@@ -382,16 +401,16 @@ open http://localhost:3000
 
 ---
 
-## TX testnet Contracts
+## Hygieia L1 Contracts
 
-IdentityRegistry: [`0x9f196FC83abcBB47391f9D4aF9998E7a5c458D71`](https://snowtrace.io/address/0x9f196FC83abcBB47391f9D4aF9998E7a5c458D71)
-GuardianRegistry: [`0xBFe33f7014E3619f39359E14dDcdF25D386D408C`](https://snowtrace.io/address/0xBFe33f7014E3619f39359E14dDcdF25D386D408C)
-PermissionManager: [`0x322890CE0C0971e879003dD3A77f686e90f2E61F`](https://snowtrace.io/address/0x322890CE0C0971e879003dD3A77f686e90f2E61F)
-ClinicalEpisodeRegistry: [`0xD33a12d276e5a588dc87e8ab7D57F56c6aaA954f`](https://snowtrace.io/address/0xD33a12d276e5a588dc87e8ab7D57F56c6aaA954f)
-MedicalOrderRegistry: [`0xAa1381cECAA42ae0313ed1E987fA66007bD3bA26`](https://snowtrace.io/address/0xAa1381cECAA42ae0313ed1E987fA66007bD3bA26)
-MedicalDocumentRegistry: [`0x7f1D7C04C2e4f3DaD7BB8c10c852B6d51Ad8c251`](https://snowtrace.io/address/0x7f1D7C04C2e4f3DaD7BB8c10c852B6d51Ad8c251)
-HealthcareNetworkRegistry: [`0xC409f54D8FbEA73772d454995882442736fA0D91`](https://snowtrace.io/address/0xC409f54D8FbEA73772d454995882442736fA0D91)
-AuditTrail: [`0xFA62c68B31532c72B29a76e17D1e44C4CCe2C709`](https://snowtrace.io/address/0xFA62c68B31532c72B29a76e17D1e44C4CCe2C709)
-HealthProofKernel: [`0xAEFcc18cB8C66c60d488658944B55F1C42a41C72`](https://snowtrace.io/address/0xAEFcc18cB8C66c60d488658944B55F1C42a41C72)
-HealthProofGateway: [`0xdA58547915d85F053A5f2A086135036cAF5B0a5D`](https://snowtrace.io/address/0xdA58547915d85F053A5f2A086135036cAF5B0a5D)
-HealthProofProtocol: [`0xde323389d5Be45a947E354b840b1015d642E2BF2`](https://snowtrace.io/address/0xde323389d5Be45a947E354b840b1015d642E2BF2)
+IdentityRegistry: `0xA0cB58636cFc93Ba57b687DD7A6b60B6ccd5932A`
+GuardianRegistry: `0x76FBf209C3A5B15365949D1362f56fCf9D0700Ca`
+PermissionManager: `0x1B1aa96212feb8718d6983D03633C15eaF92B1CF`
+ClinicalEpisodeRegistry: `0x3807004AFa19A77EBbcD1e25dAA443F9b55A565d`
+MedicalOrderRegistry: `0x3D02577e25EED5B66379820de3A0884862b32a1d`
+MedicalDocumentRegistry: `0xFf47C63A4Cc9066029f1B1022eB240b9481F2d8c`
+HealthcareNetworkRegistry: `0xBceB9cB593B6C63Afaa1a00aF594EA1A89d59943`
+AuditTrail: `0xE54CFdACB9Cfb7A2838EAACcC1d0758a88379DC8`
+HealthProofKernel: `0x00e3A9Fc92DD780906061112d83d8e7791fDbEDb`
+HealthProofGateway: `0x263C15A7c1600472E2D12b1308d5845e2700fcaD`
+HealthProofProtocol: `0x691b49CaE50E47CD07B8A4aA43594Fb16488ac25`
