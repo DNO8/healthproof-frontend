@@ -83,7 +83,47 @@ export function useSyncKeys() {
             calledRef.current = false;
             return;
           }
-          let localPk = await exportPublicKey(kp.publicKey);
+
+          // Try to export public key — old non-extractable keys will fail here
+          let localPk: string;
+          try {
+            localPk = await exportPublicKey(kp.publicKey);
+          } catch {
+            console.log("[useSyncKeys] Case 1: Public key not extractable (legacy keys), regenerating...");
+            await deleteKeyPair(userId);
+
+            const newKp = await generateKeyPair(true);
+            await saveKeyPair(userId, newKp);
+            localPk = await exportPublicKey(newKp.publicKey);
+
+            const newPrivJwk = await crypto.subtle.exportKey("jwk", newKp.privateKey);
+            const bkpPassword = createRecoveryPassword(
+              userEmail ?? walletAddress ?? userId,
+              userId,
+            );
+            const encPk = await encryptPrivateKey(
+              JSON.stringify(newPrivJwk),
+              bkpPassword,
+            );
+
+            const [pubRes, privRes] = await Promise.all([
+              updatePublicKey({ id: userId, public_key: localPk }),
+              saveEncryptedPrivateKey({
+                id: userId,
+                encrypted_private_key: encPk,
+              }),
+            ]);
+
+            if (pubRes.success && !privRes.error) {
+              sessionStorage.setItem(SYNCED_KEY, userId);
+              clearDbUserCache();
+              console.log("[useSyncKeys] Case 1: Legacy keys replaced successfully");
+            } else {
+              calledRef.current = false;
+              console.log("[useSyncKeys] Case 1: DB update failed after regeneration");
+            }
+            return;
+          }
 
           if (dbPk === localPk) {
             console.log("[useSyncKeys] Case 1: Keys match - all good");
