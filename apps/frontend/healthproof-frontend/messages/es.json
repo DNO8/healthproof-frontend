@@ -265,6 +265,8 @@
     "patientDesc": "Accede y comparte tus registros médicos de forma segura",
     "laboratory": "Laboratorio",
     "laboratoryDesc": "Sube y gestiona resultados de exámenes",
+    "doctor": "Doctor",
+    "doctorDesc": "Emite órdenes y verifica documentos clínicos",
     "medicalCenter": "Centro Médico",
     "medicalCenterDesc": "Emite órdenes y verifica documentos clínicos"
   },
@@ -287,6 +289,7 @@
     "descriptions": {
       "patient": "Gestiona tus documentos médicos, otorga o revoca permisos de acceso y verifica la integridad de tus registros clínicos.",
       "laboratory": "Realiza exámenes vinculados a órdenes médicas, sube resultados verificables y gestiona el flujo de trabajo de tu laboratorio.",
+      "doctor": "Emite órdenes médicas, verifica resultados de laboratorio y gestiona los flujos clínicos de tus pacientes.",
       "medicalCenter": "Emite órdenes médicas, verifica resultados de laboratorio y gestiona los flujos clínicos de tu institución."
     },
     "actions": {

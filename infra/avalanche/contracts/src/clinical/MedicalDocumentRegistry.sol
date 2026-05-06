@@ -2,13 +2,35 @@
 pragma solidity ^0.8.20;
 
 import "../identity/IdentityRegistry.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "../metatx/ERC2771ContextUpgradeable.sol";
 
-contract MedicalDocumentRegistry {
+contract MedicalDocumentRegistry is 
+    Initializable,
+    OwnableUpgradeable,
+    UUPSUpgradeable,
+    ERC2771ContextUpgradeable
+{
 
     IdentityRegistry public identityRegistry;
 
-    constructor(address identityAddress) {
+    function initialize(address identityAddress, address forwarder) public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+        __ERC2771Context_init(forwarder);
         identityRegistry = IdentityRegistry(identityAddress);
+    }
+
+    /// @dev Override _msgSender() to support ERC2771 meta-transactions
+    function _msgSender() internal view override returns (address) {
+        return _erc2771MsgSender();
+    }
+
+    /// @dev Override _msgData() to support ERC2771 meta-transactions
+    function _msgData() internal view override returns (bytes calldata) {
+        return _erc2771MsgData();
     }
 
     struct MedicalDocument {
@@ -45,13 +67,13 @@ contract MedicalDocumentRegistry {
     ) external {
 
         require(
-            identityRegistry.isVerified(msg.sender),
+            identityRegistry.isVerified(_msgSender()),
             "Emitter not verified"
         );
 
         documents[documentId] = MedicalDocument({
             patient: patient,
-            issuer: msg.sender,
+            issuer: _msgSender(),
             institution: institution,
             documentType: documentType,
             clinicalHash: clinicalHash,
@@ -65,7 +87,13 @@ contract MedicalDocumentRegistry {
         emit DocumentRegistered(
             documentId,
             patient,
-            msg.sender
+            _msgSender()
         );
     }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
+        // Solo el owner puede autorizar upgrades
+    }
+
+    uint256[50] private __gap;
 }

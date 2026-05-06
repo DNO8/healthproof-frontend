@@ -34,7 +34,7 @@ export default function AuthPage() {
 
   const roleLabels: Partial<Record<UserRole, { label: string; desc: string }>> = {
     patient: { label: tRoles("patient"), desc: tRoles("patientDesc") },
-    doctor: { label: tRoles("medicalCenter"), desc: tRoles("medicalCenterDesc") },
+    doctor: { label: tRoles("doctor"), desc: tRoles("doctorDesc") },
     lab: { label: tRoles("laboratory"), desc: tRoles("laboratoryDesc") },
   };
 
@@ -60,6 +60,7 @@ export default function AuthPage() {
     try {
       if (selectedRole) {
         localStorage.setItem("hp_selected_role", selectedRole);
+        localStorage.setItem("hp_intended_role", selectedRole);
       }
       await sendCode({ email: trimmed });
       setStep("otp");
@@ -244,6 +245,7 @@ export default function AuthPage() {
                 onClick={() => {
                   if (mode === "signup" && selectedRole) {
                     localStorage.setItem("hp_selected_role", selectedRole);
+                    localStorage.setItem("hp_intended_role", selectedRole);
                   } else {
                     localStorage.removeItem("hp_selected_role");
                   }

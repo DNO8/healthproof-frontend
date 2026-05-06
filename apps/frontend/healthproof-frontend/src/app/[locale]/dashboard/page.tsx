@@ -1,6 +1,6 @@
 "use client";
 
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -8,6 +8,7 @@ import type { UserRole } from "@/types/domain.types";
 import { ROLES } from "@/types/domain.types";
 import { useDbUser } from "@/hooks/useDbUser";
 import { useOnChainRole } from "@/hooks/useOnChainRole";
+import { useWalletAddress } from "@/hooks/useWalletAddress";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { DashboardActions } from "./DashboardActions";
 import { ProfileBanner } from "./ProfileBanner";
@@ -31,19 +32,19 @@ const ROLE_METRIC_KEYS: Partial<Record<UserRole, MetricKey[]>> = {
 };
 
 const ROLE_DESC_KEYS: Partial<
-  Record<UserRole, "patient" | "laboratory" | "medicalCenter">
+  Record<UserRole, "patient" | "laboratory" | "doctor">
 > = {
   patient: "patient",
   lab: "laboratory",
-  doctor: "medicalCenter",
+  doctor: "doctor",
 };
 
 const ROLE_LABEL_KEYS: Partial<
-  Record<UserRole, "patient" | "laboratory" | "medicalCenter">
+  Record<UserRole, "patient" | "laboratory" | "doctor">
 > = {
   patient: "patient",
   lab: "laboratory",
-  doctor: "medicalCenter",
+  doctor: "doctor",
 };
 
 export default function DashboardPage() {
@@ -51,12 +52,8 @@ export default function DashboardPage() {
   const tRoles = useTranslations("roles");
   const router = useRouter();
   const { ready, authenticated, user } = usePrivy();
-  const { wallets } = useWallets();
   const { dbUser, loading: dbLoading } = useDbUser();
-
-  const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
-  const walletAddress =
-    dbUser?.wallet_address || embeddedWallet?.address || null;
+  const walletAddress = useWalletAddress();
 
   const { role, loading: roleLoading } = useOnChainRole(walletAddress);
   const { stats, loading: statsLoading } = useDashboardStats(walletAddress, role);

@@ -52,10 +52,10 @@ export function useDbUser() {
     if (!userId) return;
     setLoading(true);
     try {
-      const data = await getDbUser(userId);
-      if (data) {
-        setDbUser(data as DbUser);
-        setCache(data as DbUser);
+      const result = await getDbUser({ idOrWallet: userId });
+      if (result.success && result.data) {
+        setDbUser(result.data as unknown as DbUser);
+        setCache(result.data as unknown as DbUser);
       }
     } catch (err) {
       console.error("getDbUser failed:", err);

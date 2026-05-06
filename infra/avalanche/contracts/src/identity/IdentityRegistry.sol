@@ -1,16 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-contract IdentityRegistry {
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-    address public admin;
+contract IdentityRegistry is 
+    Initializable,
+    OwnableUpgradeable,
+    UUPSUpgradeable
+{
 
-    constructor() {
-        admin = msg.sender;
+    function initialize() public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
     }
 
     modifier onlyAdmin() {
-        require(msg.sender == admin, "Not admin");
+        require(owner() == msg.sender, "Not admin");
         _;
     }
 
@@ -35,6 +42,7 @@ contract IdentityRegistry {
 
     event EntityRegistered(address wallet, Role role);
     event EntityVerified(address wallet);
+    event AdminTransferred(address previousAdmin, address newAdmin);
 
     function registerEntity(
         address wallet,
@@ -77,4 +85,20 @@ contract IdentityRegistry {
     {
         return entities[wallet].role;
     }
+
+    function transferAdmin(address newAdmin)
+        external
+        onlyAdmin
+    {
+        require(newAdmin != address(0), "Invalid admin address");
+        address previousAdmin = owner();
+        transferOwnership(newAdmin);
+        emit AdminTransferred(previousAdmin, newAdmin);
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
+        // Solo el owner puede autorizar upgrades
+    }
+
+    uint256[50] private __gap;
 }

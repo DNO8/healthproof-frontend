@@ -58,16 +58,16 @@ export function ManageEpisodeModal({
         episodeType,
       });
 
-      if ("error" in res) {
+      if (!res.success) {
         sileo.error({
           title: "Episode creation failed",
-          description: res.error.slice(0, 120),
+          description: (res.error ?? "").slice(0, 120),
           duration: 5000,
         });
         return;
       }
 
-      setResult({ episodeId: res.episodeId, txHash: res.txHash });
+      setResult({ episodeId: res.data.episodeId, txHash: res.data.txHash });
       sileo.success({
         title: "Episode opened",
         description: `Episode registered on-chain.`,
@@ -86,9 +86,10 @@ export function ManageEpisodeModal({
     setLookupLoading(true);
     setEpisode(null);
     try {
-      const ep = await getEpisodeOnChain(lookupId.trim());
+      const epRes = await getEpisodeOnChain({ episodeId: lookupId.trim() });
+      const ep = epRes.success ? epRes.data : null;
       setEpisode(ep);
-      if (!ep) {
+      if (!epRes.success || !ep) {
         sileo.error({
           title: "Not found",
           description: "Episode not found on-chain",
@@ -105,17 +106,18 @@ export function ManageEpisodeModal({
     setLookupLoading(true);
     try {
       const res = await closeEpisodeOnChain({ episodeId });
-      if ("error" in res) {
+      if (!res.success) {
         sileo.error({
           title: "Close failed",
-          description: res.error.slice(0, 120),
+          description: (res.error ?? "").slice(0, 120),
         });
       } else {
         sileo.success({
           title: "Episode closed",
-          description: `TX: ${res.txHash.slice(0, 16)}…`,
+          description: `TX: ${res.data.txHash.slice(0, 16)}…`,
         });
-        const updated = await getEpisodeOnChain(episodeId);
+        const updatedRes = await getEpisodeOnChain({ episodeId });
+        const updated = updatedRes.success ? updatedRes.data : null;
         setEpisode(updated);
       }
     } finally {

@@ -60,12 +60,12 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   async function handlePause() {
     setProtocolLoading(true);
     try {
-      const res = await pauseProtocol();
-      if ("error" in res) {
-        sileo.error({ title: "Pause failed", description: res.error.slice(0, 120) });
+      const res = await pauseProtocol({});
+      if (!res.success) {
+        sileo.error({ title: "Pause failed", description: (res.error ?? "").slice(0, 120) });
       } else {
         setPaused(true);
-        sileo.success({ title: "Protocol paused", description: `TX: ${res.txHash.slice(0, 16)}…` });
+        sileo.success({ title: "Protocol paused", description: `TX: ${res.data.txHash.slice(0, 16)}…` });
       }
     } finally {
       setProtocolLoading(false);
@@ -75,12 +75,12 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   async function handleResume() {
     setProtocolLoading(true);
     try {
-      const res = await resumeProtocol();
-      if ("error" in res) {
-        sileo.error({ title: "Resume failed", description: res.error.slice(0, 120) });
+      const res = await resumeProtocol({});
+      if (!res.success) {
+        sileo.error({ title: "Resume failed", description: (res.error ?? "").slice(0, 120) });
       } else {
         setPaused(false);
-        sileo.success({ title: "Protocol resumed", description: `TX: ${res.txHash.slice(0, 16)}…` });
+        sileo.success({ title: "Protocol resumed", description: `TX: ${res.data.txHash.slice(0, 16)}…` });
       }
     } finally {
       setProtocolLoading(false);

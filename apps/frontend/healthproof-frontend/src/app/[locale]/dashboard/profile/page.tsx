@@ -1,6 +1,6 @@
 "use client";
 
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -8,14 +8,15 @@ import type { UserRole } from "@/types/domain.types";
 import { ROLES } from "@/types/domain.types";
 import { useDbUser } from "@/hooks/useDbUser";
 import { useOnChainRole } from "@/hooks/useOnChainRole";
+import { useWalletAddress } from "@/hooks/useWalletAddress";
 import { ProfileForm } from "./ProfileForm";
 
 const ROLE_LABEL_KEYS: Partial<
-  Record<UserRole, "patient" | "laboratory" | "medicalCenter">
+  Record<UserRole, "patient" | "laboratory" | "doctor">
 > = {
   patient: "patient",
   lab: "laboratory",
-  doctor: "medicalCenter",
+  doctor: "doctor",
 };
 
 export default function ProfilePage() {
@@ -24,37 +25,8 @@ export default function ProfilePage() {
   const tDash = useTranslations("dashboard");
   const router = useRouter();
   const { ready, authenticated, user } = usePrivy();
-  const { wallets } = useWallets();
   const { dbUser } = useDbUser();
-
-  const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
-
-  // Fallback: extract from user.linkedAccounts (available before useWallets resolves)
-  const linkedWalletAddress = (() => {
-    const accounts = user?.linkedAccounts;
-    if (!accounts) return null;
-    for (const a of accounts) {
-      const raw = a as unknown as {
-        type: string;
-        walletClientType?: string;
-        address?: string;
-      };
-      if (
-        raw.type === "wallet" &&
-        raw.walletClientType === "privy" &&
-        raw.address
-      ) {
-        return raw.address;
-      }
-    }
-    return null;
-  })();
-
-  const walletAddress =
-    dbUser?.wallet_address ||
-    embeddedWallet?.address ||
-    linkedWalletAddress ||
-    "";
+  const walletAddress = useWalletAddress() ?? "";
 
   const { role: onChainRole } = useOnChainRole(walletAddress || null);
 

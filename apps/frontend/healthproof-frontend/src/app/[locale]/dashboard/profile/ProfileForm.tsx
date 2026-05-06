@@ -35,7 +35,7 @@ export function ProfileForm({
     try {
       const result = await updateProfile({ id: userId, full_name: fullName });
 
-      if (result.error) {
+      if (!result.success) {
         sileo.error({
           title: t("errorTitle"),
           description: result.error,

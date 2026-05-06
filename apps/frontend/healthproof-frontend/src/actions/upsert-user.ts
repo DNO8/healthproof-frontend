@@ -1,16 +1,25 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAuth } from "@/lib/auth/with-auth";
+import type { AuthContext } from "@/lib/auth/with-auth";
 
-export async function upsertUser(data: {
+interface UpsertUserData {
   id: string;
   email: string;
   wallet_address: string | null;
   full_name: string | null;
-}): Promise<
-  | { success: true }
-  | { success?: undefined; error: string; code?: string }
-> {
+}
+
+async function upsertUserHandler(
+  data: UpsertUserData,
+  auth: AuthContext
+): Promise<{ success: true } | { error: string; code?: number }> {
+  // Verify caller can only update their own record
+  if (data.id !== auth.userId) {
+    return { error: "Unauthorized", code: 403 };
+  }
+
   const supabase = createAdminClient();
 
   // 1. Check if this Privy ID already has a row
@@ -53,8 +62,8 @@ export async function upsertUser(data: {
 
     if (existingByEmail) {
       return {
-        error: "ACCOUNT_EXISTS",
-        code: "ACCOUNT_EXISTS",
+        error: "An account with this email is already registered. Please sign in instead.",
+        code: 409,
       };
     }
   }
@@ -74,3 +83,7 @@ export async function upsertUser(data: {
 
   return { success: true };
 }
+
+export const upsertUser = withAuth(upsertUserHandler, {
+  rateLimit: { windowMs: 60000, maxRequests: 10 },
+});

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useWallets } from "@privy-io/react-auth";
 import { listDocumentSecretsForWallet } from "@/actions/get-document-secret";
+import { useWalletAddress } from "@/hooks/useWalletAddress";
 
 type DocumentRow = {
   id: string;
@@ -17,9 +17,7 @@ type MyDocumentsModalProps = {
 };
 
 export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
-  const { wallets } = useWallets();
-  const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
-  const walletAddress = embeddedWallet?.address;
+  const walletAddress = useWalletAddress();
 
   const [docs, setDocs] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);

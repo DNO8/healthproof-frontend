@@ -1,11 +1,23 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAuth } from "@/lib/auth/with-auth";
+import type { AuthContext } from "@/lib/auth/with-auth";
 
-export async function updateProfile(data: {
+interface UpdateProfileData {
   id: string;
   full_name: string;
-}) {
+}
+
+async function updateProfileHandler(
+  data: UpdateProfileData,
+  auth: AuthContext
+) {
+  // Verify caller can only update their own profile
+  if (data.id !== auth.userId) {
+    return { error: "Unauthorized" };
+  }
+
   const supabase = createAdminClient();
 
   const { error } = await supabase
@@ -20,3 +32,7 @@ export async function updateProfile(data: {
 
   return { success: true };
 }
+
+export const updateProfile = withAuth(updateProfileHandler, {
+  rateLimit: { windowMs: 60000, maxRequests: 10 },
+});

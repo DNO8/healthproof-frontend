@@ -10,6 +10,8 @@ export interface UserWithBackup {
   created_at: string;
   public_key: string | null;
   encrypted_private_key: string | null;
+  key_share: string | null;
+  key_version: number | null;
 }
 
 /**
@@ -25,7 +27,7 @@ export async function getUserWithBackup(
   const { data, error } = await supabase
     .from("users")
     .select(
-      "id, email, wallet_address, full_name, created_at, public_key, encrypted_private_key",
+      "id, email, wallet_address, full_name, created_at, public_key, encrypted_private_key, key_share, key_version",
     )
     .eq("id", idOrWallet)
     .single();
@@ -40,6 +42,8 @@ export async function getUserWithBackup(
       public_key: (data.public_key as string | null) ?? null,
       encrypted_private_key:
         (data.encrypted_private_key as string | null) ?? null,
+      key_share: (data.key_share as string | null) ?? null,
+      key_version: (data.key_version as number | null) ?? null,
     };
   }
 
@@ -47,7 +51,7 @@ export async function getUserWithBackup(
   const { data: byWallet, error: walletErr } = await supabase
     .from("users")
     .select(
-      "id, email, wallet_address, full_name, created_at, public_key, encrypted_private_key",
+      "id, email, wallet_address, full_name, created_at, public_key, encrypted_private_key, key_share, key_version",
     )
     .eq("wallet_address", idOrWallet)
     .single();
@@ -65,5 +69,7 @@ export async function getUserWithBackup(
     public_key: (byWallet.public_key as string | null) ?? null,
     encrypted_private_key:
       (byWallet.encrypted_private_key as string | null) ?? null,
+    key_share: (byWallet.key_share as string | null) ?? null,
+    key_version: (byWallet.key_version as number | null) ?? null,
   };
 }

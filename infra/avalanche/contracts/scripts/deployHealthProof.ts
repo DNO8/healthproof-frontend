@@ -23,6 +23,18 @@ async function main() {
 
   /*
   --------------------------------------------------
+  0. TrustedForwarder (EIP-2771)
+  --------------------------------------------------
+  */
+
+  const HealthProofTrustedForwarder = await ethers.getContractFactory("HealthProofTrustedForwarder");
+  const trustedForwarder = await HealthProofTrustedForwarder.deploy();
+  await trustedForwarder.waitForDeployment();
+  const trustedForwarderAddress = await trustedForwarder.getAddress();
+  console.log("HealthProofTrustedForwarder:", trustedForwarderAddress);
+
+  /*
+  --------------------------------------------------
   IdentityRegistry
   --------------------------------------------------
   */
@@ -43,7 +55,7 @@ async function main() {
 
   const GuardianRegistry = await ethers.getContractFactory("GuardianRegistry");
 
-  const guardianRegistry = await GuardianRegistry.deploy(identityAddress);
+  const guardianRegistry = await GuardianRegistry.deploy(identityAddress, trustedForwarderAddress);
 
   await guardianRegistry.waitForDeployment();
 
@@ -61,7 +73,8 @@ async function main() {
 
   const permissionManager = await PermissionManager.deploy(
     identityAddress,
-    guardianAddress
+    guardianAddress,
+    trustedForwarderAddress
   );
 
   await permissionManager.waitForDeployment();
@@ -81,7 +94,8 @@ async function main() {
   );
 
   const clinicalEpisodeRegistry = await ClinicalEpisodeRegistry.deploy(
-    identityAddress
+    identityAddress,
+    trustedForwarderAddress
   );
 
   await clinicalEpisodeRegistry.waitForDeployment();
@@ -100,7 +114,10 @@ async function main() {
     "MedicalOrderRegistry"
   );
 
-  const medicalOrderRegistry = await MedicalOrderRegistry.deploy(identityAddress);
+  const medicalOrderRegistry = await MedicalOrderRegistry.deploy(
+    identityAddress,
+    trustedForwarderAddress
+  );
 
   await medicalOrderRegistry.waitForDeployment();
 
@@ -119,7 +136,8 @@ async function main() {
   );
 
   const medicalDocumentRegistry = await MedicalDocumentRegistry.deploy(
-    identityAddress
+    identityAddress,
+    trustedForwarderAddress
   );
 
   await medicalDocumentRegistry.waitForDeployment();
@@ -190,13 +208,39 @@ async function main() {
 
   const HealthProofGateway = await ethers.getContractFactory("HealthProofGateway");
 
-  const gateway = await HealthProofGateway.deploy(kernelAddress);
+  const gateway = await HealthProofGateway.deploy(
+    kernelAddress,
+    identityAddress,
+    guardianAddress,
+    trustedForwarderAddress
+  );
 
   await gateway.waitForDeployment();
 
   const gatewayAddress = await gateway.getAddress();
 
   console.log("HealthProofGateway:", gatewayAddress);
+
+  /*
+  --------------------------------------------------
+  Set Gateway in Registries (for onlyGatewayOrDoctor modifier)
+  --------------------------------------------------
+  */
+
+  console.log("\nSetting Gateway in registries...\n");
+
+  // Register gateway as DOCTOR in IdentityRegistry so it can be verified
+  await identityRegistry.registerEntity(gatewayAddress, 1, "gateway", ethers.ZeroAddress); // DOCTOR = 1
+  await identityRegistry.verifyEntity(gatewayAddress);
+  console.log("  -> Gateway registered as DOCTOR");
+
+  // Set gateway in MedicalOrderRegistry
+  await medicalOrderRegistry.setGateway(gatewayAddress);
+  console.log("  -> Gateway set in MedicalOrderRegistry");
+
+  // Set gateway in ClinicalEpisodeRegistry
+  await clinicalEpisodeRegistry.setGateway(gatewayAddress);
+  console.log("  -> Gateway set in ClinicalEpisodeRegistry");
 
   /*
   --------------------------------------------------
@@ -262,11 +306,11 @@ async function main() {
 
   /*
   --------------------------------------------------
-  Bootstrap: Registrar deployer y Gateway en IdentityRegistry
+  Bootstrap: Registrar deployer como ADMIN
   --------------------------------------------------
   */
 
-  console.log("\nBootstrap: Registrando deployer y Gateway...");
+  console.log("\nBootstrap: Registrando deployer como ADMIN...");
 
   await identityRegistry.registerEntity(
     deployer.address,
@@ -276,10 +320,6 @@ async function main() {
   );
   await identityRegistry.verifyEntity(deployer.address);
   console.log("  -> Deployer registrado como ADMIN y verificado");
-
-  await identityRegistry.registerEntity(gatewayAddress, 1, "", ethers.ZeroAddress); // DOCTOR
-  await identityRegistry.verifyEntity(gatewayAddress);
-  console.log("  -> Gateway registrado como DOCTOR y verificado");
 
   /*
   --------------------------------------------------
@@ -291,6 +331,7 @@ async function main() {
   console.log("HealthProof Deployment Summary");
   console.log("--------------------------------------------------");
 
+  console.log("HealthProofTrustedForwarder (EIP-2771):", trustedForwarderAddress);
   console.log("IdentityRegistry:", identityAddress);
   console.log("GuardianRegistry:", guardianAddress);
   console.log("PermissionManager:", permissionAddress);

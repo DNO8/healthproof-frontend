@@ -48,19 +48,19 @@ export function CreateOrderModal({ onClose, doctorId }: CreateOrderModalProps) {
         episodeId: episodeId.trim() || undefined,
       });
 
-      if ("error" in res) {
+      if (!res.success) {
         sileo.error({
           title: "Order creation failed",
-          description: res.error.slice(0, 120),
+          description: (res.error ?? "").slice(0, 120),
           duration: 5000,
         });
         return;
       }
 
-      setResult({ orderId: res.orderId, txHash: res.txHash });
+      setResult({ orderId: res.data.orderId, txHash: res.data.txHash });
       sileo.success({
         title: "Order created",
-        description: `Order registered on-chain. TX: ${res.txHash.slice(0, 16)}…`,
+        description: `Order registered on-chain. TX: ${res.data.txHash.slice(0, 16)}…`,
         duration: 4000,
       });
     } catch (err) {

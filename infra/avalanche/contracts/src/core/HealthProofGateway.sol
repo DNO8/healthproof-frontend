@@ -2,17 +2,26 @@
 pragma solidity ^0.8.20;
 
 import "./HealthProofKernel.sol";
+import "../identity/IdentityRegistry.sol";
+import "../identity/GuardianRegistry.sol";
 import "../clinical/ClinicalEpisodeRegistry.sol";
 import "../clinical/MedicalOrderRegistry.sol";
 import "../clinical/MedicalDocumentRegistry.sol";
 import "../access/PermissionManager.sol";
+import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 
-contract HealthProofGateway {
+contract HealthProofGateway is ERC2771Context {
 
     HealthProofKernel public kernel;
+    IdentityRegistry public identityRegistry;
+    GuardianRegistry public guardianRegistry;
 
-    constructor(address kernelAddress){
+    constructor(address kernelAddress, address identityAddress, address guardianAddress, address trustedForwarder) 
+        ERC2771Context(trustedForwarder) 
+    {
         kernel = HealthProofKernel(kernelAddress);
+        identityRegistry = IdentityRegistry(identityAddress);
+        guardianRegistry = GuardianRegistry(guardianAddress);
     }
 
     bytes32 constant EPISODE_MODULE =
@@ -36,7 +45,8 @@ contract HealthProofGateway {
     event MedicalOrderCreated(
         bytes32 indexed orderId,
         address indexed patient,
-        bytes32 episodeId
+        bytes32 episodeId,
+        address doctor
     );
 
     event MedicalDocumentRegistered(
@@ -56,19 +66,37 @@ contract HealthProofGateway {
         _;
     }
 
-    function createEpisode(
+    modifier onlyVerifiedDoctor(address doctor) {
+        require(doctor == _msgSender(), "Doctor must be caller");
+        require(
+            identityRegistry.getRole(doctor) == IdentityRegistry.Role.DOCTOR,
+            "Caller must be verified doctor"
+        );
+        require(identityRegistry.isVerified(doctor), "Doctor not verified");
+        _;
+    }
 
+    modifier authorizedForPatient(address patient) {
+        address caller = _msgSender();
+        require(
+            caller == patient || guardianRegistry.isGuardian(patient, caller),
+            "Not authorized for patient"
+        );
+        _;
+    }
+
+    function createEpisode(
         bytes32 episodeId,
         address patient,
         address institution,
         bytes32 episodeType,
-        bytes32 classification
-
+        bytes32 classification,
+        address doctor
     )
         external
         notPaused
+        onlyVerifiedDoctor(doctor)
     {
-
         address module = kernel.getModule(EPISODE_MODULE);
 
         ClinicalEpisodeRegistry(module).openEpisode(
@@ -76,30 +104,30 @@ contract HealthProofGateway {
             patient,
             institution,
             episodeType,
-            classification
+            classification,
+            doctor
         );
 
         emit EpisodeCreated(
             episodeId,
             patient,
-            msg.sender
+            doctor
         );
     }
 
     function createMedicalOrder(
-
         bytes32 orderId,
         address patient,
         address institution,
         bytes32 episodeId,
         bytes32 orderType,
-        bytes32 examType
-
+        bytes32 examType,
+        address doctor
     )
         external
         notPaused
+        onlyVerifiedDoctor(doctor)
     {
-
         address module = kernel.getModule(ORDER_MODULE);
 
         MedicalOrderRegistry(module).createOrder(
@@ -108,18 +136,19 @@ contract HealthProofGateway {
             institution,
             episodeId,
             orderType,
-            examType
+            examType,
+            doctor
         );
 
         emit MedicalOrderCreated(
             orderId,
             patient,
-            episodeId
+            episodeId,
+            doctor
         );
     }
 
     function registerMedicalDocument(
-
         bytes32 documentId,
         address patient,
         address institution,
@@ -184,5 +213,113 @@ contract HealthProofGateway {
             grantee,
             resourceId
         );
+    }
+
+    // ==========================================
+    // PROXY FUNCTIONS for Issue 2.2 (previously inaccessible)
+    // ==========================================
+
+    event LabAssignedViaGateway(
+        bytes32 indexed orderId,
+        address indexed lab,
+        address indexed patient
+    );
+
+    event OrderStatusUpdatedViaGateway(
+        bytes32 indexed orderId,
+        uint8 status,
+        address indexed updater
+    );
+
+    event EpisodeClosedViaGateway(
+        bytes32 indexed episodeId,
+        address indexed doctor
+    );
+
+    /// Assign lab to a medical order (proxy for MedicalOrderRegistry.assignLab)
+    /// Callable by patient or patient's guardian
+    function assignLabViaGateway(
+        bytes32 orderId,
+        address lab,
+        address patient
+    )
+        external
+        notPaused
+        authorizedForPatient(patient)
+    {
+        address module = kernel.getModule(ORDER_MODULE);
+        
+        // Verify lab is valid
+        require(
+            identityRegistry.getRole(lab) == IdentityRegistry.Role.LAB,
+            "Destino no es laboratorio"
+        );
+
+        MedicalOrderRegistry(module).assignLab(orderId, lab);
+
+        emit LabAssignedViaGateway(orderId, lab, patient);
+    }
+
+    /// Update order status (proxy for MedicalOrderRegistry.updateStatus)
+    /// Callable by assigned lab or the doctor who created the order
+    function updateOrderStatusViaGateway(
+        bytes32 orderId,
+        uint8 status,
+        address updater
+    )
+        external
+        notPaused
+    {
+        require(updater == _msgSender(), "Updater must be caller");
+        
+        address module = kernel.getModule(ORDER_MODULE);
+        
+        // Get order data using tuple destructuring
+        // orders() returns: (patient, doctor, institution, episodeId, orderType, examType, assignedLab, orderStatus, createdAt)
+        (,,,,,, address assignedLab, MedicalOrderRegistry.OrderStatus currentStatus,) = MedicalOrderRegistry(module).orders(orderId);
+        (currentStatus); // silence unused warning
+        
+        // Get doctor from orders mapping - using a separate call
+        (, address orderDoctor,,,,,,,) = MedicalOrderRegistry(module).orders(orderId);
+        
+        require(
+            updater == orderDoctor || updater == assignedLab,
+            "No autorizado: must be order doctor or assigned lab"
+        );
+
+        MedicalOrderRegistry(module).updateStatus(
+            orderId, 
+            MedicalOrderRegistry.OrderStatus(status)
+        );
+
+        emit OrderStatusUpdatedViaGateway(orderId, status, updater);
+    }
+
+    /// Close clinical episode (proxy for ClinicalEpisodeRegistry.closeEpisode)
+    /// Callable by the doctor who opened the episode
+    function closeEpisodeViaGateway(
+        bytes32 episodeId,
+        address doctor
+    )
+        external
+        notPaused
+    {
+        require(doctor == _msgSender(), "Doctor must be caller");
+        
+        address module = kernel.getModule(EPISODE_MODULE);
+        
+        // Get episode data - episodes() returns tuple
+        // (patient, openedBy, institution, episodeType, classification, openedAt, active)
+        (, address openedBy,,,,,) = ClinicalEpisodeRegistry(module).episodes(episodeId);
+        
+        // Validate doctor opened this episode
+        require(
+            openedBy == doctor,
+            "Solo doctor creador puede cerrar"
+        );
+
+        ClinicalEpisodeRegistry(module).closeEpisode(episodeId);
+
+        emit EpisodeClosedViaGateway(episodeId, doctor);
     }
 }

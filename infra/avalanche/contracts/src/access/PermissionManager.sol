@@ -3,18 +3,41 @@ pragma solidity ^0.8.20;
 
 import "../identity/IdentityRegistry.sol";
 import "../identity/GuardianRegistry.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "../metatx/ERC2771ContextUpgradeable.sol";
 
-contract PermissionManager {
+contract PermissionManager is 
+    Initializable,
+    OwnableUpgradeable,
+    UUPSUpgradeable,
+    ERC2771ContextUpgradeable
+{
 
     IdentityRegistry public identityRegistry;
     GuardianRegistry public guardianRegistry;
 
-    constructor(
+    function initialize(
         address identityAddress,
-        address guardianAddress
-    ){
+        address guardianAddress,
+        address forwarder
+    ) public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+        __ERC2771Context_init(forwarder);
         identityRegistry = IdentityRegistry(identityAddress);
         guardianRegistry = GuardianRegistry(guardianAddress);
+    }
+
+    /// @dev Override _msgSender() to support ERC2771 meta-transactions
+    function _msgSender() internal view override returns (address) {
+        return _erc2771MsgSender();
+    }
+
+    /// @dev Override _msgData() to support ERC2771 meta-transactions
+    function _msgData() internal view override returns (bytes calldata) {
+        return _erc2771MsgData();
     }
 
     enum Scope {
@@ -34,6 +57,9 @@ contract PermissionManager {
 
     mapping(address => Permission[]) private permissions;
 
+    /// O(1) lookup: patient → grantee → active permission (last granted)
+    mapping(address => mapping(address => Permission)) private permissionLookup;
+
     event PermissionGranted(
         address indexed patient,
         address indexed grantee,
@@ -46,15 +72,11 @@ contract PermissionManager {
     );
 
     modifier authorized(address patient) {
-
         require(
-
-            msg.sender == patient ||
-            guardianRegistry.isGuardian(patient, msg.sender),
+            _msgSender() == patient ||
+            guardianRegistry.isGuardian(patient, _msgSender()),
             "No autorizado"
-
         );
-
         _;
     }
 
@@ -74,16 +96,16 @@ contract PermissionManager {
             "Entidad no verificada"
         );
 
-        permissions[patient].push(
+        Permission memory newPerm = Permission({
+            grantee: grantee,
+            scope: scope,
+            resourceId: resourceId,
+            expiresAt: expiresAt,
+            active: true
+        });
 
-            Permission({
-                grantee: grantee,
-                scope: scope,
-                resourceId: resourceId,
-                expiresAt: expiresAt,
-                active: true
-            })
-        );
+        permissions[patient].push(newPerm);
+        permissionLookup[patient][grantee] = newPerm;
 
         emit PermissionGranted(patient, grantee, scope);
     }
@@ -96,20 +118,56 @@ contract PermissionManager {
         authorized(patient)
     {
 
+        // O(1): invalidate lookup entry
+        permissionLookup[patient][grantee].active = false;
+
+        // Also invalidate all matching entries in the array (for historical cleanup)
         Permission[] storage list = permissions[patient];
 
         for(uint i; i < list.length; ){
-
             if(
                 list[i].grantee == grantee &&
                 list[i].active
             ){
                 list[i].active = false;
-                emit PermissionRevoked(patient, grantee);
             }
 
             unchecked { ++i; }
         }
+
+        emit PermissionRevoked(patient, grantee);
+    }
+
+    function _checkPermission(
+        Permission memory p,
+        address requester,
+        bytes32 documentId,
+        bytes32 documentType,
+        address institution
+    )
+        internal
+        pure
+        returns (bool)
+    {
+        if (!p.active) return false;
+        if (p.grantee != requester) return false;
+
+        if (p.scope == Scope.FULL_ACCESS)
+            return true;
+
+        if (p.scope == Scope.DOCUMENT && p.resourceId == documentId)
+            return true;
+
+        if (p.scope == Scope.DOCUMENT_TYPE && p.resourceId == documentType)
+            return true;
+
+        if (
+            p.scope == Scope.INSTITUTION &&
+            p.resourceId == bytes32(uint256(uint160(institution)))
+        )
+            return true;
+
+        return false;
     }
 
     function hasAccess(
@@ -123,11 +181,21 @@ contract PermissionManager {
         view
         returns(bool)
     {
+        // O(1) fast-path: check lookup mapping for last granted permission
+        Permission memory lookupPerm = permissionLookup[patient][requester];
+        if (
+            lookupPerm.grantee != address(0) &&
+            lookupPerm.active &&
+            (lookupPerm.expiresAt == 0 || block.timestamp <= lookupPerm.expiresAt)
+        ) {
+            if (_checkPermission(lookupPerm, requester, documentId, documentType, institution))
+                return true;
+        }
 
+        // Fallback: scan array for historical permissions or multiple per grantee
         Permission[] memory list = permissions[patient];
 
         for(uint i; i < list.length; ){
-
             Permission memory p = list[i];
 
             if(!p.active){
@@ -145,19 +213,7 @@ contract PermissionManager {
                 continue;
             }
 
-            if(p.scope == Scope.FULL_ACCESS)
-                return true;
-
-            if(p.scope == Scope.DOCUMENT && p.resourceId == documentId)
-                return true;
-
-            if(p.scope == Scope.DOCUMENT_TYPE && p.resourceId == documentType)
-                return true;
-
-            if(
-                p.scope == Scope.INSTITUTION &&
-                p.resourceId == bytes32(uint256(uint160(institution)))
-            )
+            if(_checkPermission(p, requester, documentId, documentType, institution))
                 return true;
 
             unchecked { ++i; }
@@ -165,4 +221,33 @@ contract PermissionManager {
 
         return false;
     }
+
+    /// @dev Paginated list of all permissions for a patient (from array storage)
+    function getPermissions(
+        address patient,
+        uint256 offset,
+        uint256 limit
+    )
+        external
+        view
+        returns (Permission[] memory result, uint256 total)
+    {
+        Permission[] storage list = permissions[patient];
+        total = list.length;
+        if (offset >= total) return (new Permission[](0), total);
+
+        uint256 end = offset + limit;
+        if (end > total) end = total;
+
+        result = new Permission[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            result[i - offset] = list[i];
+        }
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
+        // Solo el owner puede autorizar upgrades
+    }
+
+    uint256[50] private __gap;
 }
