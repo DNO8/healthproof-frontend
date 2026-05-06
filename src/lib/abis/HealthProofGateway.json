@@ -5,6 +5,21 @@
         "internalType": "address",
         "name": "kernelAddress",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "identityAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "guardianAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "trustedForwarder",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -47,6 +62,25 @@
       {
         "indexed": true,
         "internalType": "address",
+        "name": "doctor",
+        "type": "address"
+      }
+    ],
+    "name": "EpisodeClosedViaGateway",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "episodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "patient",
         "type": "address"
       },
@@ -58,6 +92,31 @@
       }
     ],
     "name": "EpisodeCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "orderId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "lab",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "patient",
+        "type": "address"
+      }
+    ],
+    "name": "LabAssignedViaGateway",
     "type": "event"
   },
   {
@@ -105,10 +164,82 @@
         "internalType": "bytes32",
         "name": "episodeId",
         "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "doctor",
+        "type": "address"
       }
     ],
     "name": "MedicalOrderCreated",
     "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "orderId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "status",
+        "type": "uint8"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "updater",
+        "type": "address"
+      }
+    ],
+    "name": "OrderStatusUpdatedViaGateway",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "orderId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "lab",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "patient",
+        "type": "address"
+      }
+    ],
+    "name": "assignLabViaGateway",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "episodeId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "doctor",
+        "type": "address"
+      }
+    ],
+    "name": "closeEpisodeViaGateway",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
     "inputs": [
@@ -136,6 +267,11 @@
         "internalType": "bytes32",
         "name": "classification",
         "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "doctor",
+        "type": "address"
       }
     ],
     "name": "createEpisode",
@@ -174,6 +310,11 @@
         "internalType": "bytes32",
         "name": "examType",
         "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "doctor",
+        "type": "address"
       }
     ],
     "name": "createMedicalOrder",
@@ -212,6 +353,51 @@
     "name": "grantAccess",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "guardianRegistry",
+    "outputs": [
+      {
+        "internalType": "contract GuardianRegistry",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "identityRegistry",
+    "outputs": [
+      {
+        "internalType": "contract IdentityRegistry",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "forwarder",
+        "type": "address"
+      }
+    ],
+    "name": "isTrustedForwarder",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -276,6 +462,42 @@
       }
     ],
     "name": "registerMedicalDocument",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "trustedForwarder",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "orderId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint8",
+        "name": "status",
+        "type": "uint8"
+      },
+      {
+        "internalType": "address",
+        "name": "updater",
+        "type": "address"
+      }
+    ],
+    "name": "updateOrderStatusViaGateway",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

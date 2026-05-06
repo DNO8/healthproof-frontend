@@ -1,0 +1,75 @@
+"use server";
+
+import { createPublicClient, http, fromHex } from "viem";
+import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
+import ClinicalEpisodeRegistryAbi from "@/lib/abis/ClinicalEpisodeRegistry.json";
+import { withAuth } from "@/lib/auth/with-auth";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import type { OnChainEpisode } from "@/lib/medical-constants";
+
+interface ListEpisodesParams {
+  patientWallet: string;
+  offset?: number;
+  limit?: number;
+}
+
+async function handler(
+  data: ListEpisodesParams,
+  _auth: AuthContext
+): Promise<{ episodes: OnChainEpisode[]; total: number }> {
+  const publicClient = createPublicClient({
+    chain: HEALTHPROOF_CHAIN,
+    transport: http(),
+  });
+
+  const [episodeIds, total] = (await publicClient.readContract({
+    address: CONTRACT_ADDRESSES.ClinicalEpisodeRegistry as `0x${string}`,
+    abi: ClinicalEpisodeRegistryAbi,
+    functionName: "getEpisodesByPatient",
+    args: [
+      data.patientWallet as `0x${string}`,
+      BigInt(data.offset ?? 0),
+      BigInt(data.limit ?? 50),
+    ],
+  })) as [string[], bigint];
+
+  const episodes: OnChainEpisode[] = [];
+  for (const episodeId of episodeIds) {
+    try {
+      const ep = (await publicClient.readContract({
+        address: CONTRACT_ADDRESSES.ClinicalEpisodeRegistry as `0x${string}`,
+        abi: ClinicalEpisodeRegistryAbi,
+        functionName: "episodes",
+        args: [episodeId as `0x${string}`],
+      })) as {
+        patient: string;
+        openedBy: string;
+        institution: string;
+        episodeType: `0x${string}`;
+        classification: `0x${string}`;
+        openedAt: bigint;
+        active: boolean;
+      };
+      if (Number(ep.openedAt) !== 0) {
+        episodes.push({
+          episodeId,
+          patient: ep.patient,
+          openedBy: ep.openedBy,
+          institution: ep.institution,
+          episodeType: fromHex(ep.episodeType, "string").replace(/\0+$/, ""),
+          classification: fromHex(ep.classification, "string").replace(/\0+$/, ""),
+          openedAt: Number(ep.openedAt),
+          active: ep.active,
+        });
+      }
+    } catch {
+      // skip invalid
+    }
+  }
+
+  return { episodes, total: Number(total) };
+}
+
+export const listEpisodesByPatient = withAuth(handler, {
+  rateLimit: { windowMs: 60000, maxRequests: 20 },
+});

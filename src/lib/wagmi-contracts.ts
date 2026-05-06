@@ -2,7 +2,8 @@ import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "./contracts";
 
 import IdentityRegistryAbi from "./abis/IdentityRegistry.json";
 import GuardianRegistryAbi from "./abis/GuardianRegistry.json";
-import PermissionManagerAbi from "./abis/PermissionManager.json";
+import PermissionManagerArtifact from "./abis/PermissionManager.json";
+const PermissionManagerAbi = PermissionManagerArtifact.abi;
 import ClinicalEpisodeRegistryAbi from "./abis/ClinicalEpisodeRegistry.json";
 import MedicalOrderRegistryAbi from "./abis/MedicalOrderRegistry.json";
 import MedicalDocumentRegistryAbi from "./abis/MedicalDocumentRegistry.json";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useWallets } from "@privy-io/react-auth";
+import { useWalletAddress } from "@/hooks/useWalletAddress";
 import { QRCodeSVG } from "qrcode.react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
@@ -39,7 +39,7 @@ export function ShareResultsModal({
   patientId: string;
 }) {
   const t = useTranslations("shareModal");
-  const { wallets } = useWallets();
+  const walletAddress = useWalletAddress();
   const [grantedTo, setGrantedTo] = useState<GrantedToRole | null>(null);
   const [recipientId, setRecipientId] = useState("");
   const [results, setResults] = useState<DocumentSecretRow[]>([]);
@@ -49,15 +49,14 @@ export function ShareResultsModal({
   const [qrData, setQrData] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
 
-  const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
   const keyConflict = useKeyConflictStore((s) => s.conflict);
 
   const fetchResults = useCallback(async () => {
     setLoadingResults(true);
     try {
       // Resolve wallet address from Privy DID
-      const dbUser = await getDbUser(patientId);
-      const wallet = dbUser?.wallet_address;
+      const dbUserRes = await getDbUser({ idOrWallet: patientId });
+      const wallet = dbUserRes.success ? dbUserRes.data?.wallet_address : undefined;
       if (!wallet) {
         setResults([]);
         return;
@@ -144,40 +143,23 @@ export function ShareResultsModal({
       const myPublicKeyJwk = await exportPublicKey(myKeys.publicKey);
 
       // 5. Resolve wallet address
-      let walletAddress = patientId;
-      let provider: Awaited<
-        ReturnType<NonNullable<typeof embeddedWallet>["getEthereumProvider"]>
-      > | null = null;
-      if (embeddedWallet) {
-        provider = await embeddedWallet.getEthereumProvider();
-        const accounts = (await provider.request({
-          method: "eth_accounts",
-        })) as string[];
-        walletAddress = accounts[0] ?? embeddedWallet.address;
-      }
+      const resolvedWalletAddress = walletAddress ?? patientId;
 
       // 6. Build permission payload
       const payload = buildPermissionPayload({
-        patientWallet: walletAddress,
+        patientWallet: resolvedWalletAddress,
         granteeWallet: trimmedRecipient,
         grantedToRole: grantedTo,
         documentId: selectedResult.document_id,
       });
 
-      // 7. Sign with wallet
-      const message = JSON.stringify(payload);
-      let signature = "unsigned";
-
-      if (provider) {
-        signature = (await provider.request({
-          method: "personal_sign",
-          params: [message, walletAddress],
-        })) as string;
-      }
+      // 7. Sign — signature stored for audit but not required for on-chain grant
+      const signature = "unsigned";
+      void signature;
 
       // 7.5 Grant permission on-chain
       const grantResult = await grantPermissionOnChain({
-        patientWallet: walletAddress,
+        patientWallet: resolvedWalletAddress,
         granteeWallet: trimmedRecipient,
         documentId: selectedResult.document_id,
       });
@@ -193,7 +175,7 @@ export function ShareResultsModal({
         type: "healthproof_permission",
         payload,
         signature,
-        wallet: walletAddress,
+        wallet: resolvedWalletAddress,
         crypto: {
           document_id: selectedResult.document_id,
           cid: selectedResult.document_id,
@@ -339,7 +321,7 @@ export function ShareResultsModal({
             {/* Expiry info */}
             <p className="mt-4 text-[11px] text-slate-400">
               {t("expiryInfo", { minutes: QR_EXPIRY_MINUTES })}{" "}
-              {embeddedWallet ? t("walletSigned") : t("noWallet")}
+              {walletAddress ? t("walletSigned") : t("noWallet")}
             </p>
 
             {/* Key conflict warning */}

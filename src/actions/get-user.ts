@@ -1,25 +1,30 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAuth } from "@/lib/auth/with-auth";
+import type { AuthContext } from "@/lib/auth/with-auth";
 
-export async function getDbUser(idOrWallet: string) {
+async function getDbUserHandler(
+  data: { idOrWallet: string },
+  auth: AuthContext
+) {
   const supabase = createAdminClient();
 
   // Try lookup by Privy DID first
-  const { data, error } = await supabase
+  const { data: userData, error } = await supabase
     .from("users")
     .select("id, email, wallet_address, full_name, created_at, public_key")
-    .eq("id", idOrWallet)
+    .eq("id", data.idOrWallet)
     .single();
 
-  if (!error && data) {
+  if (!error && userData) {
     return {
-      id: data.id as string,
-      email: (data.email as string) ?? "",
-      wallet_address: data.wallet_address as string | null,
-      full_name: data.full_name as string | null,
-      created_at: data.created_at as string,
-      public_key: (data.public_key as string | null) ?? null,
+      id: userData.id as string,
+      email: (userData.email as string) ?? "",
+      wallet_address: userData.wallet_address as string | null,
+      full_name: userData.full_name as string | null,
+      created_at: userData.created_at as string,
+      public_key: (userData.public_key as string | null) ?? null,
     };
   }
 
@@ -27,7 +32,7 @@ export async function getDbUser(idOrWallet: string) {
   const { data: byWallet, error: walletErr } = await supabase
     .from("users")
     .select("id, email, wallet_address, full_name, created_at, public_key")
-    .eq("wallet_address", idOrWallet)
+    .eq("wallet_address", data.idOrWallet)
     .single();
 
   if (walletErr || !byWallet) {
@@ -43,3 +48,7 @@ export async function getDbUser(idOrWallet: string) {
     public_key: (byWallet.public_key as string | null) ?? null,
   };
 }
+
+export const getDbUser = withAuth(getDbUserHandler, {
+  rateLimit: { windowMs: 60000, maxRequests: 30 },
+});

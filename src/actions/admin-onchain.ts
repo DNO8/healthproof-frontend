@@ -9,14 +9,16 @@ import { privateKeyToAccount } from "viem/accounts";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import HealthProofKernelAbi from "@/lib/abis/HealthProofKernel.json";
 import IdentityRegistryAbi from "@/lib/abis/IdentityRegistry.json";
-import { env } from "@/lib/env";
+import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { isVerifiedAdmin } from "@/lib/auth/permissions";
 import type { ContractRole } from "@/types/domain.types";
 
 const ZERO_ADDRESS =
   "0x0000000000000000000000000000000000000000" as `0x${string}`;
 
-function getClients() {
-  const pk = env.DEPLOYER_PRIVATE_KEY;
+async function getClients() {
+  const pk = await getDeployerPrivateKey();
   if (!pk) throw new Error("DEPLOYER_PRIVATE_KEY not set");
   const account = privateKeyToAccount(
     `0x${pk.replace(/^0x/, "")}` as `0x${string}`,
@@ -30,58 +32,52 @@ function getClients() {
 
 // ─── Protocol Pause / Resume ───
 
+// Read-only, no auth required
 export async function isProtocolPaused(): Promise<boolean> {
-  try {
-    const { publicClient } = getClients();
-    const result = await publicClient.readContract({
-      address: CONTRACT_ADDRESSES.HealthProofKernel as `0x${string}`,
-      abi: HealthProofKernelAbi,
-      functionName: "protocolPaused",
-    });
-    return result as boolean;
-  } catch (err) {
-    console.error("[isProtocolPaused]", err);
-    return false;
-  }
+  const { publicClient } = await getClients();
+  const result = await publicClient.readContract({
+    address: CONTRACT_ADDRESSES.HealthProofKernel as `0x${string}`,
+    abi: HealthProofKernelAbi,
+    functionName: "protocolPaused",
+  });
+  return result as boolean;
 }
 
-export async function pauseProtocol(): Promise<
-  { success: true; txHash: string } | { error: string }
-> {
-  try {
-    const { publicClient, walletClient } = getClients();
-    const txHash = await walletClient.writeContract({
-      address: CONTRACT_ADDRESSES.HealthProofKernel as `0x${string}`,
-      abi: HealthProofKernelAbi,
-      functionName: "pauseProtocol",
-    });
-    await publicClient.waitForTransactionReceipt({ hash: txHash });
-    return { success: true, txHash };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[pauseProtocol]", msg);
-    return { error: msg };
-  }
+async function pauseProtocolHandler(_data: {}, auth: AuthContext): Promise<{ txHash: string }> {
+  const { publicClient, walletClient } = await getClients();
+  const txHash = await walletClient.writeContract({
+    address: CONTRACT_ADDRESSES.HealthProofKernel as `0x${string}`,
+    abi: HealthProofKernelAbi,
+    functionName: "pauseProtocol",
+  });
+  await publicClient.waitForTransactionReceipt({ hash: txHash });
+  
+  auditLog("pauseProtocol", auth, true, {});
+  return { txHash };
 }
 
-export async function resumeProtocol(): Promise<
-  { success: true; txHash: string } | { error: string }
-> {
-  try {
-    const { publicClient, walletClient } = getClients();
-    const txHash = await walletClient.writeContract({
-      address: CONTRACT_ADDRESSES.HealthProofKernel as `0x${string}`,
-      abi: HealthProofKernelAbi,
-      functionName: "resumeProtocol",
-    });
-    await publicClient.waitForTransactionReceipt({ hash: txHash });
-    return { success: true, txHash };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[resumeProtocol]", msg);
-    return { error: msg };
-  }
+export const pauseProtocol = withAuth(pauseProtocolHandler, {
+  rateLimit: { windowMs: 60000, maxRequests: 3 },
+  requireOnChainPermission: async (_data, auth) => isVerifiedAdmin(auth.wallet),
+});
+
+async function resumeProtocolHandler(_data: {}, auth: AuthContext): Promise<{ txHash: string }> {
+  const { publicClient, walletClient } = await getClients();
+  const txHash = await walletClient.writeContract({
+    address: CONTRACT_ADDRESSES.HealthProofKernel as `0x${string}`,
+    abi: HealthProofKernelAbi,
+    functionName: "resumeProtocol",
+  });
+  await publicClient.waitForTransactionReceipt({ hash: txHash });
+  
+  auditLog("resumeProtocol", auth, true, {});
+  return { txHash };
 }
+
+export const resumeProtocol = withAuth(resumeProtocolHandler, {
+  rateLimit: { windowMs: 60000, maxRequests: 3 },
+  requireOnChainPermission: async (_data, auth) => isVerifiedAdmin(auth.wallet),
+});
 
 // ─── Entity Management (IdentityRegistry) ───
 
@@ -92,7 +88,7 @@ export async function adminRegisterEntity(data: {
   institution?: string;
 }): Promise<{ success: true; txHash: string } | { error: string }> {
   try {
-    const { publicClient, walletClient } = getClients();
+    const { publicClient, walletClient } = await getClients();
 
     const txHash = await walletClient.writeContract({
       address: CONTRACT_ADDRESSES.IdentityRegistry as `0x${string}`,
@@ -118,7 +114,7 @@ export async function adminVerifyEntity(
   wallet: string,
 ): Promise<{ success: true; txHash: string } | { error: string }> {
   try {
-    const { publicClient, walletClient } = getClients();
+    const { publicClient, walletClient } = await getClients();
 
     const txHash = await walletClient.writeContract({
       address: CONTRACT_ADDRESSES.IdentityRegistry as `0x${string}`,
@@ -142,7 +138,7 @@ export async function adminGetEntity(wallet: string): Promise<{
   verified: boolean;
 } | null> {
   try {
-    const { publicClient } = getClients();
+    const { publicClient } = await getClients();
 
     const result = await publicClient.readContract({
       address: CONTRACT_ADDRESSES.IdentityRegistry as `0x${string}`,

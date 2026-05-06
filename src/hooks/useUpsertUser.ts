@@ -55,7 +55,7 @@ export function useUpsertUser() {
         if ("success" in result && result.success) {
           sessionStorage.setItem(SESSION_KEY, userId);
           clearDbUserCache();
-        } else if ("code" in result && result.code === "ACCOUNT_EXISTS") {
+        } else if ("code" in result && result.code === 409) {
           sileo.error({
             title: "Account already exists",
             description:

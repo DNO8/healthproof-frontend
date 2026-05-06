@@ -7,6 +7,18 @@ import { setupDeployerAsCertifier } from "@/actions/setup-deployer-certifier";
  * Safe to call multiple times (idempotent).
  */
 export async function GET() {
-  const result = await setupDeployerAsCertifier();
-  return NextResponse.json(result);
+  const result = await setupDeployerAsCertifier({});
+  
+  if (result.success) {
+    return NextResponse.json({ 
+      success: true, 
+      txHash: result.data.txHash,
+      alreadyCertifier: result.data.alreadyCertifier 
+    });
+  }
+  
+  return NextResponse.json(
+    { error: result.error },
+    { status: result.code }
+  );
 }

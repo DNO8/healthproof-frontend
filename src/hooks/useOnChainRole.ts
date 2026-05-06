@@ -38,6 +38,9 @@ function setCache(wallet: string, role: UserRole | null) {
 
 export function clearOnChainRoleCache() {
   sessionStorage.removeItem(CACHE_KEY);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("hp_onchain_role_updated"));
+  }
 }
 
 export function useOnChainRole(walletAddress: string | null | undefined) {
@@ -60,11 +63,16 @@ export function useOnChainRole(walletAddress: string | null | undefined) {
 
     setLoading(true);
     try {
-      const contractRole = await getRoleOnChain(walletAddress);
-      const resolved =
-        contractRole !== null ? (CONTRACT_TO_ROLE[contractRole] ?? null) : null;
-      setRole(resolved);
-      setCache(walletAddress, resolved);
+      const result = await getRoleOnChain({ wallet: walletAddress });
+      if (result.success) {
+        const contractRole = result.data;
+        const resolved =
+          contractRole !== null ? (CONTRACT_TO_ROLE[contractRole] ?? null) : null;
+        setRole(resolved);
+        setCache(walletAddress, resolved);
+      } else {
+        setRole(null);
+      }
     } catch (err) {
       console.error("useOnChainRole error:", err);
       setRole(null);
@@ -75,6 +83,12 @@ export function useOnChainRole(walletAddress: string | null | undefined) {
 
   useEffect(() => {
     refetch();
+  }, [refetch]);
+
+  useEffect(() => {
+    const handler = () => refetch();
+    window.addEventListener("hp_onchain_role_updated", handler);
+    return () => window.removeEventListener("hp_onchain_role_updated", handler);
   }, [refetch]);
 
   return { role, loading, refetch };

@@ -90,6 +90,17 @@ export function UploadResultsModal({
       return;
     }
 
+    // Hard guard: verify encryption key backup exists
+    const { checkKeyBackup } = await import("@/actions/check-key-backup");
+    const backupResult = await checkKeyBackup({ userId: labId });
+    if (!backupResult.success || !backupResult.data?.hasBackup) {
+      sileo.error({
+        title: t("backupRequired"),
+        description: t("backupRequiredDesc"),
+      });
+      return;
+    }
+
     setUploading(true);
     try {
       // Get lab's key pair from IndexedDB
@@ -119,8 +130,8 @@ export function UploadResultsModal({
 
       // Resolve wallet addresses for DB storage
       // patientId is already a wallet address from UserSelect
-      const labUser = await getDbUser(labId);
-      const labWallet = labUser?.wallet_address ?? "";
+      const labResult = await getDbUser({ idOrWallet: labId });
+      const labWallet = (labResult.success && labResult.data && labResult.data.wallet_address) ? labResult.data.wallet_address : "";
       const patientWallet = trimmedPatientId;
 
       // Save encryption secrets to document_secrets table

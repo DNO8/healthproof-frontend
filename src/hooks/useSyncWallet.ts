@@ -7,6 +7,18 @@ import { clearDbUserCache } from "@/hooks/useDbUser";
 
 const SYNCED_KEY = "hp_wallet_synced";
 
+function resolveActiveAddress(
+  wallets: ReturnType<typeof useWallets>["wallets"],
+): string | null {
+  const embedded = wallets.find((w) => w.walletClientType === "privy");
+  if (embedded?.address) return embedded.address;
+
+  const external = wallets.find(
+    (w) => w.walletClientType !== "privy" && w.address,
+  );
+  return external?.address ?? null;
+}
+
 export function useSyncWallet() {
   const { ready, authenticated, user } = usePrivy();
   const { wallets } = useWallets();
@@ -17,6 +29,7 @@ export function useSyncWallet() {
   const userId = user?.id;
 
   const hasEmbeddedWallet = wallets.some((w) => w.walletClientType === "privy");
+  const hasExternalWallet = wallets.some((w) => w.walletClientType !== "privy");
 
   const hasLinkedWallet =
     user?.linkedAccounts?.some((a) => a.type === "wallet") ?? false;
@@ -32,6 +45,7 @@ export function useSyncWallet() {
         if (result.success) {
           sessionStorage.setItem(SYNCED_KEY, userId);
           clearDbUserCache();
+          console.log("[useSyncWallet] Synced wallet address:", address);
         } else {
           console.error("[useSyncWallet] Sync failed:", result.error);
           syncedRef.current = false;
@@ -44,10 +58,10 @@ export function useSyncWallet() {
     [userId],
   );
 
-  // Effect 1: Create embedded wallet if user doesn't have one
+  // Effect 1: Create embedded wallet only if user has no wallet at all
   useEffect(() => {
     if (!ready || !authenticated || !userId) return;
-    if (hasEmbeddedWallet || hasLinkedWallet) return;
+    if (hasEmbeddedWallet || hasExternalWallet || hasLinkedWallet) return;
     if (creatingRef.current) return;
 
     creatingRef.current = true;
@@ -61,11 +75,12 @@ export function useSyncWallet() {
     authenticated,
     userId,
     hasEmbeddedWallet,
+    hasExternalWallet,
     hasLinkedWallet,
     createWallet,
   ]);
 
-  // Effect 2: Once embedded wallet exists, sync its address to Supabase
+  // Effect 2: Sync best available wallet address to Supabase
   useEffect(() => {
     if (!ready || !authenticated || !userId) return;
     if (syncedRef.current) return;
@@ -73,10 +88,10 @@ export function useSyncWallet() {
     const alreadySynced = sessionStorage.getItem(SYNCED_KEY);
     if (alreadySynced === userId) return;
 
-    const embedded = wallets.find((w) => w.walletClientType === "privy");
-    if (!embedded?.address) return;
+    const address = resolveActiveAddress(wallets);
+    if (!address) return;
 
     syncedRef.current = true;
-    syncToSupabase(embedded.address);
+    syncToSupabase(address);
   }, [ready, authenticated, userId, wallets, syncToSupabase]);
 }

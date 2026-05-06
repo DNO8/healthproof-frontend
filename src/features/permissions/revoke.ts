@@ -7,5 +7,11 @@ export async function revokePermission(data: {
   patientWallet: string;
   granteeWallet: string;
 }): Promise<{ success: true; txHash: string } | { error: string }> {
-  return revokePermissionOnChain(data);
+  const result = await revokePermissionOnChain(data);
+  
+  if (result.success) {
+    return { success: true, txHash: result.data.txHash };
+  }
+  
+  return { error: result.error };
 }

@@ -265,6 +265,8 @@
     "patientDesc": "Access and share your medical records securely",
     "laboratory": "Laboratory",
     "laboratoryDesc": "Upload and manage test results",
+    "doctor": "Doctor",
+    "doctorDesc": "Issue orders and verify clinical documents",
     "medicalCenter": "Medical Center",
     "medicalCenterDesc": "Issue orders and verify clinical documents"
   },
@@ -287,6 +289,7 @@
     "descriptions": {
       "patient": "Manage your medical documents, grant or revoke access permissions, and verify the integrity of your clinical records.",
       "laboratory": "Perform tests linked to medical orders, upload verifiable results, and manage your laboratory workflow.",
+      "doctor": "Issue medical orders, verify laboratory results, and manage your patients' clinical workflows.",
       "medicalCenter": "Issue medical orders, verify laboratory results, and manage your institution's clinical workflows."
     },
     "actions": {

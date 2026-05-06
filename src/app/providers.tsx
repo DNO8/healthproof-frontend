@@ -9,8 +9,9 @@ import { useUpsertUser } from "@/hooks/useUpsertUser";
 import { useSyncWallet } from "@/hooks/useSyncWallet";
 import { useSyncKeys } from "@/hooks/useSyncKeys";
 import { useRegisterIdentity } from "@/hooks/useRegisterIdentity";
+import { useSwitchToHygieia } from "@/hooks/useSwitchToHygieia";
 import { KeyConflictBanner } from "@/components/feedback/KeyConflictBanner";
-import { KeyRecoveryModal } from "@/components/auth/KeyRecoveryModal";
+import { RpcHealthBanner } from "@/components/feedback/RpcHealthBanner";
 import { wagmiConfig } from "@/lib/wagmi";
 
 const queryClient = new QueryClient();
@@ -24,17 +25,14 @@ function PrivyTokenSync({ children }: { children: React.ReactNode }) {
 
   useUpsertUser();
   useSyncWallet();
-  const { showRecoveryModal, setShowRecoveryModal } = useSyncKeys();
+  useSwitchToHygieia();
+  useSyncKeys();
   useRegisterIdentity();
 
   return (
     <>
+      <RpcHealthBanner />
       <KeyConflictBanner />
-      <KeyRecoveryModal
-        isOpen={showRecoveryModal}
-        onClose={() => setShowRecoveryModal(false)}
-        onSuccess={() => setShowRecoveryModal(false)}
-      />
       {children}
     </>
   );
@@ -53,7 +51,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         },
         embeddedWallets: {
           ethereum: {
-            createOnLogin: "all-users",
+            createOnLogin: "users-without-wallets",
           },
         },
       }}
