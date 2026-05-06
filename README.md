@@ -304,6 +304,189 @@ This guarantees:
 - Patient-controlled access
 
 
+# Feature Branch: Architecture Debt Resolution
+
+This branch (`feature/architecture-debt-resolution`) implements a comprehensive refactoring to address architectural debt and improve the security, scalability, and maintainability of the HealthProof protocol.
+
+## Overview
+
+The refactoring addresses 7 key areas:
+
+1. **Gateway Proxy Functions** - Server actions now use HealthProofGateway for proper on-chain access control
+2. **EIP-2771 Meta-transactions** - Gasless transactions for better UX
+3. **Guardian Auto-registration Removal** - Eliminated security risk of automatic deployer guardian assignment
+4. **PermissionManager Optimization** - O(1) permission lookups with nested mappings
+5. **Dead Code Cleanup** - Removed unused audit features
+6. **Testnet Faucet** - Easy token distribution for testing
+7. **KMS Abstraction** - Pluggable key management for production security
+
+## Key Changes
+
+### 1. Gateway Proxy Functions
+Server actions (`assignLabToOrder`, `updateOrderStatusOnChain`, `closeEpisodeOnChain`) now call proxy functions on `HealthProofGateway` instead of directly accessing registry contracts. This ensures proper on-chain access control is enforced.
+
+**Files modified:**
+- `src/actions/medical-orders-onchain.ts`
+- `src/actions/clinical-episodes-onchain.ts`
+
+### 2. EIP-2771 Meta-transactions
+Implemented infrastructure for gasless meta-transactions using a trusted forwarder pattern. Users can sign transactions off-chain, and a relayer (deployer) executes them on-chain.
+
+**New files:**
+- `src/lib/metatx/types.ts` - EIP-712 type definitions
+- `src/lib/metatx/forwarder.ts` - Signing utilities
+- `src/lib/abis/HealthProofTrustedForwarder.json` - Forwarder ABI
+- `src/actions/relay-metatx.ts` - Server action for relaying
+
+### 3. Guardian Auto-registration Removal
+Removed automatic registration of the deployer as a guardian for new patient identities. This was a security risk and is now handled explicitly when needed.
+
+**Files modified:**
+- `src/hooks/useRegisterIdentity.ts`
+
+### 4. PermissionManager Optimization
+The `PermissionManager` contract now uses nested mappings for O(1) permission lookups instead of O(N) array scans. Added a paginated `getPermissions` view function.
+
+**Files modified:**
+- `infra/avalanche/contracts/src/access/PermissionManager.sol`
+
+### 5. Dead Code Cleanup
+Removed unused audit features that were no longer part of the active architecture.
+
+**Files deleted:**
+- `src/features/audit/index.ts`
+- `src/features/audit/` directory
+
+### 6. Testnet Faucet
+Implemented a faucet server action to distribute testnet tokens (HVE) to users for testing. Includes rate limiting and cooldown periods.
+
+**New files:**
+- `src/actions/faucet.ts`
+
+### 7. KMS Abstraction
+Abstracted private key access behind a pluggable KMS interface. Currently uses environment variables (EnvKMSProvider) with AWS KMS support ready for future implementation.
+
+**New files:**
+- `src/lib/kms/interface.ts` - KMS provider abstraction
+
+**Files modified:**
+- `src/lib/auth/secure-key.ts` - Now uses KMS provider
+- All server actions using `getDeployerPrivateKey` - Updated to async
+
+### 8. ECDH Key Backup & Recovery
+Implemented Shamir Secret Sharing for automatic key recovery across browsers. Users no longer lose encryption keys when switching devices.
+
+**New files:**
+- `src/services/encryption/key-backup.ts` - PBKDF2+AES-GCM encryption
+- `src/actions/save-encrypted-private-key.ts` - Backup storage
+- `src/actions/get-user-with-backup.ts` - Backup retrieval
+- `src/components/auth/KeyRecoveryModal.tsx` - Recovery UI
+
+**Files modified:**
+- `src/hooks/useSyncKeys.ts` - Auto-backup and recovery logic
+- `src/services/encryption/ecdh.ts` - Added importPrivateKey
+
+### 9. Role Selection
+Registration now requires explicit role selection. No default "patient" assignment - users must choose their role during signup.
+
+**Files modified:**
+- `src/hooks/useRegisterIdentity.ts`
+
+## How It Works
+
+### Meta-transaction Flow
+1. User signs transaction off-chain using `signMetaTransaction()`
+2. Signed request sent to `relayMetaTransaction` server action
+3. Deployer (relayer) executes via `HealthProofTrustedForwarder`
+4. User pays no gas, relayer bears cost
+
+### Key Recovery Flow
+1. First login: Generates ECDH key pair, saves public_key + encrypted_private_key to DB
+2. Browser change: Detects empty IndexedDB + backup exists
+3. Auto-recovery: Uses Shamir shares (DB + derived from wallet|userId)
+4. Fallback: Legacy encrypted_private_key with PBKDF2
+5. Conflict detection: Prevents key regeneration if encrypted data exists
+
+### Permission Check Flow
+1. Fast-path: O(1) lookup via nested mapping `permissionLookup[grantee][target]`
+2. Fallback: Array scan for edge cases
+3. Paginated retrieval: `getPermissions(offset, limit)` for UI
+
+## Testing the Branch
+
+### Prerequisites
+- Deployer private key set in `DEPLOYER_PRIVATE_KEY`
+- Shamir encryption key set in `SHAMIR_ENCRYPTION_KEY`
+- Contracts deployed on target network
+
+### Test Meta-transactions
+```typescript
+import { signGatewayMetaTx } from "@/lib/metatx/forwarder";
+import { relayMetaTransaction } from "@/actions/relay-metatx";
+
+// Sign off-chain
+const signed = await signGatewayMetaTx(
+  walletClient,
+  CONTRACT_ADDRESSES.HealthProofGateway,
+  "closeEpisodeViaGateway",
+  [episodeId, account.address]
+);
+
+// Relay via server
+const result = await relayMetaTransaction(signed);
+```
+
+### Test Faucet
+```typescript
+import { requestFaucet } from "@/actions/faucet";
+
+const result = await requestFaucet({ wallet: userWallet });
+// Returns { txHash, amount }
+```
+
+### Test Key Recovery
+1. Login on Browser A → keys generated, backup saved
+2. Login on Browser B → keys auto-recovered from backup
+3. Check IndexedDB → keys restored
+
+## Migration Notes
+
+### Breaking Changes
+- `getDeployerPrivateKey()` is now async - all callers must await
+- Server actions require explicit role selection during registration
+- PermissionManager ABI updated - recompile contracts
+
+### Environment Variables
+Add to `.env`:
+```
+DEPLOYER_PRIVATE_KEY=0x...
+SHAMIR_ENCRYPTION_KEY=your-encryption-key
+```
+
+### Contract Deployment
+Redeploy `PermissionManager.sol` to enable O(1) lookups:
+```bash
+cd infra/avalanche/contracts
+npx hardhat run scripts/deployHealthProofUUPS.ts --network hygieia
+```
+
+## Rollback Plan
+
+If issues arise, rollback to `main` branch:
+```bash
+git checkout main
+git pull origin main
+```
+
+## Future Enhancements
+
+- AWS KMS integration for production key management
+- Additional meta-transaction support for all contract interactions
+- Enhanced faucet with CAPTCHA for abuse prevention
+- Multi-chain support for meta-transactions
+
+---
+
 # Quick Start (Run Locally)
 
 ## Requirements
