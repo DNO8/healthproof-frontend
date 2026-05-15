@@ -24,8 +24,12 @@ export type { ERC2771Forwarder } from "./@openzeppelin/contracts/metatx/ERC2771F
 export { ERC2771Forwarder__factory } from "./factories/@openzeppelin/contracts/metatx/ERC2771Forwarder__factory";
 export type { IBeacon } from "./@openzeppelin/contracts/proxy/beacon/IBeacon";
 export { IBeacon__factory } from "./factories/@openzeppelin/contracts/proxy/beacon/IBeacon__factory";
+export type { ERC1967Proxy } from "./@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy";
+export { ERC1967Proxy__factory } from "./factories/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy__factory";
 export type { ERC1967Utils } from "./@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils";
 export { ERC1967Utils__factory } from "./factories/@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils__factory";
+export type { Proxy } from "./@openzeppelin/contracts/proxy/Proxy";
+export { Proxy__factory } from "./factories/@openzeppelin/contracts/proxy/Proxy__factory";
 export type { Address } from "./@openzeppelin/contracts/utils/Address";
 export { Address__factory } from "./factories/@openzeppelin/contracts/utils/Address__factory";
 export type { ECDSA } from "./@openzeppelin/contracts/utils/cryptography/ECDSA";
