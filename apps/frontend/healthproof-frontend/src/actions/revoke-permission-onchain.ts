@@ -3,7 +3,7 @@
 import {
   createPublicClient,
   createWalletClient,
-  http,
+  http
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
@@ -12,6 +12,8 @@ const PermissionManagerAbi = PermissionManagerArtifact.abi;
 import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
 import { validatePatientAccess } from "@/lib/auth/permissions";
+import { logAuditEvent } from "@/lib/audit-onchain";
+import { AuditAction } from "@/lib/medical-constants";
 
 interface RevokePermissionData {
   patientWallet: string;
@@ -53,6 +55,12 @@ async function revokePermissionHandler(
   });
 
   await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+  try {
+    await logAuditEvent(data.patientWallet, data.granteeWallet, AuditAction.PERMISSION_REVOKED);
+  } catch {
+    // On-chain audit logging is best-effort
+  }
 
   auditLog("revokePermissionOnChain", auth, true, {
     patientWallet: data.patientWallet,

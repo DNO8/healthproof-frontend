@@ -1,5 +1,3 @@
-"use server";
-
 import { createPublicClient, http } from "viem";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import GuardianRegistryAbi from "@/lib/abis/GuardianRegistry.json";
@@ -93,6 +91,10 @@ export async function isVerifiedLab(address: string): Promise<boolean> {
  * Check if address is a verified admin
  */
 export async function isVerifiedAdmin(address: string): Promise<boolean> {
+  // Dev bypass: on HTTP localhost Privy cookies are blocked, so admin check is skipped in dev
+  if (process.env.NODE_ENV === "development") {
+    return true;
+  }
   try {
     const [isVerified, role] = await Promise.all([
       publicClient.readContract({

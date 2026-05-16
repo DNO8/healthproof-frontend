@@ -6,6 +6,7 @@ import {
   http,
   keccak256,
   toHex,
+  stringToHex
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
@@ -14,6 +15,8 @@ const PermissionManagerAbi = PermissionManagerArtifact.abi;
 import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
 import { validatePatientAccess } from "@/lib/auth/permissions";
+import { logAuditEvent } from "@/lib/audit-onchain";
+import { AuditAction } from "@/lib/medical-constants";
 
 const ZERO_BYTES32 =
   "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
@@ -77,6 +80,12 @@ async function grantPermissionHandler(
   });
 
   await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+  try {
+    await logAuditEvent(data.patientWallet, resourceId, AuditAction.PERMISSION_GRANTED);
+  } catch {
+    // On-chain audit logging is best-effort
+  }
 
   auditLog("grantPermissionOnChain", auth, true, {
     patientWallet: data.patientWallet,

@@ -1,5 +1,3 @@
-"use server";
-
 import { verifyPrivyAuth, getClientIP, AuthContext, AuthError } from "./server-auth";
 import { checkRateLimit, RateLimitOptions, RateLimitError } from "./rate-limit";
 import { PermissionError } from "./permissions";
@@ -39,18 +37,23 @@ export function isAuthError<T>(result: AuthResponse<T>): result is AuthErrorResu
 /**
  * Higher-order function to wrap server actions with auth, rate limiting, and permission checks
  */
+type WithPrivyToken<T> = T & { _privyToken?: string };
+
 export function withAuth<T, R>(
   handler: (data: T, auth: AuthContext) => Promise<R>,
   options: WithAuthOptions<T> = {}
-): (data: T) => Promise<AuthResponse<R>> {
+): (data: WithPrivyToken<T>) => Promise<AuthResponse<R>> {
   const { 
     rateLimit, 
     requireOnChainPermission, 
     requireAuth = true 
   } = options;
 
-  return async (data: T): Promise<AuthResponse<R>> => {
+  return async (data: WithPrivyToken<T>): Promise<AuthResponse<R>> => {
     try {
+      // Extract optional explicit token (needed for local dev without Secure cookies)
+      const { _privyToken, ...cleanData } = data as unknown as Record<string, unknown>;
+
       // Rate limiting (applies even if auth is optional)
       if (rateLimit) {
         const actionName = handler.name || "unknown";
@@ -59,10 +62,37 @@ export function withAuth<T, R>(
 
       // Authentication
       let auth: AuthContext | null = null;
-      if (requireAuth) {
-        auth = await verifyPrivyAuth();
-      } else {
-        auth = await verifyPrivyAuth().catch(() => null);
+      try {
+        auth = await verifyPrivyAuth(_privyToken as string | undefined);
+      } catch (err) {
+        // In development, a 401 "no token" error means Privy Secure cookies are
+        // blocked on HTTP localhost. Allow fallback below instead of hard failing.
+        if (
+          process.env.NODE_ENV === "development" &&
+          err instanceof AuthError &&
+          err.statusCode === 401
+        ) {
+          auth = null;
+        } else if (!requireAuth) {
+          auth = null;
+        } else {
+          throw err;
+        }
+      }
+
+      // Development fallback: when Privy Secure cookies are blocked on HTTP localhost,
+      // allow auth context from the wallet present in the payload.
+      if (requireAuth && !auth && process.env.NODE_ENV === "development") {
+        const walletFromPayload =
+          (cleanData as unknown as Record<string, unknown>)?.wallet ??
+          (cleanData as unknown as Record<string, unknown>)?.wallet_address;
+        if (typeof walletFromPayload === "string" && walletFromPayload.startsWith("0x")) {
+          auth = {
+            userId: "dev-user",
+            wallet: walletFromPayload.toLowerCase(),
+            token: "dev-token",
+          };
+        }
       }
 
       if (requireAuth && !auth) {
@@ -71,18 +101,18 @@ export function withAuth<T, R>(
 
       // On-chain permission validation
       if (requireOnChainPermission && auth) {
-        const hasPermission = await requireOnChainPermission(data, auth);
+        const hasPermission = await requireOnChainPermission(cleanData as T, auth);
         if (!hasPermission) {
           console.warn(`[withAuth] Permission denied for ${auth.wallet}`, {
             action: handler.name,
-            data,
+            data: cleanData,
           });
           return { success: false, error: "Permission denied", code: 403 };
         }
       }
 
       // Execute handler
-      const result = await handler(data, auth!);
+      const result = await handler(cleanData as T, auth!);
       
       return { success: true, data: result };
     } catch (error) {
@@ -118,7 +148,7 @@ export function withBasicAuth<T, R>(
   handler: (data: T, auth: AuthContext) => Promise<R>,
   actionName: string,
   rateLimit?: RateLimitOptions
-): (data: T) => Promise<AuthResponse<R>> {
+): (data: WithPrivyToken<T>) => Promise<AuthResponse<R>> {
   return withAuth(handler, {
     requireAuth: true,
     rateLimit: rateLimit ?? { windowMs: 60000, maxRequests: 10 },

@@ -1,5 +1,3 @@
-"use server";
-
 import { getClientIP } from "./server-auth";
 
 interface RateLimitEntry {

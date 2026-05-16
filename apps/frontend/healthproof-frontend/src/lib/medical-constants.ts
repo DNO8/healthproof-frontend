@@ -41,3 +41,71 @@ export interface OnChainEpisode {
   openedAt: number;
   active: boolean;
 }
+
+// ─── On-chain Permission (matches PermissionManager.Permission) ───
+
+export interface OnChainPermission {
+  grantee: string;
+  scope: number;
+  resourceId: string;
+  expiresAt: number;
+  active: boolean;
+}
+
+// ─── On-chain Guardianship (matches GuardianRegistry.Guardianship) ───
+
+export interface OnChainGuardianship {
+  guardian: string;
+  certifier: string;
+  gType: number;
+  legalDocHash: string;
+  validUntil: number;
+  active: boolean;
+}
+
+// ─── On-chain Document (matches MedicalDocumentRegistry.Document) ───
+
+export interface OnChainDocument {
+  patient: string;
+  issuer: string;
+  institution: string;
+  documentType: string;
+  clinicalHash: string;
+  episodeId: string;
+  cid: string;
+  standard: string;
+  classification: string;
+  createdAt: number;
+}
+
+// ─── On-chain Healthcare Network ───
+
+export interface OnChainNetwork {
+  networkId: string;
+  name: string;
+  countryCode: string;
+  authority: string;
+  active: boolean;
+}
+
+// ─── On-chain Institution ───
+
+export interface OnChainInstitution {
+  institutionId: string;
+  networkId: string;
+  wallet: string;
+  institutionType: number;
+  countryCode: string;
+  verified: boolean;
+}
+
+// ─── Audit Action (matches AuditTrail.ActionType) ───
+
+export enum AuditAction {
+  DOCUMENT_REGISTERED = 0,
+  DOCUMENT_ACCESSED = 1,
+  PERMISSION_GRANTED = 2,
+  PERMISSION_REVOKED = 3,
+  ORDER_CREATED = 4,
+  EPISODE_OPENED = 5,
+}

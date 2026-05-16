@@ -17,6 +17,8 @@ import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth"
 import type { AuthContext } from "@/lib/auth/with-auth";
 import { isVerifiedDoctor } from "@/lib/auth/permissions";
 import type { OnChainEpisode } from "@/lib/medical-constants";
+import { logAuditEvent } from "@/lib/audit-onchain";
+import { AuditAction } from "@/lib/medical-constants";
 
 const ZERO_BYTES32 =
   "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
@@ -76,6 +78,12 @@ async function openEpisodeHandler(
   });
 
   await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+  try {
+    await logAuditEvent(data.patientWallet, episodeId, AuditAction.EPISODE_OPENED);
+  } catch {
+    // On-chain audit logging is best-effort
+  }
 
   auditLog("openEpisodeOnChain", auth, true, {
     patientWallet: data.patientWallet,

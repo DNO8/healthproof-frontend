@@ -32,7 +32,7 @@ function resolveWalletAddress(
 }
 
 export function useRegisterIdentity() {
-  const { ready, authenticated } = usePrivy();
+  const { ready, authenticated, getAccessToken } = usePrivy();
   const { wallets } = useWallets();
   const calledRef = useRef(false);
 
@@ -73,8 +73,11 @@ export function useRegisterIdentity() {
 
     (async () => {
       try {
+        const privyToken = await getAccessToken();
+        const tokenOpt = privyToken ? { _privyToken: privyToken } : {};
+
         // Check if already registered on-chain WITH THE CORRECT ROLE
-        const result = await getEntityOnChain({ wallet: walletAddress });
+        const result = await getEntityOnChain({ wallet: walletAddress, ...tokenOpt });
         if (result.success && result.data && result.data.role !== 0) {
           const onChainUserRole = CONTRACT_TO_ROLE[result.data.role] ?? null;
           if (onChainUserRole === roleToUse) {
@@ -96,6 +99,7 @@ export function useRegisterIdentity() {
         const regResult = await registerEntityOnChain({
           wallet: walletAddress,
           role: contractRole,
+          ...tokenOpt,
         });
 
         if ("error" in regResult) {
@@ -122,7 +126,7 @@ export function useRegisterIdentity() {
         }
 
         // Verify entity on-chain
-        const verResult = await verifyEntityOnChain({ wallet: walletAddress });
+        const verResult = await verifyEntityOnChain({ wallet: walletAddress, ...tokenOpt });
         if (!verResult.success) {
           console.warn("[useRegisterIdentity] On-chain verification failed:", verResult.error);
         }

@@ -1,5 +1,3 @@
-"use server";
-
 import { createCipheriv, createDecipheriv, scryptSync, randomBytes } from "crypto";
 import { getKMSProvider } from "@/lib/kms/interface";
 

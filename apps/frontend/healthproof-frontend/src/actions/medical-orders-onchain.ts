@@ -17,6 +17,8 @@ import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth"
 import type { AuthContext } from "@/lib/auth/with-auth";
 import { isVerifiedDoctor, isVerifiedLab } from "@/lib/auth/permissions";
 import type { OnChainOrder } from "@/lib/medical-constants";
+import { logAuditEvent } from "@/lib/audit-onchain";
+import { AuditAction } from "@/lib/medical-constants";
 
 const ZERO_BYTES32 =
   "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
@@ -83,6 +85,12 @@ async function createOrderHandler(
   });
 
   await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+  try {
+    await logAuditEvent(data.patientWallet, orderId, AuditAction.ORDER_CREATED);
+  } catch {
+    // On-chain audit logging is best-effort
+  }
 
   auditLog("createMedicalOrderOnChain", auth, true, {
     patientWallet: data.patientWallet,

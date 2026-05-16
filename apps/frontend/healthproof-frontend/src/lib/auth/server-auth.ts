@@ -1,5 +1,3 @@
-"use server";
-
 import { cookies } from "next/headers";
 
 const PRIVY_TOKEN_COOKIE = "privy-token";
@@ -15,9 +13,9 @@ export interface AuthContext {
  * Verify Privy authentication from cookies
  * Returns authenticated user context or throws error
  */
-export async function verifyPrivyAuth(): Promise<AuthContext> {
+export async function verifyPrivyAuth(privyToken?: string): Promise<AuthContext> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(PRIVY_TOKEN_COOKIE)?.value;
+  const token = privyToken ?? cookieStore.get(PRIVY_TOKEN_COOKIE)?.value;
   const idToken = cookieStore.get(PRIVY_ID_COOKIE)?.value;
 
   if (!token) {
