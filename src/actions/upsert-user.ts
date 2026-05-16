@@ -16,7 +16,9 @@ async function upsertUserHandler(
   auth: AuthContext
 ): Promise<{ success: true } | { error: string; code?: number }> {
   // Verify caller can only update their own record
-  if (data.id !== auth.userId) {
+  // Dev fallback: auth.userId is "dev-user" when Privy cookies are blocked on HTTP localhost
+  const isDevFallback = process.env.NODE_ENV === "development" && auth.userId === "dev-user";
+  if (!isDevFallback && data.id !== auth.userId) {
     return { error: "Unauthorized", code: 403 };
   }
 

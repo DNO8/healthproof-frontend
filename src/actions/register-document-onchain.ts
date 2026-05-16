@@ -13,6 +13,8 @@ import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import MedicalDocumentRegistryAbi from "@/lib/abis/MedicalDocumentRegistry.json";
 import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { logAuditEvent } from "@/lib/audit-onchain";
+import { AuditAction } from "@/lib/medical-constants";
 
 const ZERO_BYTES32 =
   "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
@@ -76,6 +78,12 @@ async function registerDocumentHandler(
   });
 
   await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+  try {
+    await logAuditEvent(data.patientWallet, documentId, AuditAction.DOCUMENT_REGISTERED);
+  } catch {
+    // On-chain audit logging is best-effort
+  }
 
   auditLog("registerDocumentOnChain", auth, true, {
     patientWallet: data.patientWallet,
