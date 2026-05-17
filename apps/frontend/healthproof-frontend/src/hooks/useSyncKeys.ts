@@ -109,6 +109,23 @@ export function useSyncKeys() {
             }
           }
 
+          if (!kp.privateKey.extractable) {
+            await deleteKeyPair(userId);
+            const newKp = await generateKeyPair(true);
+            await saveKeyPair(userId, newKp);
+            localPk = await exportPublicKey(newKp.publicKey);
+            const newPrivJwk = await crypto.subtle.exportKey("jwk", newKp.privateKey);
+            const shares = generateShares(jwkToUint8Array(newPrivJwk as JsonWebKey), 2, 2);
+            const share1 = shareToBase64(shares[0]);
+            await saveKeyShare({ userId, share: share1 });
+            const pubRes = await updatePublicKey({ id: userId, public_key: localPk });
+            if (pubRes.success) {
+              sessionStorage.setItem(SYNCED_KEY, userId);
+              clearDbUserCache();
+            } else { calledRef.current = false; }
+            return;
+          }
+
           const privateKeyJwk = await crypto.subtle.exportKey("jwk", kp.privateKey);
           const shares = generateShares(jwkToUint8Array(privateKeyJwk as JsonWebKey), 2, 2);
           const share1 = shareToBase64(shares[0]);
@@ -169,7 +186,10 @@ export function useSyncKeys() {
             legacyPassword,
           );
           if (privateKeyJwk) {
-            const privateKey = await importPrivateKey(JSON.parse(privateKeyJwk));
+            const privateKeyJwkObj = JSON.parse(privateKeyJwk) as JsonWebKey;
+            const privateKey = await crypto.subtle.importKey(
+              "jwk", privateKeyJwkObj, { name: "ECDH", namedCurve: "P-256" }, true, ["deriveKey", "deriveBits"],
+            );
             const publicKeyJwk = JSON.parse(userWithBackup.public_key) as JsonWebKey;
             const publicKey = await crypto.subtle.importKey(
               "jwk", publicKeyJwk, { name: "ECDH", namedCurve: "P-256" }, false, [],
