@@ -1,6 +1,6 @@
 export const env = {
   PRIVY_APP_ID: process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? "",
-  PRIVY_SECRET_ID: process.env.PRIVY_SECRET_ID ?? "",
+  PRIVY_APP_SECRET: process.env.PRIVY_APP_SECRET ?? "",
   SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   SUPABASE_KEY: process.env.NEXT_PUBLIC_SUPABASE_KEY ?? "",
   SUPABASE_SECRET_KEY: process.env.NEXT_SUPABASE_SECRET_KEY ?? "",

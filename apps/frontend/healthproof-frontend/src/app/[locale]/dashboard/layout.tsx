@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
 import { useOnChainRole } from "@/hooks/useOnChainRole";
 import { useDbUser } from "@/hooks/useDbUser";
+import type { UserRole } from "@/types/domain.types";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 
 export default function DashboardLayout({
@@ -17,7 +18,16 @@ export default function DashboardLayout({
   const { ready, authenticated } = usePrivy();
   const { dbUser, loading: dbLoading } = useDbUser();
   const walletAddress = useWalletAddress();
-  const { role, loading: roleLoading } = useOnChainRole(walletAddress);
+  const { role: onChainRole, loading: roleLoading } = useOnChainRole(walletAddress);
+
+  // Fallback chain: on-chain role → DB role → localStorage intended role → patient
+  const effectiveRole: UserRole = useMemo(() => {
+    const intended = typeof window !== "undefined"
+      ? (localStorage.getItem("hp_intended_role") as UserRole | null)
+      : null;
+    const dbRole = dbUser?.role?.toLowerCase() as UserRole | null;
+    return onChainRole ?? dbRole ?? intended ?? "patient";
+  }, [onChainRole, dbUser?.role]);
 
   useEffect(() => {
     if (ready && !authenticated) {
@@ -39,7 +49,7 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen">
-      <DashboardSidebar role={role} walletAddress={walletAddress} />
+      <DashboardSidebar role={effectiveRole} walletAddress={walletAddress} />
       <main className="flex-1 md:ml-64 min-h-screen">
         {children}
       </main>
