@@ -63,36 +63,63 @@ export function useUpsertUser() {
 
     (async () => {
       const privyToken = await getAccessToken();
-      upsertUser({
-        id: userId,
-        email: email ?? "",
-        wallet_address: walletAddress,
-        full_name: fullName,
-        _privyToken: privyToken ?? undefined,
-      })
-      .then((result) => {
+
+      // Read intended role from signup flow
+      const intendedRole = typeof window !== "undefined"
+        ? localStorage.getItem("hp_intended_role")
+        : null;
+
+      // Retry helper for transient auth failures
+      async function tryUpsert(attempt: number): Promise<void> {
+        const result = await upsertUser({
+          id: userId,
+          email: email ?? "",
+          wallet_address: walletAddress,
+          full_name: fullName,
+          role: intendedRole ?? undefined,
+          _privyToken: privyToken ?? undefined,
+        });
+
         if ("success" in result && result.success) {
           sessionStorage.setItem(SESSION_KEY, userId);
           clearDbUserCache();
-        } else if ("code" in result && result.code === 409) {
+          return;
+        }
+
+        if ("code" in result && result.code === 409) {
           sileo.error({
             title: "Account already exists",
             description:
               "An account with this email is already registered. Please sign in instead.",
             duration: 6000,
           });
-          logout().then(() => {
-            window.location.href = "/auth";
-          });
-        } else {
-          console.error("upsertUser failed:", result.error);
-          calledRef.current = false;
+          await logout();
+          window.location.href = "/auth";
+          return;
         }
-      })
-      .catch((err) => {
+
+        const isAuthError = result.error?.toLowerCase().includes("authentication") ||
+                            result.error?.toLowerCase().includes("token");
+
+        if (isAuthError && attempt < 3) {
+          const delay = 1000 * Math.pow(2, attempt); // 2s, 4s, 8s
+          console.warn(`[useUpsertUser] Auth failed, retrying in ${delay}ms (attempt ${attempt + 1}/3)`);
+          await new Promise((r) => setTimeout(r, delay));
+          // Refresh token before retry
+          const freshToken = await getAccessToken();
+          return tryUpsert(attempt + 1);
+        }
+
+        console.error("upsertUser failed:", result.error);
+        calledRef.current = false;
+      }
+
+      try {
+        await tryUpsert(0);
+      } catch (err) {
         console.error("Failed to upsert user:", err);
         calledRef.current = false;
-      });
+      }
     })();
   }, [ready, authenticated, userId, email, fullName, walletAddress, logout]);
 }

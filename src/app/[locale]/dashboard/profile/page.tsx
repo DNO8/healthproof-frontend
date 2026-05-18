@@ -47,7 +47,13 @@ export default function ProfilePage() {
 
   const email =
     user.email?.address ?? user.google?.email ?? dbUser?.email ?? "";
-  const effectiveRole: UserRole = onChainRole ?? "patient";
+
+  // Fallback chain: on-chain role → DB role → localStorage intended role → patient
+  const intendedRole = typeof window !== "undefined"
+    ? (localStorage.getItem("hp_intended_role") as UserRole | null)
+    : null;
+  const dbRole = dbUser?.role?.toLowerCase() as UserRole | null;
+  const effectiveRole: UserRole = onChainRole ?? dbRole ?? intendedRole ?? "patient";
   const roleConfig = ROLES.find((r) => r.key === effectiveRole);
   const roleLabel = tRoles(ROLE_LABEL_KEYS[effectiveRole] ?? "patient");
   const fullName = dbUser?.full_name ?? user.google?.name ?? "";
