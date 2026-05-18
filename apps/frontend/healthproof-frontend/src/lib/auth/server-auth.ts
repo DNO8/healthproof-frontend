@@ -1,7 +1,14 @@
 import { cookies } from "next/headers";
+import { PrivyClient } from "@privy-io/server-auth";
 
 const PRIVY_TOKEN_COOKIE = "privy-token";
 const PRIVY_ID_COOKIE = "privy-id-token";
+
+// Privy Server SDK — requires App ID + App Secret
+const privyClient = new PrivyClient(
+  process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? "",
+  process.env.PRIVY_SECRET_ID ?? ""
+);
 
 export interface AuthContext {
   userId: string;
@@ -10,40 +17,36 @@ export interface AuthContext {
 }
 
 /**
- * Verify Privy authentication from cookies
- * Returns authenticated user context or throws error
+ * Verify Privy authentication using the official Server SDK.
+ * Falls back to cookie-based token if no explicit token is provided.
  */
 export async function verifyPrivyAuth(privyToken?: string): Promise<AuthContext> {
   const cookieStore = await cookies();
   const token = privyToken ?? cookieStore.get(PRIVY_TOKEN_COOKIE)?.value;
-  const idToken = cookieStore.get(PRIVY_ID_COOKIE)?.value;
 
   if (!token) {
     throw new AuthError("No authentication token found", 401);
   }
 
-  // Verify token with Privy API
-  const response = await fetch("https://auth.privy.io/api/v1/sessions/verify", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
+  // Verify token with Privy Server SDK
+  const verifiedClaims = await privyClient.verifyAuthToken(token);
 
-  if (!response.ok) {
+  if (!verifiedClaims.userId) {
     throw new AuthError("Invalid or expired authentication", 401);
   }
 
-  const session = await response.json();
-  
-  if (!session.user || !session.user.wallet_address) {
+  // Fetch full user to get wallet address
+  const user = await privyClient.getUser(verifiedClaims.userId);
+  const wallet = user.wallet?.address ?? user.linkedAccounts.find((a: unknown) => (a as Record<string, unknown>).type === "wallet");
+  const walletAddress = typeof wallet === "string" ? wallet : (wallet as { address?: string })?.address ?? "";
+
+  if (!walletAddress) {
     throw new AuthError("No wallet connected", 401);
   }
 
   return {
-    userId: session.user.id,
-    wallet: session.user.wallet_address.toLowerCase(),
+    userId: verifiedClaims.userId,
+    wallet: walletAddress.toLowerCase(),
     token,
   };
 }

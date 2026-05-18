@@ -78,13 +78,17 @@ async function registerEntityHandler(
     return { txHash };
 }
 
-async function validateAdmin(_data: unknown, auth: AuthContext): Promise<boolean> {
-  return await isVerifiedAdmin(auth.wallet);
+async function validateAdminOrSelf(data: unknown, auth: AuthContext): Promise<boolean> {
+  const isAdmin = await isVerifiedAdmin(auth.wallet);
+  if (isAdmin) return true;
+  // Allow users to register their own wallet
+  const payload = data as RegisterEntityData;
+  return payload.wallet.toLowerCase() === auth.wallet.toLowerCase();
 }
 
 export const registerEntityOnChain = withAuth<RegisterEntityData, { txHash: string }>(registerEntityHandler, {
   rateLimit: { windowMs: 60000, maxRequests: 5 },
-  requireOnChainPermission: validateAdmin,
+  requireOnChainPermission: validateAdminOrSelf,
 });
 
 async function verifyEntityHandler(
@@ -123,9 +127,16 @@ async function verifyEntityHandler(
   return { txHash };
 }
 
+async function verifyAdminOrSelf(data: unknown, auth: AuthContext): Promise<boolean> {
+  const isAdmin = await isVerifiedAdmin(auth.wallet);
+  if (isAdmin) return true;
+  const payload = data as { wallet: string };
+  return payload.wallet.toLowerCase() === auth.wallet.toLowerCase();
+}
+
 export const verifyEntityOnChain = withAuth<{ wallet: string }, { txHash: string }>(verifyEntityHandler, {
   rateLimit: { windowMs: 60000, maxRequests: 10 },
-  requireOnChainPermission: validateAdmin,
+  requireOnChainPermission: verifyAdminOrSelf,
 });
 
 async function getEntityHandler(

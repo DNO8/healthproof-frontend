@@ -13,6 +13,7 @@ export interface DbUser {
   full_name: string | null;
   created_at: string;
   public_key: string | null;
+  role: string | null;
 }
 
 function getCached(userId: string): DbUser | null {

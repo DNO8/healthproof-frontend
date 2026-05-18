@@ -55,7 +55,13 @@ export default function OverviewPage() {
   }
 
   const email = user?.email?.address ?? user?.google?.email ?? dbUser?.email ?? "";
-  const effectiveRole: UserRole = role ?? "patient";
+
+  // Fallback chain: on-chain role → DB role → localStorage intended role → patient
+  const intendedRole = typeof window !== "undefined"
+    ? (localStorage.getItem("hp_intended_role") as UserRole | null)
+    : null;
+  const dbRole = dbUser?.role?.toLowerCase() as UserRole | null;
+  const effectiveRole: UserRole = role ?? dbRole ?? intendedRole ?? "patient";
   const roleConfig = ROLES.find((r) => r.key === effectiveRole);
   const metricKeys = ROLE_METRIC_KEYS[effectiveRole] ?? ROLE_METRIC_KEYS.patient!;
   const descKey = ROLE_DESC_KEYS[effectiveRole] ?? "patient";
