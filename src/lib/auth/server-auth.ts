@@ -7,7 +7,7 @@ const PRIVY_ID_COOKIE = "privy-id-token";
 // Privy Server SDK — requires App ID + App Secret
 const privyClient = new PrivyClient(
   process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? "",
-  process.env.PRIVY_SECRET_ID ?? ""
+  process.env.PRIVY_APP_SECRET ?? ""
 );
 
 export interface AuthContext {
