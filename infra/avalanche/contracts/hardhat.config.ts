@@ -22,7 +22,7 @@ const config: HardhatUserConfig = {
     hygieia: {
       url:
         process.env.HYGIEIA_RPC_URL ||
-        "http://3.141.110.34:9650/ext/bc/2jCAc5YTNYtf86EuMn4EGmyHNRrH4Hm3zis3cikhPh3wAQTCEJ/rpc",
+        "http://3.141.110.34:9654/ext/bc/2GyyV9JKfw3ZqLHVra8UzJ53avgFZbAvVRjVXQnVjPYM2xsNYq/rpc",
       chainId: 21668,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
