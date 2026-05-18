@@ -61,6 +61,10 @@ export function useUpsertUser() {
 
     calledRef.current = true;
 
+    // Capture non-null values for the async closure
+    const id = userId;
+    const wallet = walletAddress;
+
     (async () => {
       const privyToken = await getAccessToken();
 
@@ -72,16 +76,16 @@ export function useUpsertUser() {
       // Retry helper for transient auth failures
       async function tryUpsert(attempt: number): Promise<void> {
         const result = await upsertUser({
-          id: userId,
+          id,
           email: email ?? "",
-          wallet_address: walletAddress,
+          wallet_address: wallet,
           full_name: fullName,
           role: intendedRole ?? undefined,
           _privyToken: privyToken ?? undefined,
         });
 
         if ("success" in result && result.success) {
-          sessionStorage.setItem(SESSION_KEY, userId);
+          sessionStorage.setItem(SESSION_KEY, id);
           clearDbUserCache();
           return;
         }
