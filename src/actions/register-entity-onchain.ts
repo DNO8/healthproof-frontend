@@ -3,6 +3,7 @@
 import { createWalletClient, createPublicClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { env } from "@/lib/env";
 import IdentityRegistryAbi from "@/lib/abis/IdentityRegistry.json";
 import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth";
 import type { AuthContext, AuthResponse } from "@/lib/auth/with-auth";
@@ -14,19 +15,20 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
 async function getClients() {
   const pk = await getDeployerPrivateKey();
   if (!pk) throw new Error("DEPLOYER_PRIVATE_KEY not set");
-  
+
   const prefixed = pk.startsWith("0x") ? pk : `0x${pk}`;
   const account = privateKeyToAccount(prefixed as `0x${string}`);
+  const rpcUrl = env.RPC_URL;
 
   const publicClient = createPublicClient({
     chain: HEALTHPROOF_CHAIN,
-    transport: http(),
+    transport: http(rpcUrl, { timeout: 30000 }),
   });
 
   const walletClient = createWalletClient({
     account,
     chain: HEALTHPROOF_CHAIN,
-    transport: http(),
+    transport: http(rpcUrl, { timeout: 30000 }),
   });
 
   return { publicClient, walletClient, account };
