@@ -18,7 +18,7 @@ export function TeamSection() {
           <strong className="text-slate-800">{t("descriptionBold")}</strong>
         </p>
 
-        <div className="mx-auto mt-8 grid max-w-3xl gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mx-auto mt-8 grid max-w-5xl gap-5 sm:grid-cols-2 lg:grid-cols-5">
           {TEAM_MEMBERS.map((member) => (
             <a
               className="neu-surface flex flex-col items-center p-5 text-center transition-shadow hover:shadow-lg"

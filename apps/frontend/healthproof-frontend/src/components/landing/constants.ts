@@ -272,33 +272,43 @@ export const TEAM_MEMBERS: TeamMember[] = [
   {
     name: "Catalina Orellana",
     role: "CEO",
-    photo: "/images/team/catalina_orellana.png",
+    photo: "/images/team/catalina_orellana.webp",
     icons: ["/images/icons/herdao-icon.png"],
     linkedin: "https://www.linkedin.com/in/catalina-orellana-riveros/",
   },
   {
     name: "Pablo Guzmán",
     role: "CTO",
-    photo: "/images/team/pablo_guzman.png",
+    photo: "/images/team/pablo_guzman.webp",
     icons: ["/images/icons/team-one-icon.png", "/images/icons/pablo-icon.png"],
     linkedin: "https://www.linkedin.com/in/pablo-guzman-sanchez/",
   },
   {
     name: "Danilo Contreras",
     role: "CPO",
-    photo: "/images/team/danilo_contreras.png",
+    photo: "/images/team/danilo_contreras.webp",
     icons: ["/images/icons/ronin-icon.png", "/images/icons/stellar-icon.png"],
     linkedin: "https://www.linkedin.com/in/danilo-contreras-05597922b/",
   },
   {
     name: "Andrés Peña",
     role: "CMO",
-    photo: "/images/team/andres_peña.png",
+    photo: "/images/team/andres_peña.webp",
     icons: [
       "/images/icons/andres-icon.png",
       "/images/icons/chatterpay-icon.png",
     ],
     linkedin: "https://www.linkedin.com/in/andresanemic/",
+  },
+  {
+    name: "Marcos Vinicio Reyes",
+    role: "Asesor en Tecnología y Sistemas de Negocio",
+    photo: "/images/team/marcos_vini.webp",
+    icons: [
+      "/images/icons/stellar-icon.png",
+      "/images/icons/tupartnerti-icon.jpeg",
+    ],
+    linkedin: "https://www.linkedin.com/in/marcosvinicioreyes/",
   },
 ];
 

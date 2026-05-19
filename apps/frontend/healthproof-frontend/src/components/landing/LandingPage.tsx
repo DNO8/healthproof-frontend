@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { ScrollReveal, SectionDivider } from "@/components/ui";
 import {
   BeforeAfterSection,
+  DemoVideoSection,
   FinalCtaSection,
   HeroCarouselSection,
   Icd11Section,
@@ -49,6 +50,12 @@ export function LandingPage() {
           <SectionDivider label={t("howItWorks")} />
         </ScrollReveal>
         <WorkflowSection />
+
+        {/* §5.5 Demo Video */}
+        <ScrollReveal y={30} duration={0.5}>
+          <SectionDivider label={t("demoVideo")} />
+        </ScrollReveal>
+        <DemoVideoSection />
 
         {/* §6 Technology */}
         <ScrollReveal y={30} duration={0.5}>

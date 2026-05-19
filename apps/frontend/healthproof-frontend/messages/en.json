@@ -612,6 +612,11 @@
       "lookupResult": "Entity found"
     }
   },
+  "demoVideo": {
+    "eyebrow": "See It In Action",
+    "title": "HealthProof Platform Demo",
+    "subtitle": "Watch how HealthProof transforms medical document verification in under 3 minutes."
+  },
   "contact": {
     "title": "Contact — HealthProof",
     "description": "Get in touch with the HealthProof team",
@@ -648,6 +653,7 @@
     "regulatoryUrgency": "Regulatory Urgency",
     "useCases": "Use Cases",
     "howItWorks": "How It Works",
+    "demoVideo": "Demo",
     "technology": "Technology",
     "team": "Team",
     "icd11": "ICD-11",

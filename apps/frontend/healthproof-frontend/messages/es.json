@@ -612,6 +612,11 @@
       "lookupResult": "Entidad encontrada"
     }
   },
+  "demoVideo": {
+    "eyebrow": "Véalo En Acción",
+    "title": "Demo de la Plataforma HealthProof",
+    "subtitle": "Mira cómo HealthProof transforma la verificación de documentos médicos en menos de 3 minutos."
+  },
   "contact": {
     "title": "Contacto — HealthProof",
     "description": "Ponte en contacto con el equipo de HealthProof",
@@ -648,6 +653,7 @@
     "regulatoryUrgency": "Urgencia Regulatoria",
     "useCases": "Casos de Uso",
     "howItWorks": "Cómo Funciona",
+    "demoVideo": "Demo",
     "technology": "Tecnología",
     "team": "Equipo",
     "icd11": "ICD-11",
