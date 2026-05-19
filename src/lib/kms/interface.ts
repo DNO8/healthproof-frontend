@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * KMS (Key Management Service) abstraction interface.
  * Allows switching between environment variable storage and cloud KMS providers.
