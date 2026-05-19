@@ -67,7 +67,7 @@ export default function OverviewPage() {
   const descKey = ROLE_DESC_KEYS[effectiveRole] ?? "patient";
   const roleLabel = tRoles(effectiveRole === "lab" ? "laboratory" : effectiveRole);
 
-  const displayName = dbUser?.full_name ?? null;
+  const displayName = dbUser?.full_name ?? user?.google?.name ?? null;
   const isProfileComplete = Boolean(displayName && walletAddress);
   const userId = user?.id ?? "";
 
