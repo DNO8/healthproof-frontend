@@ -46,6 +46,11 @@ export function useSyncWallet() {
           sessionStorage.setItem(SYNCED_KEY, userId);
           clearDbUserCache();
           console.log("[useSyncWallet] Synced wallet address:", address);
+        } else if (result.code === 409) {
+          // Wallet change blocked by on-chain role — stop retrying
+          console.warn("[useSyncWallet] Wallet change blocked:", result.error);
+          sessionStorage.setItem(SYNCED_KEY, userId);
+          syncedRef.current = false;
         } else {
           console.error("[useSyncWallet] Sync failed:", result.error);
           syncedRef.current = false;
