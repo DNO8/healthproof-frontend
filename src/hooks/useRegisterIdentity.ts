@@ -78,10 +78,12 @@ export function useRegisterIdentity() {
         const privyToken = await getAccessToken();
         const tokenOpt = privyToken ? { _privyToken: privyToken } : {};
 
-        // Check if already registered on-chain WITH THE CORRECT ROLE
+        // Check if already registered on-chain
         const result = await getEntityOnChain({ wallet: walletAddress, ...tokenOpt });
         if (result.success && result.data && result.data.role !== 0) {
           const onChainUserRole = CONTRACT_TO_ROLE[result.data.role] ?? null;
+
+          // Same role — all good
           if (onChainUserRole === roleToUse) {
             console.log("[useRegisterIdentity] Already correctly registered as:", roleToUse);
             localStorage.setItem(INTENDED_KEY, roleToUse);
@@ -91,8 +93,20 @@ export function useRegisterIdentity() {
             calledRef.current = false;
             return;
           }
-          console.log("[useRegisterIdentity] Role mismatch on-chain:", onChainUserRole, "→ re-registering as:", roleToUse);
-          sessionStorage.removeItem(REGISTERED_KEY); // force re-check next session too
+
+          // Role mismatch — BLOCK re-registration to prevent data loss and compliance issues
+          console.warn("[useRegisterIdentity] Role mismatch blocked. On-chain:", onChainUserRole, "requested:", roleToUse);
+          localStorage.setItem(INTENDED_KEY, onChainUserRole); // accept on-chain role as source of truth
+          localStorage.removeItem(ROLE_KEY);
+          sessionStorage.setItem(REGISTERED_KEY, walletAddress);
+          clearOnChainRoleCache();
+          sileo.error({
+            title: "Role already assigned",
+            description: `Your wallet is already registered as a ${onChainUserRole}. Contact support to change roles.`,
+            duration: 8000,
+          });
+          calledRef.current = false;
+          return;
         }
 
         // Register on-chain via deployer admin
