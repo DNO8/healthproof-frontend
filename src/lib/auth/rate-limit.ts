@@ -19,18 +19,20 @@ export interface RateLimitOptions {
 }
 
 /**
- * Check rate limit for current IP and action
+ * Check rate limit for current IP/action and optional user identifier
  * Throws error if limit exceeded
  */
 export async function checkRateLimit(
   actionName: string,
-  options: RateLimitOptions = {}
+  options: RateLimitOptions = {},
+  identifier?: string
 ): Promise<void> {
   const windowMs = options.windowMs ?? DEFAULT_WINDOW_MS;
   const maxRequests = options.maxRequests ?? DEFAULT_MAX_REQUESTS;
   
   const ip = getClientIP();
-  const key = `${ip}:${actionName}`;
+  const prefix = identifier ? `user:${identifier}` : `ip:${ip}`;
+  const key = `${prefix}:${actionName}`;
   const now = Date.now();
 
   const entry = rateLimitStore.get(key);

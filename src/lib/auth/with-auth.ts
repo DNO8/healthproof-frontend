@@ -54,12 +54,6 @@ export function withAuth<T, R>(
       // Extract optional explicit token (needed for local dev without Secure cookies)
       const { _privyToken, ...cleanData } = data as unknown as Record<string, unknown>;
 
-      // Rate limiting (applies even if auth is optional)
-      if (rateLimit) {
-        const actionName = handler.name || "unknown";
-        await checkRateLimit(actionName, rateLimit);
-      }
-
       // Authentication
       let auth: AuthContext | null = null;
       try {
@@ -97,6 +91,12 @@ export function withAuth<T, R>(
 
       if (requireAuth && !auth) {
         return { success: false, error: "Authentication required", code: 401 };
+      }
+
+      // Rate limiting with per-user bucket (wallet) when authenticated, IP fallback otherwise
+      if (rateLimit) {
+        const actionName = handler.name || "unknown";
+        await checkRateLimit(actionName, rateLimit, auth?.wallet ?? undefined);
       }
 
       // On-chain permission validation

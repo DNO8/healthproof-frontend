@@ -15,7 +15,7 @@ const ROLE_KEY = "hp_selected_role";           // transient: cleared after regis
 const INTENDED_KEY = "hp_intended_role";        // persistent: survives across sessions
 const REGISTERED_KEY = "hp_onchain_registered"; // sessionStorage: set after success
 const ATTEMPTS_KEY = "hp_reg_attempts";         // sessionStorage: retry counter
-const MAX_ATTEMPTS = 2;
+const MAX_ATTEMPTS = 10;
 const VALID_ROLES: UserRole[] = ["patient", "doctor", "lab"];
 
 
@@ -37,10 +37,11 @@ export function useRegisterIdentity() {
   const calledRef = useRef(false);
 
   const walletAddress = resolveWalletAddress(wallets);
+  const inProgressRef = useRef(false);
 
   useEffect(() => {
     if (!ready || !authenticated) return;
-    if (!walletAddress || calledRef.current) return;
+    if (!walletAddress || calledRef.current || inProgressRef.current) return;
 
     const storedRole = localStorage.getItem(ROLE_KEY) as UserRole | null;
     const intendedRole = localStorage.getItem(INTENDED_KEY) as UserRole | null;
@@ -69,6 +70,7 @@ export function useRegisterIdentity() {
     sessionStorage.setItem(ATTEMPTS_KEY, String(attempts + 1));
 
     calledRef.current = true;
+    inProgressRef.current = true;
     console.log("[useRegisterIdentity] Registering wallet:", walletAddress, "as role:", roleToUse);
 
     (async () => {
@@ -108,16 +110,23 @@ export function useRegisterIdentity() {
             regResult.error.includes("ECONNREFUSED") ||
             regResult.error.includes("network") ||
             regResult.error.includes("timeout");
+          const isRateLimit = regResult.error.toLowerCase().includes("rate limit");
 
           console.error("[useRegisterIdentity] Registration failed:", regResult.error);
           sileo.error({
-            title: isRpcError ? "Network error" : "Registration failed",
-            description: isRpcError
-              ? "Could not connect to the Hygieia network. Please try again later."
-              : regResult.error.slice(0, 120),
+            title: isRpcError ? "Network error" : isRateLimit ? "Please wait" : "Registration failed",
+            description: isRateLimit
+              ? "Too many registration attempts. Please wait a minute and refresh."
+              : isRpcError
+                ? "Could not connect to the Hygieia network. Please try again later."
+                : regResult.error.slice(0, 120),
             duration: 6000,
           });
-          calledRef.current = false;
+          // Don't reset calledRef on rate limit so the effect doesn't retry immediately
+          if (!isRateLimit) {
+            calledRef.current = false;
+          }
+          inProgressRef.current = false;
           return;
         }
 
@@ -145,6 +154,8 @@ export function useRegisterIdentity() {
       } catch (err) {
         console.error("[useRegisterIdentity] Unexpected error:", err);
         calledRef.current = false;
+      } finally {
+        inProgressRef.current = false;
       }
     })();
   }, [ready, authenticated, walletAddress]);

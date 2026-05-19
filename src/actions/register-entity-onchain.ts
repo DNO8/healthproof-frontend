@@ -89,7 +89,7 @@ async function validateAdminOrSelf(data: unknown, auth: AuthContext): Promise<bo
 }
 
 export const registerEntityOnChain = withAuth<RegisterEntityData, { txHash: string }>(registerEntityHandler, {
-  rateLimit: { windowMs: 60000, maxRequests: 5 },
+  rateLimit: { windowMs: 60000, maxRequests: 30 },
   requireOnChainPermission: validateAdminOrSelf,
 });
 
@@ -137,7 +137,7 @@ async function verifyAdminOrSelf(data: unknown, auth: AuthContext): Promise<bool
 }
 
 export const verifyEntityOnChain = withAuth<{ wallet: string }, { txHash: string }>(verifyEntityHandler, {
-  rateLimit: { windowMs: 60000, maxRequests: 10 },
+  rateLimit: { windowMs: 60000, maxRequests: 30 },
   requireOnChainPermission: verifyAdminOrSelf,
 });
 
@@ -176,7 +176,7 @@ async function getEntityHandler(
 
 type EntityData = { role: number; specialty: string; institution: string; verified: boolean } | null;
 export const getEntityOnChain = withAuth<{ wallet: string }, EntityData>(getEntityHandler, {
-  rateLimit: { windowMs: 60000, maxRequests: 20 },
+  rateLimit: { windowMs: 60000, maxRequests: 30 },
 });
 
 async function getRoleHandler(
