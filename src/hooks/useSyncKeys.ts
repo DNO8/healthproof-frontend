@@ -47,7 +47,7 @@ function uint8ArrayToJwk(bytes: Uint8Array): JsonWebKey {
 
 export function useSyncKeys() {
   const { ready, authenticated, user } = usePrivy();
-  const calledRef = useRef(false);
+  const ranForRef = useRef<{ userId: string; wallet: string } | null>(null);
   const setConflict = useKeyConflictStore((s) => s.setConflict);
   const clearConflict = useKeyConflictStore((s) => s.clearConflict);
 
@@ -56,9 +56,13 @@ export function useSyncKeys() {
 
   useEffect(() => {
     if (!ready || !authenticated || !userId || !walletAddress) return;
-    if (calledRef.current) return;
 
-    calledRef.current = true;
+    const alreadyRan = ranForRef.current;
+    if (alreadyRan && alreadyRan.userId === userId && alreadyRan.wallet === walletAddress) {
+      return;
+    }
+
+    ranForRef.current = { userId, wallet: walletAddress };
 
     const alreadySynced = sessionStorage.getItem(SYNCED_KEY);
     if (alreadySynced === userId) return;
@@ -71,7 +75,7 @@ export function useSyncKeys() {
         // ── Case 1: IndexedDB has keys ──────────────────────────
         if (localExists) {
           const kp = await getKeyPair(userId);
-          if (!kp) { calledRef.current = false; return; }
+          if (!kp) { ranForRef.current = null; return; }
 
           let localPk: string;
           try {
@@ -91,7 +95,7 @@ export function useSyncKeys() {
             if (pubRes.success) {
               sessionStorage.setItem(SYNCED_KEY, userId);
               clearDbUserCache();
-            } else { calledRef.current = false; }
+            } else { ranForRef.current = null; }
             return;
           }
 
@@ -122,7 +126,7 @@ export function useSyncKeys() {
             if (pubRes.success) {
               sessionStorage.setItem(SYNCED_KEY, userId);
               clearDbUserCache();
-            } else { calledRef.current = false; }
+            } else { ranForRef.current = null; }
             return;
           }
 
@@ -135,7 +139,7 @@ export function useSyncKeys() {
           if (pubRes.success) {
             sessionStorage.setItem(SYNCED_KEY, userId);
             clearDbUserCache();
-          } else { calledRef.current = false; }
+          } else { ranForRef.current = null; }
           return;
         }
 
@@ -224,10 +228,10 @@ export function useSyncKeys() {
         if (pubRes.success) {
           sessionStorage.setItem(SYNCED_KEY, userId);
           clearDbUserCache();
-        } else { calledRef.current = false; }
+        } else { ranForRef.current = null; }
       } catch (err) {
         console.error("[useSyncKeys] Error syncing keys:", err);
-        calledRef.current = false;
+        ranForRef.current = null;
       }
     })();
   }, [ready, authenticated, userId, walletAddress, setConflict, clearConflict]);
