@@ -32,16 +32,35 @@ function resolveWalletAddress(
 }
 
 export function useRegisterIdentity() {
-  const { ready, authenticated, getAccessToken } = usePrivy();
+  const { ready, authenticated, getAccessToken, user } = usePrivy();
   const { wallets } = useWallets();
-  const calledRef = useRef(false);
+  const ranForRef = useRef<{ userId: string; wallet: string } | null>(null);
 
   const walletAddress = resolveWalletAddress(wallets);
   const inProgressRef = useRef(false);
+  const userId = user?.id;
 
   useEffect(() => {
-    if (!ready || !authenticated) return;
-    if (!walletAddress || calledRef.current || inProgressRef.current) return;
+    if (!ready || !authenticated || !userId || !walletAddress) return;
+
+    const alreadyRan = ranForRef.current;
+    if (alreadyRan && alreadyRan.userId === userId && alreadyRan.wallet === walletAddress) {
+      return;
+    }
+
+    if (inProgressRef.current) return;
+
+    // Detect user switch and clear stale role data from previous account
+    const lastUserId = localStorage.getItem("hp_last_user_id");
+    if (lastUserId && lastUserId !== userId) {
+      localStorage.removeItem(ROLE_KEY);
+      localStorage.removeItem(INTENDED_KEY);
+      sessionStorage.removeItem(REGISTERED_KEY);
+      sessionStorage.removeItem(ATTEMPTS_KEY);
+    }
+    localStorage.setItem("hp_last_user_id", userId);
+
+    ranForRef.current = { userId, wallet: walletAddress };
 
     const storedRole = localStorage.getItem(ROLE_KEY) as UserRole | null;
     const intendedRole = localStorage.getItem(INTENDED_KEY) as UserRole | null;
@@ -69,7 +88,6 @@ export function useRegisterIdentity() {
     }
     sessionStorage.setItem(ATTEMPTS_KEY, String(attempts + 1));
 
-    calledRef.current = true;
     inProgressRef.current = true;
     console.log("[useRegisterIdentity] Registering wallet:", walletAddress, "as role:", roleToUse);
 
@@ -90,7 +108,7 @@ export function useRegisterIdentity() {
             localStorage.removeItem(ROLE_KEY);
             sessionStorage.setItem(REGISTERED_KEY, walletAddress);
             clearOnChainRoleCache();
-            calledRef.current = false;
+            ranForRef.current = null;
             return;
           }
 
@@ -105,7 +123,7 @@ export function useRegisterIdentity() {
             description: `Your wallet is already registered as a ${onChainUserRole}. Contact support to change roles.`,
             duration: 8000,
           });
-          calledRef.current = false;
+          ranForRef.current = null;
           return;
         }
 
@@ -136,9 +154,9 @@ export function useRegisterIdentity() {
                 : regResult.error.slice(0, 120),
             duration: 6000,
           });
-          // Don't reset calledRef on rate limit so the effect doesn't retry immediately
+          // Don't reset ranForRef on rate limit so the effect doesn't retry immediately
           if (!isRateLimit) {
-            calledRef.current = false;
+            ranForRef.current = null;
           }
           inProgressRef.current = false;
           return;
@@ -167,10 +185,10 @@ export function useRegisterIdentity() {
         });
       } catch (err) {
         console.error("[useRegisterIdentity] Unexpected error:", err);
-        calledRef.current = false;
+        ranForRef.current = null;
       } finally {
         inProgressRef.current = false;
       }
     })();
-  }, [ready, authenticated, walletAddress]);
+  }, [ready, authenticated, userId, walletAddress]);
 }
