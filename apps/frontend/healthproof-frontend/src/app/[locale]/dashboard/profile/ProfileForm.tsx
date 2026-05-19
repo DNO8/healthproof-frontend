@@ -1,7 +1,7 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { updateProfile } from "@/actions/update-profile";
@@ -27,6 +27,11 @@ export function ProfileForm({
   const t = useTranslations("dashboard.profile");
   const [fullName, setFullName] = useState(initialName);
   const [saving, setSaving] = useState(false);
+
+  // Sync local state when parent prop changes (after profile save invalidates cache)
+  useEffect(() => {
+    setFullName(initialName);
+  }, [initialName]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
