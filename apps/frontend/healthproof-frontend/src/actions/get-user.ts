@@ -13,7 +13,7 @@ async function getDbUserHandler(
   // Try lookup by Privy DID first
   const { data: userData, error } = await supabase
     .from("users")
-    .select("id, email, wallet_address, full_name, created_at, public_key, role")
+    .select("id, email, wallet_address, full_name, created_at, public_key")
     .eq("id", data.idOrWallet)
     .single();
 
@@ -25,14 +25,13 @@ async function getDbUserHandler(
       full_name: userData.full_name as string | null,
       created_at: userData.created_at as string,
       public_key: (userData.public_key as string | null) ?? null,
-      role: (userData.role as string | null) ?? null,
     };
   }
 
   // Fall back to wallet_address lookup
   const { data: byWallet, error: walletErr } = await supabase
     .from("users")
-    .select("id, email, wallet_address, full_name, created_at, public_key, role")
+    .select("id, email, wallet_address, full_name, created_at, public_key")
     .eq("wallet_address", data.idOrWallet)
     .single();
 
@@ -47,7 +46,6 @@ async function getDbUserHandler(
     full_name: byWallet.full_name as string | null,
     created_at: byWallet.created_at as string,
     public_key: (byWallet.public_key as string | null) ?? null,
-    role: (byWallet.role as string | null) ?? null,
   };
 }
 
