@@ -35,8 +35,13 @@ function setCache(user: DbUser) {
   }
 }
 
+const INVALIDATE_EVENT = "hp_db_user_invalidate";
+
 export function clearDbUserCache() {
   sessionStorage.removeItem(CACHE_KEY);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(INVALIDATE_EVENT));
+  }
 }
 
 export function useDbUser() {
@@ -83,6 +88,17 @@ export function useDbUser() {
     fetchedForRef.current = userId;
     refetch();
   }, [ready, authenticated, userId, refetch]);
+
+  // Listen for cross-component cache invalidation (e.g. after profile save)
+  useEffect(() => {
+    if (!userId) return;
+    const handler = () => {
+      fetchedForRef.current = null;
+      refetch();
+    };
+    window.addEventListener(INVALIDATE_EVENT, handler);
+    return () => window.removeEventListener(INVALIDATE_EVENT, handler);
+  }, [userId, refetch]);
 
   return { dbUser, loading, refetch };
 }
