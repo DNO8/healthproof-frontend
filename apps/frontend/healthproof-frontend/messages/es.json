@@ -362,6 +362,7 @@
       "permissions": "Permisos",
       "guardians": "Tutores",
       "share": "Compartir",
+      "shared": "Compartidos Conmigo",
       "orders": "Órdenes",
       "episodes": "Episodios",
       "labOrders": "Órdenes de Lab",
@@ -465,7 +466,7 @@
     "orders": {
       "title": "Órdenes Médicas",
       "tabCreate": "Crear",
-      "tabList": "Lista",
+      "tabLookup": "Buscar",
       "patientLabel": "Wallet del Paciente",
       "patientPlaceholder": "0x…",
       "examTypeLabel": "Tipo de Examen",
@@ -477,6 +478,7 @@
       "patientRequiredDesc": "Ingresa la dirección de wallet del paciente.",
       "createError": "Error al crear orden",
       "createSuccess": "Orden creada",
+      "createAnother": "Crear Otra",
       "listError": "Error al cargar órdenes",
       "loading": "Cargando…",
       "empty": "No se encontraron órdenes.",
@@ -485,7 +487,17 @@
       "statusCompleted": "Completada",
       "statusCancelled": "Cancelada",
       "patient": "Paciente",
-      "episode": "Episodio"
+      "episode": "Episodio",
+      "orderIdLabel": "ID de Orden",
+      "orderIdPlaceholder": "Pega el ID de la orden…",
+      "lookupButton": "Buscar Orden",
+      "lookupError": "Error al buscar",
+      "notFound": "Orden no encontrada en la cadena",
+      "doctor": "Doctor",
+      "status": "Estado",
+      "myOrders": "Mis Órdenes",
+      "manualLookup": "Buscar por ID",
+      "orderCardTitle": "Orden"
     },
     "episodes": {
       "title": "Episodios Clínicos",
@@ -513,7 +525,17 @@
       "patient": "Paciente",
       "diagnosis": "Diagnóstico",
       "createdAt": "Creado",
-      "closedAt": "Cerrado"
+      "closedAt": "Cerrado",
+      "myEpisodes": "Mis Episodios",
+      "episodeCardTitle": "Episodio",
+      "manualLookup": "Buscar por ID",
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "episodeDetails": "Detalles del Episodio",
+      "type": "Tipo",
+      "doctor": "Doctor",
+      "yes": "Sí",
+      "no": "No"
     },
     "labOrders": {
       "title": "Órdenes de Lab",
@@ -524,6 +546,18 @@
       "statusAssigned": "Asignada",
       "statusCompleted": "Completada",
       "statusCancelled": "Cancelada",
+      "myOrders": "Mis Órdenes",
+      "filterAll": "Todas",
+      "filterPending": "Pendientes",
+      "filterAssigned": "Asignadas",
+      "filterCompleted": "Completadas",
+      "orderCardTitle": "Orden",
+      "doctor": "Doctor",
+      "uploadResult": "Subir Resultado",
+      "lookupButton": "Buscar",
+      "lookupPlaceholder": "Ingrese ID de orden…",
+      "notFound": "Orden no encontrada",
+      "lookupError": "Búsqueda fallida",
       "patient": "Paciente",
       "episode": "Episodio",
       "assignButton": "Asignar",
@@ -540,7 +574,10 @@
       "uploadSuccess": "Subida exitosa",
       "uploadError": "Error al subir",
       "uploading": "Subiendo…",
-      "uploadButton": "Subir y Registrar"
+      "uploadButton": "Subir y Registrar",
+      "linkedOrder": "Vinculado a Orden",
+      "orderCompleted": "Orden marcada como completada",
+      "orderStatusFailed": "Subida lista, pero falló la actualización del estado de la orden"
     },
     "scan": {
       "title": "Escanear Código QR"
@@ -782,11 +819,28 @@
     "processError": "No se pudo descifrar el resultado. Inténtalo de nuevo.",
     "fileDecrypted": "Resultado descifrado exitosamente",
     "patientLabel": "Paciente",
-    "cidLabel": "CID de IPFS",
-    "signatureLabel": "Firma",
-    "downloadFile": "Descargar Archivo",
-    "done": "Listo",
-    "viewDetails": "Ver detalles"
+    "cidLabel": "CID de IPFS"
+  },
+  "sharedDocuments": {
+    "title": "Compartidos Conmigo",
+    "loading": "Cargando…",
+    "empty": "Aún no te han compartido documentos. Pide a un paciente que comparta un documento mediante código QR.",
+    "loadError": "Error al cargar documentos compartidos",
+    "view": "Ver",
+    "download": "Descargar",
+    "decrypting": "Descifrando…",
+    "documentTitle": "Documento Compartido",
+    "sharedOn": "Compartido el",
+    "patient": "Paciente",
+    "uploadedBy": "Subido por",
+    "uploadedOn": "Subido el",
+    "noIv": "Faltan datos del documento",
+    "noIvDesc": "Los datos de cifrado del documento faltan. Es posible que el documento haya sido eliminado.",
+    "noKey": "No se puede descifrar",
+    "noPatientKey": "Clave pública del paciente no encontrada. El paciente debe iniciar sesión para generar sus claves de cifrado.",
+    "invalidKey": "La clave de cifrado compartida es inválida.",
+    "downloadError": "Error al descargar",
+    "decryptFailed": "No se pudo descifrar el documento. Asegúrate de usar el mismo navegador donde iniciaste sesión originalmente."
   },
   "uploadModal": {
     "title": "Subir Resultados",
@@ -817,5 +871,21 @@
     "keyConflictTitle": "Conflicto de Claves",
     "keyConflictDesc": "Las claves de cifrado no están disponibles o no coinciden. Subir archivos está deshabilitado.",
     "keyConflictWarning": "Las claves de cifrado no están disponibles o no coinciden. Subir archivos está deshabilitado hasta que se resuelva."
+  },
+  "myDocuments": {
+    "title": "Mis Documentos",
+    "loading": "Cargando…",
+    "empty": "No se encontraron documentos para tu wallet.",
+    "loadError": "Error al cargar documentos",
+    "view": "Ver",
+    "download": "Descargar",
+    "decrypting": "Descifrando…",
+    "documentTitle": "Documento",
+    "uploadedBy": "Subido por",
+    "close": "Cerrar",
+    "noKey": "No se puede descifrar",
+    "noKeyDesc": "No tienes acceso para descifrar este documento.",
+    "noUploaderKey": "Falta la clave pública del subidor.",
+    "downloadError": "Error al descargar"
   }
 }

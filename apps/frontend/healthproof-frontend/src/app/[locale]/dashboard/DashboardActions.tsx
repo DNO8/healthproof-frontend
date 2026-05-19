@@ -1,16 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { UserRole } from "@/types/domain.types";
-import { useUiStore } from "@/state/ui.store";
-import { ShareResultsModal } from "./ShareResultsModal";
-import { UploadResultsModal } from "./UploadResultsModal";
-import { ScanQRModal } from "./ScanQRModal";
-import { CreateOrderModal } from "./CreateOrderModal";
-import { ManageEpisodeModal } from "./ManageEpisodeModal";
 import { AdminPanel } from "./AdminPanel";
-import { MyDocumentsModal } from "./MyDocumentsModal";
 
 type ActionDef = {
   id: string;
@@ -139,48 +133,35 @@ const ROLE_ACTIONS: Partial<Record<UserRole, ActionDef[]>> = {
   ],
 };
 
+const NAVIGATION_MAP: Record<string, string> = {
+  "share-results": "/dashboard/share",
+  "upload-results": "/dashboard/upload",
+  "scan-qr": "/dashboard/scan",
+  "my-documents": "/dashboard/documents",
+  "create-order": "/dashboard/orders",
+  "manage-episodes": "/dashboard/episodes",
+  "pending-orders": "/dashboard/lab-orders",
+  "results-history": "/dashboard/documents",
+};
+
 export function DashboardActions({
   role,
-  userId,
 }: {
   role: UserRole;
-  userId: string;
 }) {
   const t = useTranslations("dashboard.actions");
+  const router = useRouter();
   const actions = ROLE_ACTIONS[role] ?? [];
-  const { isQrModalOpen, openQrModal, closeQrModal } = useUiStore();
-  const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [isScanOpen, setIsScanOpen] = useState(false);
-  const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
-  const [isEpisodesOpen, setIsEpisodesOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [isMyDocsOpen, setIsMyDocsOpen] = useState(false);
 
   function handleActionClick(actionId: string) {
-    switch (actionId) {
-      case "share-results":
-        openQrModal();
-        break;
-      case "upload-results":
-        setIsUploadOpen(true);
-        break;
-      case "scan-qr":
-        setIsScanOpen(true);
-        break;
-      case "my-documents":
-        setIsMyDocsOpen(true);
-        break;
-      case "create-order":
-        setIsCreateOrderOpen(true);
-        break;
-      case "manage-episodes":
-        setIsEpisodesOpen(true);
-        break;
-      case "admin-panel":
-        setIsAdminOpen(true);
-        break;
-      default:
-        break;
+    if (actionId === "admin-panel") {
+      setIsAdminOpen(true);
+      return;
+    }
+    const path = NAVIGATION_MAP[actionId];
+    if (path) {
+      router.push(path);
     }
   }
 
@@ -216,41 +197,8 @@ export function DashboardActions({
         </div>
       </div>
 
-      {isQrModalOpen && (
-        <ShareResultsModal onClose={closeQrModal} patientId={userId} />
-      )}
-
-      {isUploadOpen && (
-        <UploadResultsModal
-          onClose={() => setIsUploadOpen(false)}
-          labId={userId}
-        />
-      )}
-
-      {isScanOpen && (
-        <ScanQRModal onClose={() => setIsScanOpen(false)} doctorId={userId} />
-      )}
-
-      {isCreateOrderOpen && (
-        <CreateOrderModal
-          onClose={() => setIsCreateOrderOpen(false)}
-          doctorId={userId}
-        />
-      )}
-
-      {isEpisodesOpen && (
-        <ManageEpisodeModal
-          onClose={() => setIsEpisodesOpen(false)}
-          doctorId={userId}
-        />
-      )}
-
       {isAdminOpen && (
         <AdminPanel onClose={() => setIsAdminOpen(false)} />
-      )}
-
-      {isMyDocsOpen && (
-        <MyDocumentsModal onClose={() => setIsMyDocsOpen(false)} />
       )}
     </>
   );

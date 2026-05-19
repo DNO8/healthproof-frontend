@@ -69,7 +69,6 @@ export default function OverviewPage() {
 
   const displayName = dbUser?.full_name ?? user?.google?.name ?? null;
   const isProfileComplete = Boolean(displayName && walletAddress);
-  const userId = user?.id ?? "";
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
@@ -128,7 +127,7 @@ export default function OverviewPage() {
 
       <ProfileBanner isComplete={isProfileComplete} />
 
-      <DashboardActions role={effectiveRole} userId={userId} />
+      <DashboardActions role={effectiveRole} />
     </main>
   );
 }
