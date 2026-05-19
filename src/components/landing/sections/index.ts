@@ -1,4 +1,5 @@
 export { BeforeAfterSection } from "./BeforeAfterSection";
+export { DemoVideoSection } from "./DemoVideoSection";
 export { FinalCtaSection } from "./FinalCtaSection";
 export { HeroCarouselSection } from "./HeroCarouselSection";
 export { Icd11Section } from "./Icd11Section";
