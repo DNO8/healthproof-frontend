@@ -32,6 +32,7 @@ const LINKS_BY_ROLE: Record<UserRole, SidebarLink[]> = {
     { id: "overview", labelKey: "overview", icon: "📊", href: "/dashboard/overview" },
     { id: "orders", labelKey: "orders", icon: "📝", href: "/dashboard/orders" },
     { id: "episodes", labelKey: "episodes", icon: "🏥", href: "/dashboard/episodes" },
+    { id: "shared", labelKey: "shared", icon: "📂", href: "/dashboard/shared" },
     { id: "scan", labelKey: "scan", icon: "📷", href: "/dashboard/scan" },
   ],
   lab: [
@@ -92,7 +93,7 @@ export function DashboardSidebar({ role, walletAddress }: DashboardSidebarProps)
     <>
       {/* Mobile hamburger */}
       <button
-        className="fixed left-4 top-3 z-[60] md:hidden neu-surface rounded-xl p-2.5"
+        className="fixed left-4 top-3 z-60 md:hidden neu-surface rounded-xl p-2.5"
         onClick={() => setMobileOpen(!mobileOpen)}
         type="button"
       >
@@ -102,14 +103,14 @@ export function DashboardSidebar({ role, walletAddress }: DashboardSidebarProps)
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-[55] bg-black/30 md:hidden"
+          className="fixed inset-0 z-55 bg-black/30 md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-[56] h-screen flex-col border-r border-white/70 bg-[#F8F5F0] ${sidebarClasses} ${mobileOpen ? "flex translate-x-0" : "-translate-x-full md:translate-x-0"} transition-transform duration-200`}
+        className={`fixed left-0 top-0 z-56 h-screen flex-col border-r border-white/70 bg-[#F8F5F0] ${sidebarClasses} ${mobileOpen ? "flex translate-x-0" : "-translate-x-full md:translate-x-0"} transition-transform duration-200`}
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-white/70">

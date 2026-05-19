@@ -66,6 +66,39 @@ async function countDistinctPatients(): Promise<number> {
   return unique.size;
 }
 
+async function countPendingOrdersForLab(wallet: string): Promise<number> {
+  try {
+    const client = getPublicClient();
+    const [orderIds] = (await client.readContract({
+      address: CONTRACT_ADDRESSES.MedicalOrderRegistry as `0x${string}`,
+      abi: await import("@/lib/abis/MedicalOrderRegistry.json").then((m) => m.default),
+      functionName: "getOrdersByLab",
+      args: [wallet as `0x${string}`, BigInt(0), BigInt(100)],
+    })) as [`0x${string}`[], bigint];
+
+    let pending = 0;
+    for (const orderId of orderIds) {
+      try {
+        const order = (await client.readContract({
+          address: CONTRACT_ADDRESSES.MedicalOrderRegistry as `0x${string}`,
+          abi: await import("@/lib/abis/MedicalOrderRegistry.json").then((m) => m.default),
+          functionName: "orders",
+          args: [orderId],
+        })) as { status: number; createdAt: bigint };
+        if (Number(order.createdAt) !== 0 && order.status < 2) {
+          pending++;
+        }
+      } catch {
+        // skip invalid
+      }
+    }
+    return pending;
+  } catch (err) {
+    console.error("[dashboard-stats] countPendingOrdersForLab:", err);
+    return 0;
+  }
+}
+
 // ─── On-chain event log helpers ───
 
 async function countPermissionGrantedForPatient(
@@ -146,13 +179,14 @@ export async function getDashboardStats(
       }
 
       case "lab": {
-        const [resultsUploaded] = await Promise.all([
+        const [resultsUploaded, pendingOrders] = await Promise.all([
           countUploadsForLab(wallet),
+          countPendingOrdersForLab(wallet),
         ]);
         return {
           testsPerformed: resultsUploaded,
           resultsUploaded,
-          pendingOrders: 0,
+          pendingOrders,
         };
       }
 

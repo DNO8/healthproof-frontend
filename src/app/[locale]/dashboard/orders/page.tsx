@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { createMedicalOrderOnChain, getOrderOnChain } from "@/actions/medical-orders-onchain";
+import { listOrdersByDoctor } from "@/actions/list-orders-by-doctor";
+import type { OrderRef } from "@/actions/list-orders-by-doctor";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
+import { UserSelect } from "@/components/forms/UserSelect";
 
 const EXAM_TYPES = [
   "BLOOD_TEST", "URINE_TEST", "X_RAY", "MRI", "CT_SCAN", "ULTRASOUND", "ECG", "OTHER",
@@ -18,9 +21,14 @@ export default function OrdersPage() {
   const [examType, setExamType] = useState<string>(EXAM_TYPES[0]);
   const [episodeId, setEpisodeId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ orderId: string; txHash: string } | null>(null);
   const [lookupId, setLookupId] = useState("");
   const [order, setOrder] = useState<{ orderId: string; patient: string; doctor: string; examType: string; status: number; episodeId: string } | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
+
+  const [orders, setOrders] = useState<OrderRef[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<OrderRef | null>(null);
 
   async function handleCreate() {
     const trimmed = patientId.trim();
@@ -38,12 +46,11 @@ export default function OrdersPage() {
       if (!res.success) {
         sileo.error({ title: t("createError"), description: (res.error ?? "").slice(0, 120) });
       } else {
+        setResult({ orderId: res.data.orderId, txHash: res.data.txHash });
         sileo.success({
           title: t("createSuccess"),
-          description: `TX: ${res.data?.txHash?.slice(0, 16)}…`,
+          description: `TX: ${res.data.txHash.slice(0, 16)}…`,
         });
-        setPatientId("");
-        setEpisodeId("");
       }
     } catch (e) {
       sileo.error({ title: t("createError"), description: String(e).slice(0, 120) });
@@ -51,6 +58,31 @@ export default function OrdersPage() {
       setLoading(false);
     }
   }
+
+  function handleReset() {
+    setResult(null);
+    setPatientId("");
+    setEpisodeId("");
+  }
+
+  const fetchOrders = useCallback(async () => {
+    if (!walletAddress) return;
+    setLoadingOrders(true);
+    try {
+      const res = await listOrdersByDoctor({ doctorWallet: walletAddress });
+      if (res.success && res.data) {
+        setOrders(res.data.orders);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingOrders(false);
+    }
+  }, [walletAddress]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   async function handleLookup() {
     if (!lookupId.trim()) return;
@@ -96,15 +128,16 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {tab === "create" && (
+      {tab === "create" && !result && (
         <div className="neu-shell border border-white/70 p-6 sm:p-8 space-y-4">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("patientLabel")}</label>
-            <input
-              className="neu-pressed w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none"
-              placeholder={t("patientPlaceholder")}
+            <UserSelect
               value={patientId}
-              onChange={(e) => setPatientId(e.target.value)}
+              onChange={setPatientId}
+              label={t("patientLabel")}
+              placeholder={t("patientPlaceholder")}
+              filterRole="patient"
+              excludeWallet={walletAddress ?? undefined}
             />
           </div>
           <div>
@@ -139,34 +172,122 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {tab === "lookup" && (
+      {tab === "create" && result && (
         <div className="neu-shell border border-white/70 p-6 sm:p-8 space-y-4">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("orderIdLabel")}</label>
-            <input
-              className="neu-pressed w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none"
-              placeholder={t("orderIdPlaceholder")}
-              value={lookupId}
-              onChange={(e) => setLookupId(e.target.value)}
-            />
+          <div className="rounded-xl bg-green-50 p-4 text-sm text-green-800">
+            <p className="font-semibold">{t("createSuccess")}</p>
+          </div>
+          <div className="space-y-2 text-xs text-slate-600">
+            <div>
+              <span className="font-medium">{t("orderIdLabel")}:</span>{" "}
+              <code className="break-all rounded bg-slate-100 px-1 py-0.5 text-[11px]">{result.orderId}</code>
+            </div>
+            {episodeId.trim() && (
+              <div>
+                <span className="font-medium">{t("episodeLabel")}:</span>{" "}
+                <code className="break-all rounded bg-slate-100 px-1 py-0.5 text-[11px]">{episodeId.trim()}</code>
+              </div>
+            )}
+            <div>
+              <span className="font-medium">TX:</span>{" "}
+              <code className="break-all rounded bg-slate-100 px-1 py-0.5 text-[11px]">{result.txHash}</code>
+            </div>
           </div>
           <button
-            className="neu-surface hover:neu-pressed w-full rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition-all disabled:opacity-50"
-            disabled={lookupLoading || !lookupId.trim()}
-            onClick={handleLookup}
+            className="neu-surface hover:neu-pressed w-full rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition-all"
+            onClick={handleReset}
             type="button"
           >
-            {lookupLoading ? t("loading") : t("lookupButton")}
+            {t("createAnother")}
           </button>
-          {order && (
-            <div className="neu-inset rounded-xl p-4 space-y-1">
-              <p className="text-sm font-semibold text-slate-800">{order.examType}</p>
-              <p className="text-xs text-slate-500">{t("patient")}: {order.patient.slice(0, 8)}…{order.patient.slice(-4)}</p>
-              <p className="text-xs text-slate-500">{t("doctor")}: {order.doctor.slice(0, 8)}…{order.doctor.slice(-4)}</p>
-              <p className="text-xs text-slate-500">{t("episode")}: {order.episodeId.slice(0, 10)}…</p>
-              <p className="text-xs text-slate-500">{t("status")}: {order.status === 0 ? t("statusPending") : order.status === 1 ? t("statusAssigned") : order.status === 2 ? t("statusCompleted") : t("statusCancelled")}</p>
+        </div>
+      )}
+
+      {tab === "lookup" && (
+        <div className="space-y-4">
+          {/* Auto-list */}
+          <div className="neu-shell border border-white/70 p-6 sm:p-8">
+            <h2 className="text-sm font-semibold text-slate-700 mb-4">{t("myOrders")}</h2>
+            {loadingOrders ? (
+              <p className="py-8 text-center text-sm text-slate-400">{t("loading")}</p>
+            ) : orders.length === 0 ? (
+              <p className="py-8 text-center text-sm text-slate-400">{t("empty")}</p>
+            ) : (
+              <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                {orders.map((o) => (
+                  <button
+                    key={o.orderId}
+                    className={`w-full text-left rounded-xl px-4 py-3 transition-all ${
+                      selectedOrder?.orderId === o.orderId
+                        ? "neu-pressed border-l-4 border-l-sky-500"
+                        : "neu-surface hover:neu-pressed"
+                    }`}
+                    onClick={() => {
+                      setSelectedOrder(o);
+                      setOrder(null);
+                    }}
+                    type="button"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-slate-800">{o.examType || t("orderCardTitle")}</p>
+                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
+                        o.status === 0 ? "bg-amber-100 text-amber-700" :
+                        o.status === 1 ? "bg-sky-100 text-sky-700" :
+                        o.status === 2 ? "bg-emerald-100 text-emerald-700" :
+                        "bg-slate-100 text-slate-600"
+                      }`}>
+                        {o.status === 0 ? t("statusPending") : o.status === 1 ? t("statusAssigned") : o.status === 2 ? t("statusCompleted") : t("statusCancelled")}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 mt-1">
+                      <span>{t("patient")}: <span className="font-mono">{o.patient.slice(0, 8)}…{o.patient.slice(-4)}</span></span>
+                      <span>{t("createdAt")}: {new Date(o.createdAt * 1000).toLocaleDateString()}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {selectedOrder && !order && (
+              <div className="mt-4 neu-inset rounded-xl p-4 space-y-1">
+                <p className="text-sm font-semibold text-slate-800">{selectedOrder.examType}</p>
+                <p className="text-xs text-slate-500">{t("patient")}: {selectedOrder.patient.slice(0, 8)}…{selectedOrder.patient.slice(-4)}</p>
+                <p className="text-xs text-slate-500">{t("doctor")}: {selectedOrder.doctor.slice(0, 8)}…{selectedOrder.doctor.slice(-4)}</p>
+                <p className="text-xs text-slate-500">{t("status")}: {selectedOrder.status === 0 ? t("statusPending") : selectedOrder.status === 1 ? t("statusAssigned") : selectedOrder.status === 2 ? t("statusCompleted") : t("statusCancelled")}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Manual lookup */}
+          <div className="neu-shell border border-white/70 p-6 sm:p-8 space-y-4">
+            <h2 className="text-sm font-semibold text-slate-700">{t("manualLookup")}</h2>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("orderIdLabel")}</label>
+              <input
+                className="neu-pressed w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none"
+                placeholder={t("orderIdPlaceholder")}
+                value={lookupId}
+                onChange={(e) => setLookupId(e.target.value)}
+              />
             </div>
-          )}
+            <button
+              className="neu-surface hover:neu-pressed w-full rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition-all disabled:opacity-50"
+              disabled={lookupLoading || !lookupId.trim()}
+              onClick={handleLookup}
+              type="button"
+            >
+              {lookupLoading ? t("loading") : t("lookupButton")}
+            </button>
+            {order && (
+              <div className="neu-inset rounded-xl p-4 space-y-1">
+                <p className="text-sm font-semibold text-slate-800">{order.examType}</p>
+                <p className="text-xs text-slate-500">{t("patient")}: {order.patient.slice(0, 8)}…{order.patient.slice(-4)}</p>
+                <p className="text-xs text-slate-500">{t("doctor")}: {order.doctor.slice(0, 8)}…{order.doctor.slice(-4)}</p>
+                <p className="text-xs text-slate-500">{t("episode")}: {order.episodeId.slice(0, 10)}…</p>
+                <p className="text-xs text-slate-500">{t("status")}: {order.status === 0 ? t("statusPending") : order.status === 1 ? t("statusAssigned") : order.status === 2 ? t("statusCompleted") : t("statusCancelled")}</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </main>

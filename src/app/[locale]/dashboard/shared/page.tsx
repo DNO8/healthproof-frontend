@@ -4,27 +4,29 @@ import { useState, useEffect, useCallback } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { usePrivy } from "@privy-io/react-auth";
-import { listDocumentSecretsForWallet } from "@/actions/get-document-secret";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
+import { listSharedDocuments } from "@/actions/list-shared-documents";
+import { getUserPublicKey } from "@/actions/get-user-public-key";
 import { useDocumentDecrypt } from "@/hooks/useDocumentDecrypt";
 import { FilePreview, getExtensionFromMime } from "@/components/documents/FilePreview";
-import type { DocumentSecretRow } from "@/actions/get-document-secret";
+import type { SharedDocument } from "@/actions/list-shared-documents";
 
 function formatAddress(addr: string): string {
   if (!addr || addr.length < 10) return addr;
   return `${addr.slice(0, 8)}…${addr.slice(-4)}`;
 }
 
-export default function DocumentsPage() {
-  const t = useTranslations("myDocuments");
+export default function SharedDocumentsPage() {
+  const t = useTranslations("sharedDocuments");
   const walletAddress = useWalletAddress();
   const { user } = usePrivy();
   const userId = user?.id ?? "";
 
-  const [docs, setDocs] = useState<DocumentSecretRow[]>([]);
+  const [docs, setDocs] = useState<SharedDocument[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDoc, setSelectedDoc] = useState<DocumentSecretRow | null>(null);
+  const [selectedDoc, setSelectedDoc] = useState<SharedDocument | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [patientKeys, setPatientKeys] = useState<Record<string, string | null>>({});
 
   const { decrypt, decryptedFile, loading: decryptLoading, error: decryptError, clear } = useDocumentDecrypt();
 
@@ -32,8 +34,25 @@ export default function DocumentsPage() {
     if (!walletAddress) return;
     setLoading(true);
     try {
-      const rows = await listDocumentSecretsForWallet(walletAddress);
-      setDocs(rows);
+      const res = await listSharedDocuments({ doctorWallet: walletAddress });
+      if (res.success && res.data) {
+        setDocs(res.data.documents);
+        // Pre-fetch patient public keys
+        const uniquePatients = [...new Set(res.data.documents.map((d) => d.patient_wallet))];
+        const keyMap: Record<string, string | null> = {};
+        await Promise.all(
+          uniquePatients.map(async (pw) => {
+            try {
+              keyMap[pw] = await getUserPublicKey(pw);
+            } catch {
+              keyMap[pw] = null;
+            }
+          })
+        );
+        setPatientKeys(keyMap);
+      } else {
+        setDocs([]);
+      }
     } catch (e) {
       sileo.error({ title: t("loadError"), description: String(e).slice(0, 120) });
     } finally {
@@ -45,61 +64,58 @@ export default function DocumentsPage() {
     fetchDocs();
   }, [fetchDocs]);
 
-  function handleSelect(doc: DocumentSecretRow) {
-    if (selectedDoc?.id === doc.id) {
-      setSelectedDoc(null);
-      clear();
-      return;
-    }
-    setSelectedDoc(doc);
-    clear();
-  }
-
-  async function handleView(doc: DocumentSecretRow) {
-    setSelectedDoc(doc);
-    clear();
-    await performDecrypt(doc);
-  }
-
-  async function handleDownload(doc: DocumentSecretRow) {
-    setDownloadingId(doc.id);
-    try {
-      const file = await performDecrypt(doc, true);
-      if (file) {
-        const ext = getExtensionFromMime(file.mime);
-        const name = `document-${doc.document_id.slice(0, 8)}${ext}`;
-        const a = document.createElement("a");
-        a.href = file.url;
-        a.download = name;
-        a.click();
-      }
-    } catch (e) {
-      sileo.error({ title: t("downloadError"), description: String(e).slice(0, 120) });
-    } finally {
-      setDownloadingId(null);
-    }
-  }
-
-  async function performDecrypt(doc: DocumentSecretRow, silent = false) {
+  async function performDecrypt(doc: SharedDocument, silent = false) {
     if (!walletAddress || !userId) return null;
-    const wrappedKey =
-      doc.encrypted_keys[walletAddress.toLowerCase()] ??
-      doc.encrypted_keys[userId];
-    if (!wrappedKey) {
-      if (!silent) sileo.error({ title: t("noKey"), description: t("noKeyDesc") });
+    if (!doc.iv) {
+      if (!silent) sileo.error({ title: t("noIv"), description: t("noIvDesc") });
       return null;
     }
-    if (!doc.uploader_public_key) {
-      if (!silent) sileo.error({ title: t("noKey"), description: t("noUploaderKey") });
+    const senderKey = patientKeys[doc.patient_wallet];
+    if (!senderKey) {
+      if (!silent) sileo.error({ title: t("noKey"), description: t("noPatientKey") });
+      return null;
+    }
+    let wrappedKey;
+    try {
+      wrappedKey = JSON.parse(doc.encrypted_key);
+    } catch {
+      if (!silent) sileo.error({ title: t("noKey"), description: t("invalidKey") });
       return null;
     }
     return await decrypt({
       cid: doc.document_id,
       iv: doc.iv,
       wrappedKey,
-      senderPublicKeyJwk: doc.uploader_public_key,
+      senderPublicKeyJwk: senderKey,
       myUserId: userId,
     });
+  }
+
+  async function handleView(doc: SharedDocument) {
+    setSelectedDoc(doc);
+    clear();
+    await performDecrypt(doc);
+  }
+
+  async function handleDownload(doc: SharedDocument) {
+    setDownloadingId(doc.document_id);
+    try {
+      const file = await performDecrypt(doc, true);
+      if (file) {
+        const ext = getExtensionFromMime(file.mime);
+        const name = `shared-doc-${doc.document_id.slice(0, 8)}${ext}`;
+        const a = document.createElement("a");
+        a.href = file.url;
+        a.download = name;
+        a.click();
+      } else {
+        sileo.error({ title: t("downloadError"), description: t("decryptFailed") });
+      }
+    } catch (e) {
+      sileo.error({ title: t("downloadError"), description: String(e).slice(0, 120) });
+    } finally {
+      setDownloadingId(null);
+    }
   }
 
   const isDecrypting = decryptLoading || !!downloadingId;
@@ -117,11 +133,11 @@ export default function DocumentsPage() {
       ) : (
         <div className="space-y-4">
           {docs.map((doc) => {
-            const isSelected = selectedDoc?.id === doc.id;
+            const isSelected = selectedDoc?.document_id === doc.document_id;
             const isBusy = isDecrypting && isSelected;
             return (
               <div
-                key={doc.id}
+                key={doc.document_id}
                 className={`neu-shell rounded-xl p-5 sm:p-6 space-y-3 transition-all ${
                   isSelected ? "border-l-4 border-l-sky-500" : ""
                 }`}
@@ -130,7 +146,7 @@ export default function DocumentsPage() {
                   <div>
                     <p className="text-sm font-semibold text-slate-800">{t("documentTitle")}</p>
                     <p className="text-[10px] text-slate-400 mt-0.5">
-                      {new Date(doc.created_at).toLocaleDateString()}
+                      {t("sharedOn")}: {new Date(doc.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -148,14 +164,19 @@ export default function DocumentsPage() {
                       onClick={() => handleDownload(doc)}
                       type="button"
                     >
-                      {downloadingId === doc.id ? t("decrypting") : t("download")}
+                      {downloadingId === doc.document_id ? t("decrypting") : t("download")}
                     </button>
                   </div>
                 </div>
 
                 <div className="text-xs text-slate-500 space-y-1">
-                  <p className="font-mono text-[11px]">{formatAddress(doc.document_id)}</p>
-                  <p>{t("uploadedBy")}: {formatAddress(doc.uploader_wallet)}</p>
+                  <p>{t("patient")}: <span className="font-mono">{formatAddress(doc.patient_wallet)}</span></p>
+                  {doc.uploader_wallet && (
+                    <p>{t("uploadedBy")}: <span className="font-mono">{formatAddress(doc.uploader_wallet)}</span></p>
+                  )}
+                  {doc.doc_created_at && (
+                    <p>{t("uploadedOn")}: {new Date(doc.doc_created_at).toLocaleDateString()}</p>
+                  )}
                 </div>
 
                 {isSelected && decryptedFile && (

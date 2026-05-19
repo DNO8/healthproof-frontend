@@ -7,6 +7,7 @@ import { listPermissionsOnChain } from "@/actions/list-permissions-onchain";
 import { grantPermissionOnChain } from "@/actions/grant-permission-onchain";
 import { revokePermissionOnChain } from "@/actions/revoke-permission-onchain";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
+import { UserSelect } from "@/components/forms/UserSelect";
 import type { OnChainPermission } from "@/lib/medical-constants";
 
 export default function PermissionsPage() {
@@ -172,12 +173,12 @@ export default function PermissionsPage() {
         <div className="neu-shell border border-white/70 p-6 sm:p-8 space-y-4">
           <h2 className="text-sm font-semibold text-slate-700">{t("grantTitle")}</h2>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("granteeLabel")}</label>
-            <input
-              className="neu-pressed w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none"
-              placeholder={t("granteePlaceholder")}
+            <UserSelect
               value={granteeWallet}
-              onChange={(e) => setGranteeWallet(e.target.value)}
+              onChange={setGranteeWallet}
+              label={t("granteeLabel")}
+              placeholder={t("granteePlaceholder")}
+              excludeWallet={walletAddress ?? undefined}
             />
           </div>
           <div>

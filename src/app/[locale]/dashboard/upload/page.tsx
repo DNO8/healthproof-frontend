@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
@@ -12,6 +13,7 @@ import { getUserPublicKey } from "@/actions/get-user-public-key";
 import { getDbUser } from "@/actions/get-user";
 import { saveDocumentSecret } from "@/actions/save-document-secret";
 import { registerDocumentOnChain } from "@/actions/register-document-onchain";
+import { updateOrderStatusOnChain } from "@/actions/medical-orders-onchain";
 import { UserSelect } from "@/components/forms/UserSelect";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
 
@@ -21,7 +23,10 @@ export default function UploadPage() {
   const walletAddress = useWalletAddress();
   const { user } = usePrivy();
   const labId = user?.id ?? "";
-  const [patientId, setPatientId] = useState("");
+  const searchParams = useSearchParams();
+  const linkedOrderId = searchParams.get("orderId");
+  const linkedPatientWallet = searchParams.get("patientWallet");
+  const [patientId, setPatientId] = useState(linkedPatientWallet ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -77,9 +82,20 @@ export default function UploadPage() {
         patientWallet: patientId.trim(),
       });
 
-      sileo.success({ title: t("uploadSuccess"), description: `CID: ${uploadResult.ipfs.cid.slice(0, 20)}…` });
+      // If linked to an order, update its status to COMPLETED (2)
+      if (linkedOrderId) {
+        try {
+          await updateOrderStatusOnChain({ orderId: linkedOrderId, status: 2 });
+          sileo.success({ title: t("uploadSuccess"), description: t("orderCompleted") });
+        } catch {
+          sileo.warning({ title: t("uploadSuccess"), description: t("orderStatusFailed") });
+        }
+      } else {
+        sileo.success({ title: t("uploadSuccess"), description: `CID: ${uploadResult.ipfs.cid.slice(0, 20)}…` });
+      }
+
       setFile(null);
-      setPatientId("");
+      setPatientId(linkedPatientWallet ?? "");
     } catch (e) {
       sileo.error({ title: t("uploadError"), description: String(e).slice(0, 120) });
     } finally {
@@ -90,6 +106,16 @@ export default function UploadPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
       <h1 className="mb-6 text-2xl font-bold text-slate-800">{t("title")}</h1>
+
+      {linkedOrderId && (
+        <div className="mb-4 rounded-xl bg-sky-50 p-4 text-sm text-sky-700 border border-sky-200">
+          <p className="font-semibold">{t("linkedOrder")}</p>
+          <p className="font-mono text-xs mt-1">{linkedOrderId.slice(0, 20)}…{linkedOrderId.slice(-8)}</p>
+          {linkedPatientWallet && (
+            <p className="text-xs mt-1">{t("patientLabel")}: {linkedPatientWallet.slice(0, 8)}…{linkedPatientWallet.slice(-4)}</p>
+          )}
+        </div>
+      )}
 
       {keyConflict && (
         <div className="mb-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-700 border border-amber-200">
