@@ -17,8 +17,12 @@ export const HEALTHPROOF_CHAIN = defineChain({
     decimals: 18,
   },
   rpcUrls: {
-    default: { http: [env.RPC_URL] },
-    public: { http: [env.RPC_URL] },
+    default: {
+      http: [typeof window !== "undefined" ? "/api/rpc" : env.RPC_URL],
+    },
+    public: {
+      http: [typeof window !== "undefined" ? "/api/rpc" : env.RPC_URL],
+    },
   },
 });
 

@@ -14,7 +14,11 @@ const HYGIEIA_NETWORK_PARAMS = {
     symbol: "HVE",
     decimals: 18,
   },
-  rpcUrls: [env.RPC_URL],
+  rpcUrls: [
+    typeof window !== "undefined"
+      ? `${window.location.origin}/api/rpc`
+      : env.RPC_URL,
+  ],
   blockExplorerUrls: [] as string[],
 } as const;
 
