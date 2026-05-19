@@ -64,13 +64,14 @@ export function useSyncKeys() {
 
     ranForRef.current = { userId, wallet: walletAddress };
 
-    const alreadySynced = sessionStorage.getItem(SYNCED_KEY);
-    if (alreadySynced === userId) return;
-
     (async () => {
       try {
         const localExists = await hasKeyPair(userId);
         const dbPk = await getUserPublicKey(userId);
+
+        const alreadySynced = sessionStorage.getItem(SYNCED_KEY);
+        // If sessionStorage says synced but DB has no public_key, force re-sync
+        if (alreadySynced === userId && dbPk) return;
 
         // ── Case 1: IndexedDB has keys ──────────────────────────
         if (localExists) {
