@@ -9,7 +9,6 @@ interface UpsertUserData {
   email: string;
   wallet_address: string | null;
   full_name: string | null;
-  role?: string;
 }
 
 async function upsertUserHandler(
@@ -28,7 +27,7 @@ async function upsertUserHandler(
   // 1. Check if this Privy ID already has a row
   const { data: existingById } = await supabase
     .from("users")
-    .select("id, full_name, wallet_address, role")
+    .select("id, full_name, wallet_address")
     .eq("id", data.id)
     .single();
 
@@ -39,8 +38,6 @@ async function upsertUserHandler(
       updates.full_name = data.full_name;
     if (!existingById.wallet_address && data.wallet_address)
       updates.wallet_address = data.wallet_address.toLowerCase();
-    if (!existingById.role && data.role)
-      updates.role = data.role.toUpperCase();
 
     if (Object.keys(updates).length > 0) {
       const { error } = await supabase
@@ -73,13 +70,12 @@ async function upsertUserHandler(
     }
   }
 
-  // 3. New user — insert (role also stored in DB as fallback)
+  // 3. New user — insert
   const { error } = await supabase.from("users").insert({
     id: data.id,
     email: data.email,
     wallet_address: data.wallet_address?.toLowerCase() ?? "",
     full_name: data.full_name,
-    role: data.role?.toUpperCase() ?? "PATIENT",
   });
 
   if (error) {

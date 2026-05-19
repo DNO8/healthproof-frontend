@@ -1,4 +1,4 @@
-import { verifyPrivyAuth, getClientIP, AuthContext, AuthError } from "./server-auth";
+import { verifyPrivyAuth, AuthContext, AuthError } from "./server-auth";
 import { checkRateLimit, RateLimitOptions, RateLimitError } from "./rate-limit";
 import { PermissionError } from "./permissions";
 import { getDeployerPrivateKey, getShamirKey, clearKeyCache, SecureKeyError } from "./secure-key";
@@ -153,6 +153,10 @@ export function withBasicAuth<T, R>(
     requireAuth: true,
     rateLimit: rateLimit ?? { windowMs: 60000, maxRequests: 10 },
   });
+}
+
+function getClientIP(): string {
+  return "unknown";
 }
 
 /**

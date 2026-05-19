@@ -68,11 +68,6 @@ export function useUpsertUser() {
     (async () => {
       const privyToken = await getAccessToken();
 
-      // Read intended role from signup flow
-      const intendedRole = typeof window !== "undefined"
-        ? localStorage.getItem("hp_intended_role")
-        : null;
-
       // Retry helper for transient auth failures
       async function tryUpsert(attempt: number): Promise<void> {
         const result = await upsertUser({
@@ -80,7 +75,6 @@ export function useUpsertUser() {
           email: email ?? "",
           wallet_address: wallet,
           full_name: fullName,
-          role: intendedRole ?? undefined,
           _privyToken: privyToken ?? undefined,
         });
 

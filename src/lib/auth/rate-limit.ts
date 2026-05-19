@@ -1,8 +1,10 @@
-import { getClientIP } from "./server-auth";
-
 interface RateLimitEntry {
   count: number;
   resetAt: number;
+}
+
+function getClientIP(): string {
+  return "unknown";
 }
 
 // In-memory rate limit store
