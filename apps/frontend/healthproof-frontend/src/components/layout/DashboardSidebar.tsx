@@ -23,6 +23,7 @@ interface SidebarLink {
 const LINKS_BY_ROLE: Record<UserRole, SidebarLink[]> = {
   patient: [
     { id: "overview", labelKey: "overview", icon: "📊", href: "/dashboard/overview" },
+    { id: "my-orders", labelKey: "myOrders", icon: "📋", href: "/dashboard/my-orders" },
     { id: "documents", labelKey: "documents", icon: "📄", href: "/dashboard/documents" },
     { id: "permissions", labelKey: "permissions", icon: "🔐", href: "/dashboard/permissions" },
     { id: "guardians", labelKey: "guardians", icon: "👤", href: "/dashboard/guardians" },

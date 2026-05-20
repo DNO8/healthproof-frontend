@@ -18,6 +18,13 @@ type ActionDef = {
 const ROLE_ACTIONS: Partial<Record<UserRole, ActionDef[]>> = {
   patient: [
     {
+      id: "my-orders",
+      titleKey: "myOrders",
+      descKey: "myOrdersDesc",
+      icon: "📋",
+      disabled: false,
+    },
+    {
       id: "share-results",
       titleKey: "shareResults",
       descKey: "shareResultsDesc",
@@ -134,6 +141,7 @@ const ROLE_ACTIONS: Partial<Record<UserRole, ActionDef[]>> = {
 };
 
 const NAVIGATION_MAP: Record<string, string> = {
+  "my-orders": "/dashboard/my-orders",
   "share-results": "/dashboard/share",
   "upload-results": "/dashboard/upload",
   "scan-qr": "/dashboard/scan",
