@@ -5,7 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { createWalletClient, custom, keccak256, toHex } from "viem";
+import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import { signGatewayMetaTx } from "@/lib/metatx/forwarder";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import { uploadHybridEncryptedFile } from "@/services/storage/upload";
 import { getKeyPair } from "@/services/encryption/keystore";
 import { exportPublicKey } from "@/services/encryption/ecdh";
@@ -22,6 +26,7 @@ export default function UploadPage() {
   const tModal = useTranslations("uploadModal");
   const walletAddress = useWalletAddress();
   const { user } = usePrivy();
+  const { wallets } = useWallets();
   const labId = user?.id ?? "";
   const searchParams = useSearchParams();
   const linkedOrderId = searchParams.get("orderId");
@@ -82,10 +87,30 @@ export default function UploadPage() {
         patientWallet: patientId.trim(),
       });
 
-      // If linked to an order, update its status to COMPLETED (2)
+      // If linked to an order, update its status to COMPLETED (2) via meta-tx
       if (linkedOrderId) {
         try {
-          await updateOrderStatusOnChain({ orderId: linkedOrderId, status: 2 });
+          const activeWallet = wallets.find((w) => w.address);
+          if (!activeWallet) throw new Error("No active wallet");
+
+          const provider = await activeWallet.getEthereumProvider();
+          const viemWallet = createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+          const updaterAddress = (await viemWallet.getAddresses())[0];
+          if (!updaterAddress) throw new Error("No wallet address");
+
+          const orderIdBytes =
+            linkedOrderId.startsWith("0x") && linkedOrderId.length === 66
+              ? (linkedOrderId as `0x${string}`)
+              : keccak256(toHex(linkedOrderId));
+
+          const request = await signGatewayMetaTx(
+            viemWallet,
+            "updateOrderStatusViaGateway",
+            [orderIdBytes, 2, updaterAddress],
+            HealthProofGatewayAbi,
+          );
+
+          await updateOrderStatusOnChain({ request, orderId: linkedOrderId, status: 2 });
           sileo.success({ title: t("uploadSuccess"), description: t("orderCompleted") });
         } catch {
           sileo.warning({ title: t("uploadSuccess"), description: t("orderStatusFailed") });

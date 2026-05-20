@@ -509,6 +509,8 @@
       "tabClose": "Cerrar",
       "tabLookup": "Consultar",
       "patientLabel": "Wallet del Paciente",
+      "patientPlaceholder": "Selecciona un paciente…",
+      "typeLabel": "Tipo de Episodio",
       "diagnosisLabel": "Diagnóstico ICD-11",
       "openButton": "Abrir Episodio",
       "opening": "Abriendo…",

@@ -510,6 +510,8 @@
       "tabLookup": "Lookup",
       "createAnother": "Create Another",
       "patientLabel": "Patient Wallet",
+      "patientPlaceholder": "Select a patient…",
+      "typeLabel": "Episode Type",
       "diagnosisLabel": "Diagnosis ICD-11",
       "openButton": "Open Episode",
       "opening": "Opening…",

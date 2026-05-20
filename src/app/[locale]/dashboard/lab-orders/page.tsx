@@ -4,10 +4,20 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
+import { useWallets } from "@privy-io/react-auth";
+import { createWalletClient, custom, keccak256, toHex } from "viem";
+import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import { assignLabToOrder, getOrderOnChain } from "@/actions/medical-orders-onchain";
 import { listOrdersByLab } from "@/actions/list-orders-by-lab";
+import { signGatewayMetaTx } from "@/lib/metatx/forwarder";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import type { OrderRef } from "@/actions/list-orders-by-lab";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
+
+async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
+  const provider = await wallet.getEthereumProvider();
+  return createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+}
 
 const STATUS_FILTERS = [
   { key: "all", labelKey: "filterAll" },
@@ -40,6 +50,7 @@ export default function LabOrdersPage() {
   const t = useTranslations("dashboard.labOrders");
   const router = useRouter();
   const walletAddress = useWalletAddress();
+  const { wallets } = useWallets();
   const [orders, setOrders] = useState<OrderRef[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("all");
@@ -99,10 +110,47 @@ export default function LabOrdersPage() {
   }
 
   async function handleAssign() {
-    if (!orderId.trim() || !labWallet.trim()) return;
+    const trimmedOrderId = orderId.trim();
+    const trimmedLabWallet = labWallet.trim();
+    if (!trimmedOrderId || !trimmedLabWallet) return;
+
+    const activeWallet = wallets.find((w) => w.address);
+    if (!activeWallet) {
+      sileo.error({ title: t("assignError"), description: "No active wallet found" });
+      return;
+    }
+
     setAssigning(true);
     try {
-      const res = await assignLabToOrder({ orderId: orderId.trim(), labWallet: labWallet.trim() });
+      const orderRes = await getOrderOnChain({ orderId: trimmedOrderId });
+      if (!orderRes.success || !orderRes.data) {
+        sileo.error({ title: t("assignError"), description: "Order not found" });
+        return;
+      }
+      const patientWallet = orderRes.data.patient;
+
+      const viemWallet = await getViemWalletClient(activeWallet);
+      const updaterAddress = (await viemWallet.getAddresses())[0];
+      if (!updaterAddress) throw new Error("No wallet address");
+
+      const orderIdBytes =
+        trimmedOrderId.startsWith("0x") && trimmedOrderId.length === 66
+          ? (trimmedOrderId as `0x${string}`)
+          : keccak256(toHex(trimmedOrderId));
+
+      const request = await signGatewayMetaTx(
+        viemWallet,
+        "assignLabViaGateway",
+        [orderIdBytes, trimmedLabWallet, patientWallet],
+        HealthProofGatewayAbi,
+      );
+
+      const res = await assignLabToOrder({
+        request,
+        orderId: trimmedOrderId,
+        labWallet: trimmedLabWallet,
+        patientWallet,
+      });
       if (!res.success) {
         sileo.error({ title: t("assignError"), description: (res.error ?? "").slice(0, 120) });
       } else {

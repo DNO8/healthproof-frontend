@@ -3,23 +3,37 @@
 import { useState, useEffect, useCallback } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
+import { useWallets } from "@privy-io/react-auth";
+import { createWalletClient, custom, keccak256, toHex, stringToHex } from "viem";
+import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import {
   openEpisodeOnChain,
   closeEpisodeOnChain,
   getEpisodeOnChain,
 } from "@/actions/clinical-episodes-onchain";
 import { listEpisodesByDoctor } from "@/actions/list-episodes-by-doctor";
+import { signGatewayMetaTx } from "@/lib/metatx/forwarder";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import type { OnChainEpisode } from "@/lib/medical-constants";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
 import { UserSelect } from "@/components/forms/UserSelect";
+
+const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 const EPISODE_TYPES = [
   "CONSULTATION", "EMERGENCY", "SURGERY", "FOLLOW_UP", "DIAGNOSTIC", "OTHER",
 ] as const;
 
+async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
+  const provider = await wallet.getEthereumProvider();
+  return createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+}
+
 export default function EpisodesPage() {
   const t = useTranslations("dashboard.episodes");
   const walletAddress = useWalletAddress();
+  const { wallets } = useWallets();
   const [tab, setTab] = useState<"open" | "lookup" | "close">("open");
   const [patientId, setPatientId] = useState("");
   const [episodeType, setEpisodeType] = useState<string>(EPISODE_TYPES[0]);
@@ -39,16 +53,48 @@ export default function EpisodesPage() {
       sileo.error({ title: t("patientRequiredTitle"), description: t("patientRequiredDesc") });
       return;
     }
+
+    const activeWallet = wallets.find((w) => w.address);
+    if (!activeWallet) {
+      sileo.error({ title: t("openError"), description: "No active wallet found" });
+      return;
+    }
+
     setLoading(true);
     try {
+      const viemWallet = await getViemWalletClient(activeWallet);
+      const doctorAddress = (await viemWallet.getAddresses())[0];
+      if (!doctorAddress) throw new Error("No wallet address");
+
+      const episodeId = keccak256(
+        toHex(`${trimmed}-${episodeType}-${Date.now()}`),
+      );
+      const episodeTypeBytes = stringToHex(episodeType, { size: 32 });
+
+      const request = await signGatewayMetaTx(
+        viemWallet,
+        "createEpisode",
+        [
+          episodeId,
+          trimmed,
+          ZERO_ADDRESS,
+          episodeTypeBytes,
+          ZERO_BYTES32,
+          doctorAddress,
+        ],
+        HealthProofGatewayAbi,
+      );
+
       const res = await openEpisodeOnChain({
+        request,
         patientWallet: trimmed,
         episodeType,
+        episodeId,
       });
       if (!res.success) {
         sileo.error({ title: t("openError"), description: (res.error ?? "").slice(0, 120) });
       } else {
-        setResult({ episodeId: res.data.episodeId, txHash: res.data.txHash });
+        setResult({ episodeId, txHash: res.data.txHash });
         sileo.success({
           title: t("openSuccess"),
           description: `TX: ${res.data.txHash.slice(0, 16)}…`,
@@ -107,10 +153,34 @@ export default function EpisodesPage() {
   }
 
   async function handleClose() {
-    if (!lookupId.trim()) return;
+    const id = lookupId.trim();
+    if (!id) return;
+
+    const activeWallet = wallets.find((w) => w.address);
+    if (!activeWallet) {
+      sileo.error({ title: t("closeError"), description: "No active wallet found" });
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await closeEpisodeOnChain({ episodeId: lookupId.trim() });
+      const viemWallet = await getViemWalletClient(activeWallet);
+      const doctorAddress = (await viemWallet.getAddresses())[0];
+      if (!doctorAddress) throw new Error("No wallet address");
+
+      const episodeIdBytes =
+        id.startsWith("0x") && id.length === 66
+          ? (id as `0x${string}`)
+          : keccak256(toHex(id));
+
+      const request = await signGatewayMetaTx(
+        viemWallet,
+        "closeEpisodeViaGateway",
+        [episodeIdBytes, doctorAddress],
+        HealthProofGatewayAbi,
+      );
+
+      const res = await closeEpisodeOnChain({ request, episodeId: id });
       if (!res.success) {
         sileo.error({ title: t("closeError"), description: (res.error ?? "").slice(0, 120) });
       } else {
@@ -265,7 +335,28 @@ export default function EpisodesPage() {
                     onClick={async () => {
                       setLookupLoading(true);
                       try {
-                        const res = await closeEpisodeOnChain({ episodeId: selectedEpisode.episodeId });
+                        const activeWallet = wallets.find((w) => w.address);
+                        if (!activeWallet) {
+                          sileo.error({ title: t("closeError"), description: "No active wallet found" });
+                          return;
+                        }
+                        const viemWallet = await getViemWalletClient(activeWallet);
+                        const doctorAddress = (await viemWallet.getAddresses())[0];
+                        if (!doctorAddress) throw new Error("No wallet address");
+
+                        const episodeIdBytes =
+                          selectedEpisode.episodeId.startsWith("0x") && selectedEpisode.episodeId.length === 66
+                            ? (selectedEpisode.episodeId as `0x${string}`)
+                            : keccak256(toHex(selectedEpisode.episodeId));
+
+                        const request = await signGatewayMetaTx(
+                          viemWallet,
+                          "closeEpisodeViaGateway",
+                          [episodeIdBytes, doctorAddress],
+                          HealthProofGatewayAbi,
+                        );
+
+                        const res = await closeEpisodeOnChain({ request, episodeId: selectedEpisode.episodeId });
                         if (!res.success) {
                           sileo.error({ title: t("closeError"), description: (res.error ?? "").slice(0, 120) });
                         } else {
