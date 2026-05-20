@@ -50,12 +50,14 @@ async function handler(
   for (const episodeId of episodeIds) {
     try {
       console.log("[listEpisodesByDoctor] Fetching episode:", episodeId);
-      const ep = (await publicClient.readContract({
+      const raw = await publicClient.readContract({
         address: CONTRACT_ADDRESSES.ClinicalEpisodeRegistry as `0x${string}`,
         abi: ClinicalEpisodeRegistryAbi,
-        functionName: "episodes",
+        functionName: "getEpisode",
         args: [episodeId as `0x${string}`],
-      })) as {
+      });
+      console.log("[listEpisodesByDoctor] Raw episode result:", raw);
+      const ep = raw as {
         patient: string;
         openedBy: string;
         institution: string;
