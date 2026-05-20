@@ -6,7 +6,7 @@ import { Contract, Interface, type ContractRunner } from "ethers";
 import type {
   IIdentityRegistry,
   IIdentityRegistryInterface,
-} from "../../interfaces/IIdentityRegistry";
+} from "../../../src/interfaces/IIdentityRegistry";
 
 const _abi = [
   {

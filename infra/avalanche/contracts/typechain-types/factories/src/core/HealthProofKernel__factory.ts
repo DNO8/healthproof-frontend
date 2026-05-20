@@ -13,11 +13,11 @@ import type {
   ContractDeployTransaction,
   ContractRunner,
 } from "ethers";
-import type { NonPayableOverrides } from "../../common";
+import type { NonPayableOverrides } from "../../../common";
 import type {
   HealthProofKernel,
   HealthProofKernelInterface,
-} from "../../core/HealthProofKernel";
+} from "../../../src/core/HealthProofKernel";
 
 const _abi = [
   {

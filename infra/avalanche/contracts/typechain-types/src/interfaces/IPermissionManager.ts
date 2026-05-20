@@ -18,37 +18,36 @@ import type {
   TypedEventLog,
   TypedListener,
   TypedContractMethod,
-} from "../common";
+} from "../../common";
 
-export interface IIdentityRegistryInterface extends Interface {
+export interface IPermissionManagerInterface extends Interface {
   getFunction(
-    nameOrSignature: "getIdentity" | "isIdentityValid"
+    nameOrSignature: "grantRole" | "hasRole" | "revokeRole"
   ): FunctionFragment;
 
   encodeFunctionData(
-    functionFragment: "getIdentity",
-    values: [AddressLike]
+    functionFragment: "grantRole",
+    values: [BytesLike, AddressLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "isIdentityValid",
-    values: [AddressLike]
+    functionFragment: "hasRole",
+    values: [BytesLike, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "revokeRole",
+    values: [BytesLike, AddressLike]
   ): string;
 
-  decodeFunctionResult(
-    functionFragment: "getIdentity",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "isIdentityValid",
-    data: BytesLike
-  ): Result;
+  decodeFunctionResult(functionFragment: "grantRole", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "hasRole", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "revokeRole", data: BytesLike): Result;
 }
 
-export interface IIdentityRegistry extends BaseContract {
-  connect(runner?: ContractRunner | null): IIdentityRegistry;
+export interface IPermissionManager extends BaseContract {
+  connect(runner?: ContractRunner | null): IPermissionManager;
   waitForDeployment(): Promise<this>;
 
-  interface: IIdentityRegistryInterface;
+  interface: IPermissionManagerInterface;
 
   queryFilter<TCEvent extends TypedContractEvent>(
     event: TCEvent,
@@ -87,18 +86,22 @@ export interface IIdentityRegistry extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
-  getIdentity: TypedContractMethod<
-    [identity: AddressLike],
-    [
-      [string, string, boolean] & { did: string; name: string; active: boolean }
-    ],
+  grantRole: TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  hasRole: TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [boolean],
     "view"
   >;
 
-  isIdentityValid: TypedContractMethod<
-    [identity: AddressLike],
-    [boolean],
-    "view"
+  revokeRole: TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [void],
+    "nonpayable"
   >;
 
   getFunction<T extends ContractMethod = ContractMethod>(
@@ -106,17 +109,26 @@ export interface IIdentityRegistry extends BaseContract {
   ): T;
 
   getFunction(
-    nameOrSignature: "getIdentity"
+    nameOrSignature: "grantRole"
   ): TypedContractMethod<
-    [identity: AddressLike],
-    [
-      [string, string, boolean] & { did: string; name: string; active: boolean }
-    ],
+    [role: BytesLike, account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "hasRole"
+  ): TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [boolean],
     "view"
   >;
   getFunction(
-    nameOrSignature: "isIdentityValid"
-  ): TypedContractMethod<[identity: AddressLike], [boolean], "view">;
+    nameOrSignature: "revokeRole"
+  ): TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
 
   filters: {};
 }

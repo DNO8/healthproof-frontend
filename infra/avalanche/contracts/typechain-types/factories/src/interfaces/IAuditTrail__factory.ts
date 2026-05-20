@@ -6,7 +6,7 @@ import { Contract, Interface, type ContractRunner } from "ethers";
 import type {
   IAuditTrail,
   IAuditTrailInterface,
-} from "../../interfaces/IAuditTrail";
+} from "../../../src/interfaces/IAuditTrail";
 
 const _abi = [
   {

@@ -18,36 +18,24 @@ import type {
   TypedEventLog,
   TypedListener,
   TypedContractMethod,
-} from "../common";
+} from "../../common";
 
-export interface IPermissionManagerInterface extends Interface {
-  getFunction(
-    nameOrSignature: "grantRole" | "hasRole" | "revokeRole"
-  ): FunctionFragment;
+export interface IAuditTrailInterface extends Interface {
+  getFunction(nameOrSignature: "log"): FunctionFragment;
 
   encodeFunctionData(
-    functionFragment: "grantRole",
-    values: [BytesLike, AddressLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "hasRole",
-    values: [BytesLike, AddressLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "revokeRole",
-    values: [BytesLike, AddressLike]
+    functionFragment: "log",
+    values: [BytesLike, AddressLike, BytesLike, BytesLike]
   ): string;
 
-  decodeFunctionResult(functionFragment: "grantRole", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "hasRole", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "revokeRole", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "log", data: BytesLike): Result;
 }
 
-export interface IPermissionManager extends BaseContract {
-  connect(runner?: ContractRunner | null): IPermissionManager;
+export interface IAuditTrail extends BaseContract {
+  connect(runner?: ContractRunner | null): IAuditTrail;
   waitForDeployment(): Promise<this>;
 
-  interface: IPermissionManagerInterface;
+  interface: IAuditTrailInterface;
 
   queryFilter<TCEvent extends TypedContractEvent>(
     event: TCEvent,
@@ -86,20 +74,13 @@ export interface IPermissionManager extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
-  grantRole: TypedContractMethod<
-    [role: BytesLike, account: AddressLike],
-    [void],
-    "nonpayable"
-  >;
-
-  hasRole: TypedContractMethod<
-    [role: BytesLike, account: AddressLike],
-    [boolean],
-    "view"
-  >;
-
-  revokeRole: TypedContractMethod<
-    [role: BytesLike, account: AddressLike],
+  log: TypedContractMethod<
+    [
+      eventType: BytesLike,
+      actor: AddressLike,
+      subject: BytesLike,
+      data: BytesLike
+    ],
     [void],
     "nonpayable"
   >;
@@ -109,23 +90,14 @@ export interface IPermissionManager extends BaseContract {
   ): T;
 
   getFunction(
-    nameOrSignature: "grantRole"
+    nameOrSignature: "log"
   ): TypedContractMethod<
-    [role: BytesLike, account: AddressLike],
-    [void],
-    "nonpayable"
-  >;
-  getFunction(
-    nameOrSignature: "hasRole"
-  ): TypedContractMethod<
-    [role: BytesLike, account: AddressLike],
-    [boolean],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "revokeRole"
-  ): TypedContractMethod<
-    [role: BytesLike, account: AddressLike],
+    [
+      eventType: BytesLike,
+      actor: AddressLike,
+      subject: BytesLike,
+      data: BytesLike
+    ],
     [void],
     "nonpayable"
   >;

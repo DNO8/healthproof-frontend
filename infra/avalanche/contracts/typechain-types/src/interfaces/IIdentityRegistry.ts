@@ -18,24 +18,37 @@ import type {
   TypedEventLog,
   TypedListener,
   TypedContractMethod,
-} from "../common";
+} from "../../common";
 
-export interface IAuditTrailInterface extends Interface {
-  getFunction(nameOrSignature: "log"): FunctionFragment;
+export interface IIdentityRegistryInterface extends Interface {
+  getFunction(
+    nameOrSignature: "getIdentity" | "isIdentityValid"
+  ): FunctionFragment;
 
   encodeFunctionData(
-    functionFragment: "log",
-    values: [BytesLike, AddressLike, BytesLike, BytesLike]
+    functionFragment: "getIdentity",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "isIdentityValid",
+    values: [AddressLike]
   ): string;
 
-  decodeFunctionResult(functionFragment: "log", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "getIdentity",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "isIdentityValid",
+    data: BytesLike
+  ): Result;
 }
 
-export interface IAuditTrail extends BaseContract {
-  connect(runner?: ContractRunner | null): IAuditTrail;
+export interface IIdentityRegistry extends BaseContract {
+  connect(runner?: ContractRunner | null): IIdentityRegistry;
   waitForDeployment(): Promise<this>;
 
-  interface: IAuditTrailInterface;
+  interface: IIdentityRegistryInterface;
 
   queryFilter<TCEvent extends TypedContractEvent>(
     event: TCEvent,
@@ -74,15 +87,18 @@ export interface IAuditTrail extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
-  log: TypedContractMethod<
+  getIdentity: TypedContractMethod<
+    [identity: AddressLike],
     [
-      eventType: BytesLike,
-      actor: AddressLike,
-      subject: BytesLike,
-      data: BytesLike
+      [string, string, boolean] & { did: string; name: string; active: boolean }
     ],
-    [void],
-    "nonpayable"
+    "view"
+  >;
+
+  isIdentityValid: TypedContractMethod<
+    [identity: AddressLike],
+    [boolean],
+    "view"
   >;
 
   getFunction<T extends ContractMethod = ContractMethod>(
@@ -90,17 +106,17 @@ export interface IAuditTrail extends BaseContract {
   ): T;
 
   getFunction(
-    nameOrSignature: "log"
+    nameOrSignature: "getIdentity"
   ): TypedContractMethod<
+    [identity: AddressLike],
     [
-      eventType: BytesLike,
-      actor: AddressLike,
-      subject: BytesLike,
-      data: BytesLike
+      [string, string, boolean] & { did: string; name: string; active: boolean }
     ],
-    [void],
-    "nonpayable"
+    "view"
   >;
+  getFunction(
+    nameOrSignature: "isIdentityValid"
+  ): TypedContractMethod<[identity: AddressLike], [boolean], "view">;
 
   filters: {};
 }

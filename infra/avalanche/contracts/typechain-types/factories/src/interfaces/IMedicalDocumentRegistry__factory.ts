@@ -6,7 +6,7 @@ import { Contract, Interface, type ContractRunner } from "ethers";
 import type {
   IMedicalDocumentRegistry,
   IMedicalDocumentRegistryInterface,
-} from "../../interfaces/IMedicalDocumentRegistry";
+} from "../../../src/interfaces/IMedicalDocumentRegistry";
 
 const _abi = [
   {

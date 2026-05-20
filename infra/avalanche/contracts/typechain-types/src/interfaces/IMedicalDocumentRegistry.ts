@@ -18,7 +18,7 @@ import type {
   TypedEventLog,
   TypedListener,
   TypedContractMethod,
-} from "../common";
+} from "../../common";
 
 export interface IMedicalDocumentRegistryInterface extends Interface {
   getFunction(

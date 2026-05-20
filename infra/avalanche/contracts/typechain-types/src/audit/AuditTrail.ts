@@ -21,7 +21,7 @@ import type {
   TypedLogDescription,
   TypedListener,
   TypedContractMethod,
-} from "../common";
+} from "../../common";
 
 export interface AuditTrailInterface extends Interface {
   getFunction(nameOrSignature: "logEvent"): FunctionFragment;

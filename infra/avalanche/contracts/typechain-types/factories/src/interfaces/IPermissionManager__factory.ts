@@ -6,7 +6,7 @@ import { Contract, Interface, type ContractRunner } from "ethers";
 import type {
   IPermissionManager,
   IPermissionManagerInterface,
-} from "../../interfaces/IPermissionManager";
+} from "../../../src/interfaces/IPermissionManager";
 
 const _abi = [
   {
