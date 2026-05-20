@@ -8,7 +8,6 @@ import {
   type PublicClient,
 } from "viem";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
 import ForwarderAbi from "@/lib/abis/HealthProofTrustedForwarder.json";
 import { FORWARD_REQUEST_TYPE, type ForwardRequest, type SignedForwardRequest } from "./types";
 
@@ -17,16 +16,29 @@ const DOMAIN_VERSION = "1";
 const DEFAULT_GAS = BigInt(300000);
 const DEADLINE_MINUTES = 10;
 
-let cachedForwarderAddress: `0x${string}` | null = null;
+const forwarderCache = new Map<string, `0x${string}`>();
+
+const TRUSTED_FORWARDER_ABI = [
+  {
+    inputs: [],
+    name: "trustedForwarder",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const;
 
 /**
- * Query any registry for its trustedForwarder address.
- * All registries share the same forwarder (set at initialization).
+ * Query the target contract for its trustedForwarder address.
+ * Each ERC2771Context contract stores its own trusted forwarder.
  */
 export async function getTrustedForwarderAddress(
+  targetContract: `0x${string}` = CONTRACT_ADDRESSES.HealthProofGateway,
   publicClient?: PublicClient
 ): Promise<`0x${string}`> {
-  if (cachedForwarderAddress) return cachedForwarderAddress;
+  const cacheKey = targetContract.toLowerCase();
+  const cached = forwarderCache.get(cacheKey);
+  if (cached) return cached;
 
   const client =
     publicClient ??
@@ -36,13 +48,13 @@ export async function getTrustedForwarderAddress(
     });
 
   const addr = (await client.readContract({
-    address: CONTRACT_ADDRESSES.MedicalOrderRegistry,
-    abi: MedicalOrderRegistryAbi,
+    address: targetContract,
+    abi: TRUSTED_FORWARDER_ABI,
     functionName: "trustedForwarder",
     args: [],
   })) as `0x${string}`;
 
-  cachedForwarderAddress = addr;
+  forwarderCache.set(cacheKey, addr);
   return addr;
 }
 
@@ -51,9 +63,10 @@ export async function getTrustedForwarderAddress(
  */
 export async function getForwarderNonce(
   from: `0x${string}`,
+  targetContract?: `0x${string}`,
   publicClient?: PublicClient
 ): Promise<bigint> {
-  const forwarder = await getTrustedForwarderAddress(publicClient);
+  const forwarder = await getTrustedForwarderAddress(targetContract, publicClient);
   const client =
     publicClient ??
     createPublicClient({
@@ -111,8 +124,8 @@ export async function signMetaTransaction(
   const [account] = await walletClient.getAddresses();
   if (!account) throw new Error("No wallet account available");
 
-  const forwarderAddress = await getTrustedForwarderAddress();
-  const nonce = await getForwarderNonce(account);
+  const forwarderAddress = await getTrustedForwarderAddress(targetContract);
+  const nonce = await getForwarderNonce(account, targetContract);
   const deadline = BigInt(
     Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60
   );
