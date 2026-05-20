@@ -1,86 +1,44 @@
 "use server";
 
-import {
-  createPublicClient,
-  createWalletClient,
-  http,
-  keccak256,
-  toHex,
-  stringToHex,
-  fromHex,
-} from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { createPublicClient, http, keccak256, toHex, fromHex } from "viem";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import ClinicalEpisodeRegistryAbi from "@/lib/abis/ClinicalEpisodeRegistry.json";
-import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth";
+import { withAuth, auditLog } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
 import { isVerifiedDoctor } from "@/lib/auth/permissions";
 import type { OnChainEpisode } from "@/lib/medical-constants";
 import { logAuditEvent } from "@/lib/audit-onchain";
 import { AuditAction } from "@/lib/medical-constants";
+import { executeForwardRequest } from "./relay-core";
+import type { SignedForwardRequest } from "@/lib/metatx/types";
 
-const ZERO_BYTES32 =
-  "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
-const ZERO_ADDRESS =
-  "0x0000000000000000000000000000000000000000" as `0x${string}`;
-
-async function getClients() {
-  const pk = await getDeployerPrivateKey();
-  if (!pk) throw new Error("DEPLOYER_PRIVATE_KEY not set");
-  const account = privateKeyToAccount(
-    `0x${pk.replace(/^0x/, "")}` as `0x${string}`,
-  );
-  return {
-    publicClient: createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() }),
-    walletClient: createWalletClient({ account, chain: HEALTHPROOF_CHAIN, transport: http() }),
-    account,
-  };
-}
-
-interface OpenEpisodeData {
+interface OpenEpisodeMetaTx {
+  request: SignedForwardRequest;
   patientWallet: string;
   episodeType: string;
   classification?: string;
-  institution?: string;
+  episodeId: string;
 }
 
-// ─── Open Episode (via Gateway → ClinicalEpisodeRegistry) ───
-// Requires authenticated verified doctor
+// ─── Open Episode (via EIP-2771 meta-tx → HealthProofGateway) ───
+// Requires authenticated verified doctor.
+// The frontend signs the meta-tx with the doctor's wallet; the deployer relays it.
 
 async function openEpisodeHandler(
-  data: OpenEpisodeData,
+  data: OpenEpisodeMetaTx,
   auth: AuthContext
 ): Promise<{ txHash: string; episodeId: string }> {
-  const { publicClient, walletClient, account } = await getClients();
+  if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
+    throw new Error("Signer mismatch: request.from != authenticated wallet");
+  }
 
-  const episodeId = keccak256(
-    toHex(`${data.patientWallet}-${data.episodeType}-${Date.now()}`),
-  );
-  const episodeType = stringToHex(data.episodeType, { size: 32 });
-  const classification = data.classification
-    ? stringToHex(data.classification, { size: 32 })
-    : ZERO_BYTES32;
-  const institution = (data.institution as `0x${string}`) ?? ZERO_ADDRESS;
-
-  const txHash = await walletClient.writeContract({
-    address: CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
-    abi: HealthProofGatewayAbi,
-    functionName: "createEpisode",
-    args: [
-      episodeId,
-      data.patientWallet as `0x${string}`,
-      institution,
-      episodeType,
-      classification,
-      account.address,
-    ],
-  });
-
-  await publicClient.waitForTransactionReceipt({ hash: txHash });
+  const result = await executeForwardRequest(data.request);
+  if (!result.success) {
+    throw new Error("Meta-transaction failed on-chain");
+  }
 
   try {
-    await logAuditEvent(data.patientWallet, episodeId, AuditAction.EPISODE_OPENED);
+    await logAuditEvent(data.patientWallet, data.episodeId, AuditAction.EPISODE_OPENED);
   } catch {
     // On-chain audit logging is best-effort
   }
@@ -88,13 +46,13 @@ async function openEpisodeHandler(
   auditLog("openEpisodeOnChain", auth, true, {
     patientWallet: data.patientWallet,
     episodeType: data.episodeType,
-    episodeId,
+    episodeId: data.episodeId,
   });
 
-  return { txHash, episodeId };
+  return { txHash: result.txHash, episodeId: data.episodeId };
 }
 
-async function validateOpenEpisode(data: OpenEpisodeData, auth: AuthContext): Promise<boolean> {
+async function validateOpenEpisode(data: OpenEpisodeMetaTx, auth: AuthContext): Promise<boolean> {
   return await isVerifiedDoctor(auth.wallet);
 }
 
@@ -103,43 +61,35 @@ export const openEpisodeOnChain = withAuth(openEpisodeHandler, {
   requireOnChainPermission: validateOpenEpisode,
 });
 
-interface CloseEpisodeData {
+interface CloseEpisodeMetaTx {
+  request: SignedForwardRequest;
   episodeId: string;
 }
 
 // ─── Close Episode ───
-// Calls closeEpisodeViaGateway on HealthProofGateway.
-// NOTE: Requires EIP-2771 meta-transactions (Phase 2) to work on-chain
-// because the Gateway requires doctor == _msgSender().
+// Calls closeEpisodeViaGateway on HealthProofGateway via EIP-2771.
 
 async function closeEpisodeHandler(
-  data: CloseEpisodeData,
+  data: CloseEpisodeMetaTx,
   auth: AuthContext
 ): Promise<{ txHash: string }> {
-  const { publicClient, walletClient, account } = await getClients();
+  if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
+    throw new Error("Signer mismatch: request.from != authenticated wallet");
+  }
 
-  const episodeIdBytes =
-    data.episodeId.startsWith("0x") && data.episodeId.length === 66
-      ? (data.episodeId as `0x${string}`)
-      : keccak256(toHex(data.episodeId));
-
-  const txHash = await walletClient.writeContract({
-    address: CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
-    abi: HealthProofGatewayAbi,
-    functionName: "closeEpisodeViaGateway",
-    args: [episodeIdBytes, account.address],
-  });
-
-  await publicClient.waitForTransactionReceipt({ hash: txHash });
+  const result = await executeForwardRequest(data.request);
+  if (!result.success) {
+    throw new Error("Meta-transaction failed on-chain");
+  }
 
   auditLog("closeEpisodeOnChain", auth, true, {
     episodeId: data.episodeId,
   });
 
-  return { txHash };
+  return { txHash: result.txHash };
 }
 
-async function validateCloseEpisode(data: CloseEpisodeData, auth: AuthContext): Promise<boolean> {
+async function validateCloseEpisode(data: CloseEpisodeMetaTx, auth: AuthContext): Promise<boolean> {
   return await isVerifiedDoctor(auth.wallet);
 }
 
@@ -155,7 +105,7 @@ async function getEpisodeHandler(
   data: { episodeId: string },
   _auth: AuthContext
 ): Promise<OnChainEpisode | null> {
-  const { publicClient } = await getClients();
+  const publicClient = createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() });
 
   const episodeIdBytes =
     data.episodeId.startsWith("0x") && data.episodeId.length === 66

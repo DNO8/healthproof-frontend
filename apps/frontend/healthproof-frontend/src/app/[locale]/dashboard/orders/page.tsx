@@ -3,13 +3,26 @@
 import { useState, useEffect, useCallback } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
+import { useWallets } from "@privy-io/react-auth";
+import { createWalletClient, custom, keccak256, toHex, stringToHex } from "viem";
+import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import { createMedicalOrderOnChain, getOrderOnChain } from "@/actions/medical-orders-onchain";
 import { listOrdersByDoctor } from "@/actions/list-orders-by-doctor";
 import { listEpisodesByPatient } from "@/actions/list-episodes-by-patient";
+import { signGatewayMetaTx } from "@/lib/metatx/forwarder";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import type { OrderRef } from "@/actions/list-orders-by-doctor";
 import type { OnChainEpisode } from "@/lib/medical-constants";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
 import { UserSelect } from "@/components/forms/UserSelect";
+
+const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
+  const provider = await wallet.getEthereumProvider();
+  return createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+}
 
 const EXAM_TYPES = [
   "BLOOD_TEST", "URINE_TEST", "X_RAY", "MRI", "CT_SCAN", "ULTRASOUND", "ECG", "OTHER",
@@ -18,6 +31,7 @@ const EXAM_TYPES = [
 export default function OrdersPage() {
   const t = useTranslations("dashboard.orders");
   const walletAddress = useWalletAddress();
+  const { wallets } = useWallets();
   const [tab, setTab] = useState<"create" | "lookup">("create");
   const [patientId, setPatientId] = useState("");
   const [examType, setExamType] = useState<string>(EXAM_TYPES[0]);
@@ -44,17 +58,54 @@ export default function OrdersPage() {
       sileo.error({ title: t("episodeRequiredTitle"), description: t("episodeRequiredDesc") });
       return;
     }
+
+    const activeWallet = wallets.find((w) => w.address);
+    if (!activeWallet) {
+      sileo.error({ title: t("createError"), description: "No active wallet found" });
+      return;
+    }
+
     setLoading(true);
     try {
+      const viemWallet = await getViemWalletClient(activeWallet);
+      const doctorAddress = (await viemWallet.getAddresses())[0];
+      if (!doctorAddress) throw new Error("No wallet address");
+
+      const orderId = keccak256(
+        toHex(`${trimmed}-${examType}-${Date.now()}`),
+      );
+      const orderTypeBytes = stringToHex("EXAM", { size: 32 });
+      const examTypeBytes = stringToHex(examType, { size: 32 });
+      const episodeIdBytes =
+        episodeId.trim().startsWith("0x") && episodeId.trim().length === 66
+          ? (episodeId.trim() as `0x${string}`)
+          : keccak256(toHex(episodeId.trim()));
+
+      const request = await signGatewayMetaTx(
+        viemWallet,
+        "createMedicalOrder",
+        [
+          orderId,
+          trimmed,
+          ZERO_ADDRESS,
+          episodeIdBytes,
+          orderTypeBytes,
+          examTypeBytes,
+          doctorAddress,
+        ],
+        HealthProofGatewayAbi,
+      );
+
       const res = await createMedicalOrderOnChain({
+        request,
         patientWallet: trimmed,
         examType,
-        episodeId: episodeId.trim(),
+        orderId,
       });
       if (!res.success) {
         sileo.error({ title: t("createError"), description: (res.error ?? "").slice(0, 120) });
       } else {
-        setResult({ orderId: res.data.orderId, txHash: res.data.txHash });
+        setResult({ orderId, txHash: res.data.txHash });
         sileo.success({
           title: t("createSuccess"),
           description: `TX: ${res.data.txHash.slice(0, 16)}…`,

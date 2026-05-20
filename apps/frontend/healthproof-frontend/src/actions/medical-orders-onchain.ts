@@ -1,93 +1,42 @@
 "use server";
 
-import {
-  createPublicClient,
-  createWalletClient,
-  http,
-  keccak256,
-  toHex,
-  stringToHex,
-  fromHex,
-} from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { createPublicClient, http, keccak256, toHex, fromHex } from "viem";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
-import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth";
+import { withAuth, auditLog } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
 import { isVerifiedDoctor, isVerifiedLab } from "@/lib/auth/permissions";
 import type { OnChainOrder } from "@/lib/medical-constants";
 import { logAuditEvent } from "@/lib/audit-onchain";
 import { AuditAction } from "@/lib/medical-constants";
+import { executeForwardRequest } from "./relay-core";
+import type { SignedForwardRequest } from "@/lib/metatx/types";
 
-const ZERO_BYTES32 =
-  "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
-const ZERO_ADDRESS =
-  "0x0000000000000000000000000000000000000000" as `0x${string}`;
-
-async function getClients() {
-  const pk = await getDeployerPrivateKey();
-  if (!pk) throw new Error("DEPLOYER_PRIVATE_KEY not set");
-  const account = privateKeyToAccount(
-    `0x${pk.replace(/^0x/, "")}` as `0x${string}`,
-  );
-  return {
-    publicClient: createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() }),
-    walletClient: createWalletClient({ account, chain: HEALTHPROOF_CHAIN, transport: http() }),
-    account,
-  };
-}
-
-interface CreateOrderData {
+interface CreateOrderMetaTx {
+  request: SignedForwardRequest;
   patientWallet: string;
   examType: string;
-  orderType?: string;
-  episodeId?: string;
-  institution?: string;
+  orderId: string;
 }
 
-// ─── Create Medical Order (via Gateway → MedicalOrderRegistry) ───
-// Requires authenticated verified doctor
+// ─── Create Medical Order (via EIP-2771 meta-tx → HealthProofGateway) ───
+// Requires authenticated verified doctor.
 
 async function createOrderHandler(
-  data: CreateOrderData,
+  data: CreateOrderMetaTx,
   auth: AuthContext
 ): Promise<{ txHash: string; orderId: string }> {
-  const { publicClient, walletClient, account } = await getClients();
+  if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
+    throw new Error("Signer mismatch: request.from != authenticated wallet");
+  }
 
-  const orderId = keccak256(
-    toHex(`${data.patientWallet}-${data.examType}-${Date.now()}`),
-  );
-  const episodeId = data.episodeId
-    ? data.episodeId.startsWith("0x") && data.episodeId.length === 66
-      ? (data.episodeId as `0x${string}`)
-      : keccak256(toHex(data.episodeId))
-    : ZERO_BYTES32;
-  const orderType = data.orderType
-    ? stringToHex(data.orderType, { size: 32 })
-    : stringToHex("EXAM", { size: 32 });
-  const examType = stringToHex(data.examType, { size: 32 });
-  const institution = (data.institution as `0x${string}`) ?? ZERO_ADDRESS;
-
-  const txHash = await walletClient.writeContract({
-    address: CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
-    abi: HealthProofGatewayAbi,
-    functionName: "createMedicalOrder",
-    args: [
-      orderId,
-      data.patientWallet as `0x${string}`,
-      institution,
-      episodeId,
-      orderType,
-      examType,
-      account.address,
-    ],
-  });
-
-  await publicClient.waitForTransactionReceipt({ hash: txHash });
+  const result = await executeForwardRequest(data.request);
+  if (!result.success) {
+    throw new Error("Meta-transaction failed on-chain");
+  }
 
   try {
-    await logAuditEvent(data.patientWallet, orderId, AuditAction.ORDER_CREATED);
+    await logAuditEvent(data.patientWallet, data.orderId, AuditAction.ORDER_CREATED);
   } catch {
     // On-chain audit logging is best-effort
   }
@@ -95,13 +44,13 @@ async function createOrderHandler(
   auditLog("createMedicalOrderOnChain", auth, true, {
     patientWallet: data.patientWallet,
     examType: data.examType,
-    orderId,
+    orderId: data.orderId,
   });
 
-  return { txHash, orderId };
+  return { txHash: result.txHash, orderId: data.orderId };
 }
 
-async function validateCreateOrder(data: CreateOrderData, auth: AuthContext): Promise<boolean> {
+async function validateCreateOrder(data: CreateOrderMetaTx, auth: AuthContext): Promise<boolean> {
   return await isVerifiedDoctor(auth.wallet);
 }
 
@@ -110,115 +59,73 @@ export const createMedicalOrderOnChain = withAuth(createOrderHandler, {
   requireOnChainPermission: validateCreateOrder,
 });
 
-interface AssignLabData {
+interface AssignLabMetaTx {
+  request: SignedForwardRequest;
   orderId: string;
   labWallet: string;
+  patientWallet: string;
 }
 
 // ─── Assign Lab to Order ───
-// Calls assignLabViaGateway on HealthProofGateway.
-// The deployer acts as guardian (authorizedForPatient), so this works
-// without meta-tx for now.
+// Calls assignLabViaGateway on HealthProofGateway via EIP-2771.
 
 async function assignLabHandler(
-  data: AssignLabData,
+  data: AssignLabMetaTx,
   auth: AuthContext
 ): Promise<{ txHash: string }> {
-  const { publicClient, walletClient } = await getClients();
-
-  const orderIdBytes =
-    data.orderId.startsWith("0x") && data.orderId.length === 66
-      ? (data.orderId as `0x${string}`)
-      : keccak256(toHex(data.orderId));
-
-  // Read order to get patient address (Gateway requires it)
-  const order = (await publicClient.readContract({
-    address: CONTRACT_ADDRESSES.MedicalOrderRegistry as `0x${string}`,
-    abi: MedicalOrderRegistryAbi,
-    functionName: "orders",
-    args: [orderIdBytes],
-  })) as {
-    patient: string;
-    doctor: string;
-    institution: string;
-    episodeId: `0x${string}`;
-    orderType: `0x${string}`;
-    examType: `0x${string}`;
-    assignedLab: string;
-    status: number;
-    createdAt: bigint;
-  };
-
-  if (Number(order.createdAt) === 0) {
-    throw new Error("Order not found on-chain");
+  if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
+    throw new Error("Signer mismatch: request.from != authenticated wallet");
   }
 
-  const txHash = await walletClient.writeContract({
-    address: CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
-    abi: HealthProofGatewayAbi,
-    functionName: "assignLabViaGateway",
-    args: [
-      orderIdBytes,
-      data.labWallet as `0x${string}`,
-      order.patient as `0x${string}`,
-    ],
-  });
-
-  await publicClient.waitForTransactionReceipt({ hash: txHash });
+  const result = await executeForwardRequest(data.request);
+  if (!result.success) {
+    throw new Error("Meta-transaction failed on-chain");
+  }
 
   auditLog("assignLabToOrder", auth, true, {
     orderId: data.orderId,
     labWallet: data.labWallet,
   });
 
-  return { txHash };
+  return { txHash: result.txHash };
 }
 
 export const assignLabToOrder = withAuth(assignLabHandler, {
   rateLimit: { windowMs: 60000, maxRequests: 5 },
 });
 
-interface UpdateOrderStatusData {
+interface UpdateOrderStatusMetaTx {
+  request: SignedForwardRequest;
   orderId: string;
   status: number;
 }
 
 // ─── Update Order Status ───
-// Calls updateOrderStatusViaGateway on HealthProofGateway.
-// NOTE: This requires EIP-2771 meta-transactions (Phase 2) to work
-// on-chain because the Gateway requires updater == _msgSender().
-// The direct Registry call was also broken (msg.sender == doctor/lab).
+// Calls updateOrderStatusViaGateway on HealthProofGateway via EIP-2771.
 
 async function updateOrderStatusHandler(
-  data: UpdateOrderStatusData,
+  data: UpdateOrderStatusMetaTx,
   auth: AuthContext
 ): Promise<{ txHash: string }> {
-  const { publicClient, walletClient, account } = await getClients();
+  if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
+    throw new Error("Signer mismatch: request.from != authenticated wallet");
+  }
 
-  const orderIdBytes =
-    data.orderId.startsWith("0x") && data.orderId.length === 66
-      ? (data.orderId as `0x${string}`)
-      : keccak256(toHex(data.orderId));
-
-  const txHash = await walletClient.writeContract({
-    address: CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
-    abi: HealthProofGatewayAbi,
-    functionName: "updateOrderStatusViaGateway",
-    args: [orderIdBytes, data.status, account.address],
-  });
-
-  await publicClient.waitForTransactionReceipt({ hash: txHash });
+  const result = await executeForwardRequest(data.request);
+  if (!result.success) {
+    throw new Error("Meta-transaction failed on-chain");
+  }
 
   auditLog("updateOrderStatusOnChain", auth, true, {
     orderId: data.orderId,
     status: data.status,
   });
 
-  return { txHash };
+  return { txHash: result.txHash };
 }
 
 async function validateUpdateOrderStatus(
-  data: UpdateOrderStatusData,
+  data: UpdateOrderStatusMetaTx,
   auth: AuthContext
 ): Promise<boolean> {
   const isDoctor = await isVerifiedDoctor(auth.wallet);
@@ -238,7 +145,7 @@ async function getOrderHandler(
   data: { orderId: string },
   _auth: AuthContext
 ): Promise<OnChainOrder | null> {
-  const { publicClient } = await getClients();
+  const publicClient = createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() });
 
   const orderIdBytes =
     data.orderId.startsWith("0x") && data.orderId.length === 66
