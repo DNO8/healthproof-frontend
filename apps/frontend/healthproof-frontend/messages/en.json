@@ -523,6 +523,7 @@
       "statusCompleted": "Completed",
       "statusCancelled": "Cancelled",
       "doctor": "Doctor",
+      "assignedLab": "Assigned Lab",
       "createdAt": "Created",
       "status": "Status",
       "orderLabel": "Order",

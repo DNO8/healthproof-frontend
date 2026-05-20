@@ -18,6 +18,7 @@ export interface OrderRef {
   patient: string;
   doctor: string;
   examType: string;
+  assignedLab: string;
   createdAt: number;
 }
 
@@ -68,6 +69,7 @@ async function handler(
           patient: order.patient,
           doctor: order.doctor,
           examType: fromHex(order.examType, "string").replace(/\0+$/, ""),
+          assignedLab: order.assignedLab,
           createdAt: Number(order.createdAt),
         });
       }

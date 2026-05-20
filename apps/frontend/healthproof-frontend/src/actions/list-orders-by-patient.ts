@@ -12,12 +12,13 @@ interface ListOrdersParams {
   limit?: number;
 }
 
-interface OrderRef {
+export interface OrderRef {
   orderId: string;
   status: number;
   patient: string;
   doctor: string;
   examType: string;
+  assignedLab: string;
   createdAt: number;
 }
 
@@ -69,6 +70,7 @@ async function handler(
           patient: order.patient,
           doctor: order.doctor,
           examType: fromHex(order.examType, "string").replace(/\0+$/, ""),
+          assignedLab: order.assignedLab,
           createdAt: Number(order.createdAt),
         });
       }
