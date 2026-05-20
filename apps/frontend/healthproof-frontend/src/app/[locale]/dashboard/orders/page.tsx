@@ -8,6 +8,7 @@ import { createWalletClient, custom, keccak256, toHex, stringToHex } from "viem"
 import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import { createMedicalOrderOnChain, getOrderOnChain } from "@/actions/medical-orders-onchain";
 import { listOrdersByDoctor } from "@/actions/list-orders-by-doctor";
+import { listOrdersByPatient } from "@/actions/list-orders-by-patient";
 import { listEpisodesByPatient } from "@/actions/list-episodes-by-patient";
 import { signGatewayMetaTx } from "@/lib/metatx/forwarder";
 import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
@@ -47,6 +48,10 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderRef[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<OrderRef | null>(null);
+
+  const [lookupPatientId, setLookupPatientId] = useState("");
+  const [lookupOrders, setLookupOrders] = useState<OrderRef[]>([]);
+  const [loadingLookupOrders, setLoadingLookupOrders] = useState(false);
 
   async function handleCreate() {
     const trimmed = patientId.trim();
@@ -110,6 +115,7 @@ export default function OrdersPage() {
           title: t("createSuccess"),
           description: `TX: ${res.data.txHash.slice(0, 16)}…`,
         });
+        await fetchOrders();
       }
     } catch (e) {
       sileo.error({ title: t("createError"), description: String(e).slice(0, 120) });
@@ -143,6 +149,43 @@ export default function OrdersPage() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  useEffect(() => {
+    if (tab === "lookup") {
+      fetchOrders();
+    }
+  }, [tab, fetchOrders]);
+
+  const fetchLookupOrders = useCallback(async () => {
+    if (!walletAddress) return;
+    setLoadingLookupOrders(true);
+    try {
+      if (!lookupPatientId.trim()) {
+        const res = await listOrdersByDoctor({ doctorWallet: walletAddress });
+        if (res.success && res.data) {
+          setLookupOrders(res.data.orders);
+        } else {
+          setLookupOrders([]);
+        }
+      } else {
+        const res = await listOrdersByPatient({ patientWallet: lookupPatientId.trim() });
+        if (res.success && res.data) {
+          setLookupOrders(res.data.orders);
+        } else {
+          setLookupOrders([]);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      setLookupOrders([]);
+    } finally {
+      setLoadingLookupOrders(false);
+    }
+  }, [lookupPatientId, walletAddress]);
+
+  useEffect(() => {
+    fetchLookupOrders();
+  }, [fetchLookupOrders]);
 
   useEffect(() => {
     if (!patientId.trim()) {
@@ -311,13 +354,26 @@ export default function OrdersPage() {
           {/* Auto-list */}
           <div className="neu-shell border border-white/70 p-6 sm:p-8">
             <h2 className="text-sm font-semibold text-slate-700 mb-4">{t("myOrders")}</h2>
-            {loadingOrders ? (
+            <div className="mb-4">
+              <UserSelect
+                value={lookupPatientId}
+                onChange={(val) => {
+                  setLookupPatientId(val);
+                  setSelectedOrder(null);
+                }}
+                label={t("filterByPatient")}
+                placeholder={t("filterByPatientPlaceholder")}
+                filterRole="patient"
+                excludeWallet={walletAddress ?? undefined}
+              />
+            </div>
+            {loadingLookupOrders ? (
               <p className="py-8 text-center text-sm text-slate-400">{t("loading")}</p>
-            ) : orders.length === 0 ? (
+            ) : lookupOrders.length === 0 ? (
               <p className="py-8 text-center text-sm text-slate-400">{t("empty")}</p>
             ) : (
               <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
-                {orders.map((o) => (
+                {lookupOrders.map((o) => (
                   <button
                     key={o.orderId}
                     className={`w-full text-left rounded-xl px-4 py-3 transition-all ${
@@ -353,7 +409,16 @@ export default function OrdersPage() {
 
             {selectedOrder && !order && (
               <div className="mt-4 neu-inset rounded-xl p-4 space-y-1">
-                <p className="text-sm font-semibold text-slate-800">{selectedOrder.examType}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-slate-800">{selectedOrder.examType}</p>
+                  <button
+                    className="rounded-lg px-2 py-1 text-xs font-semibold text-slate-500 transition-all hover:bg-slate-100"
+                    onClick={() => setSelectedOrder(null)}
+                    type="button"
+                  >
+                    ✕
+                  </button>
+                </div>
                 <p className="text-xs text-slate-500">{t("patient")}: {selectedOrder.patient.slice(0, 8)}…{selectedOrder.patient.slice(-4)}</p>
                 <p className="text-xs text-slate-500">{t("doctor")}: {selectedOrder.doctor.slice(0, 8)}…{selectedOrder.doctor.slice(-4)}</p>
                 <p className="text-xs text-slate-500">{t("status")}: {selectedOrder.status === 0 ? t("statusPending") : selectedOrder.status === 1 ? t("statusAssigned") : selectedOrder.status === 2 ? t("statusCompleted") : t("statusCancelled")}</p>

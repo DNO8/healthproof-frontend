@@ -501,7 +501,9 @@
       "status": "Status",
       "myOrders": "My Orders",
       "manualLookup": "Lookup by ID",
-      "orderCardTitle": "Order"
+      "orderCardTitle": "Order",
+      "filterByPatient": "Filter by patient",
+      "filterByPatientPlaceholder": "Select a patient..."
     },
     "episodes": {
       "title": "Clinical Episodes",

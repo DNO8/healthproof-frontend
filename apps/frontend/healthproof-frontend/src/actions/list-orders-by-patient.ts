@@ -1,6 +1,6 @@
 "use server";
 
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http, fromHex } from "viem";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
 import { withAuth } from "@/lib/auth/with-auth";
@@ -15,6 +15,10 @@ interface ListOrdersParams {
 interface OrderRef {
   orderId: string;
   status: number;
+  patient: string;
+  doctor: string;
+  examType: string;
+  createdAt: number;
 }
 
 async function handler(
@@ -41,12 +45,13 @@ async function handler(
   const orders: OrderRef[] = [];
   for (const orderId of orderIds) {
     try {
-      const order = (await publicClient.readContract({
+      const raw = await publicClient.readContract({
         address: CONTRACT_ADDRESSES.MedicalOrderRegistry as `0x${string}`,
         abi: MedicalOrderRegistryAbi,
-        functionName: "orders",
+        functionName: "getOrder",
         args: [orderId as `0x${string}`],
-      })) as {
+      });
+      const order = raw as {
         patient: string;
         doctor: string;
         institution: string;
@@ -58,7 +63,14 @@ async function handler(
         createdAt: bigint;
       };
       if (Number(order.createdAt) !== 0) {
-        orders.push({ orderId, status: order.status });
+        orders.push({
+          orderId,
+          status: order.status,
+          patient: order.patient,
+          doctor: order.doctor,
+          examType: fromHex(order.examType, "string").replace(/\0+$/, ""),
+          createdAt: Number(order.createdAt),
+        });
       }
     } catch {
       // skip invalid
