@@ -36,12 +36,13 @@ async function handler(
   const episodes: OnChainEpisode[] = [];
   for (const episodeId of episodeIds) {
     try {
-      const ep = (await publicClient.readContract({
+      const raw = await publicClient.readContract({
         address: CONTRACT_ADDRESSES.ClinicalEpisodeRegistry as `0x${string}`,
         abi: ClinicalEpisodeRegistryAbi,
-        functionName: "episodes",
+        functionName: "getEpisode",
         args: [episodeId as `0x${string}`],
-      })) as {
+      });
+      const ep = raw as {
         patient: string;
         openedBy: string;
         institution: string;
