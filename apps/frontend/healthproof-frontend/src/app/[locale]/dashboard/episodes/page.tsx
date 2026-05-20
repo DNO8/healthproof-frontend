@@ -104,6 +104,7 @@ export default function EpisodesPage() {
           title: t("openSuccess"),
           description: `TX: ${res.data.txHash.slice(0, 16)}…`,
         });
+        await fetchEpisodes();
       }
     } catch (e) {
       console.error("[handleOpen] Error:", e);
@@ -135,6 +136,12 @@ export default function EpisodesPage() {
   useEffect(() => {
     fetchEpisodes();
   }, [fetchEpisodes]);
+
+  useEffect(() => {
+    if (tab === "lookup") {
+      fetchEpisodes();
+    }
+  }, [tab, fetchEpisodes]);
 
   async function handleLookup() {
     if (!lookupId.trim()) return;
