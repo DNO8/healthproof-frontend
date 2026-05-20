@@ -948,7 +948,7 @@
   "myDocuments": {
     "title": "Mis Documentos",
     "loading": "Cargando…",
-    "empty": "No se encontraron documentos para tu wallet.",
+    "empty": "No se encontraron documentos.",
     "loadError": "Error al cargar documentos",
     "view": "Ver",
     "download": "Descargar",
