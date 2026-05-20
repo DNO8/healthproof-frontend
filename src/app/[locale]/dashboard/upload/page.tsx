@@ -7,9 +7,9 @@ import { useTranslations } from "next-intl";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { createWalletClient, custom, keccak256, toHex } from "viem";
-import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
-import { signGatewayMetaTx } from "@/lib/metatx/forwarder";
-import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
+import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { signMetaTransaction } from "@/lib/metatx/forwarder";
+import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
 import { uploadHybridEncryptedFile } from "@/services/storage/upload";
 import { getKeyPair } from "@/services/encryption/keystore";
 import { exportPublicKey } from "@/services/encryption/ecdh";
@@ -43,10 +43,16 @@ export default function UploadPage() {
     if (dropped) setFile(dropped);
   }, []);
 
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+
   async function handleUpload() {
     if (!file || !walletAddress || !patientId.trim()) return;
     if (keyConflict) {
       sileo.error({ title: tModal("keyConflictTitle"), description: tModal("keyConflictDesc") });
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      sileo.error({ title: t("uploadError"), description: t("fileTooLarge") });
       return;
     }
     setUploading(true);
@@ -95,24 +101,24 @@ export default function UploadPage() {
 
           const provider = await activeWallet.getEthereumProvider();
           const viemWallet = createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
-          const updaterAddress = (await viemWallet.getAddresses())[0];
-          if (!updaterAddress) throw new Error("No wallet address");
 
           const orderIdBytes =
             linkedOrderId.startsWith("0x") && linkedOrderId.length === 66
               ? (linkedOrderId as `0x${string}`)
               : keccak256(toHex(linkedOrderId));
 
-          const request = await signGatewayMetaTx(
+          const request = await signMetaTransaction(
             viemWallet,
-            "updateOrderStatusViaGateway",
-            [orderIdBytes, 2, updaterAddress],
-            HealthProofGatewayAbi,
+            CONTRACT_ADDRESSES.MedicalOrderRegistry,
+            "updateStatus",
+            [orderIdBytes, 2],
+            MedicalOrderRegistryAbi,
           );
 
           await updateOrderStatusOnChain({ request, orderId: linkedOrderId, status: 2 });
           sileo.success({ title: t("uploadSuccess"), description: t("orderCompleted") });
-        } catch {
+        } catch (err) {
+          console.error("[upload] Order status update failed:", err);
           sileo.warning({ title: t("uploadSuccess"), description: t("orderStatusFailed") });
         }
       } else {

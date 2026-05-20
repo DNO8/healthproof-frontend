@@ -207,6 +207,12 @@ export default function MyOrdersPage() {
                     {t("doctor")}:{" "}
                     <span className="font-mono">{formatAddress(o.doctor)}</span>
                   </span>
+                  {o.assignedLab && o.assignedLab !== "0x0000000000000000000000000000000000000000" && (
+                    <span>
+                      {t("assignedLab")}:{" "}
+                      {o.assignedLabName ?? formatAddress(o.assignedLab)}
+                    </span>
+                  )}
                   <span>
                     {t("createdAt")}:{" "}
                     {new Date(o.createdAt * 1000).toLocaleDateString()}
@@ -251,7 +257,7 @@ export default function MyOrdersPage() {
               </p>
               {selectedOrder.assignedLab && selectedOrder.assignedLab !== "0x0000000000000000000000000000000000000000" && (
                 <p>
-                  {t("assignedLab")}: {formatAddress(selectedOrder.assignedLab)}
+                  {t("assignedLab")}: {selectedOrder.assignedLabName ?? formatAddress(selectedOrder.assignedLab)}
                 </p>
               )}
               <p>
