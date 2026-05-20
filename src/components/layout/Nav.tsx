@@ -52,15 +52,16 @@ export function Nav() {
     await logout();
     setMenuOpen(false);
     clearDbUserCache();
-    sessionStorage.removeItem("hp_upserted");
-    sessionStorage.removeItem("hp_wallet_synced");
-    sessionStorage.removeItem("hp_welcome_shown");
-    sessionStorage.removeItem("hp_logging_out");
+
+    // Clear all app storage so a different user can log in cleanly
+    sessionStorage.clear();
+    localStorage.clear();
+
     sileo.success({
       title: t("signedOut"),
       description: t("signedOutDescription"),
     });
-    router.replace("/");
+    window.location.href = "/";
   }
 
   // Hide nav on auth page

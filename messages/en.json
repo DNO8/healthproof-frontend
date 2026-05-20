@@ -518,6 +518,7 @@
       "closeButton": "Close Episode",
       "closing": "Closing…",
       "lookupButton": "Lookup",
+      "lookingUp": "Looking up…",
       "looking": "Looking up…",
       "openSuccess": "Episode opened",
       "openError": "Failed to open episode",
