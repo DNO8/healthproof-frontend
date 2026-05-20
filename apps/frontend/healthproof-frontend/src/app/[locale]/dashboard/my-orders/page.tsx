@@ -5,11 +5,11 @@ import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { useWallets } from "@privy-io/react-auth";
 import { createWalletClient, custom, keccak256, toHex } from "viem";
-import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import { assignLabToOrder, getOrderOnChain } from "@/actions/medical-orders-onchain";
 import { listOrdersByPatient } from "@/actions/list-orders-by-patient";
-import { signGatewayMetaTx } from "@/lib/metatx/forwarder";
-import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
+import { signMetaTransaction } from "@/lib/metatx/forwarder";
+import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
 import type { OrderRef } from "@/actions/list-orders-by-doctor";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
 import { LabSelect } from "@/components/forms/LabSelect";
@@ -107,11 +107,12 @@ export default function MyOrdersPage() {
           ? (selectedOrder.orderId as `0x${string}`)
           : keccak256(toHex(selectedOrder.orderId));
 
-      const request = await signGatewayMetaTx(
+      const request = await signMetaTransaction(
         viemWallet,
-        "assignLabViaGateway",
-        [orderIdBytes, selectedLab.trim(), patientAddress],
-        HealthProofGatewayAbi,
+        CONTRACT_ADDRESSES.MedicalOrderRegistry,
+        "assignLab",
+        [orderIdBytes, selectedLab.trim()],
+        MedicalOrderRegistryAbi,
       );
 
       const res = await assignLabToOrder({
