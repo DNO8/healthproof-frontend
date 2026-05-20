@@ -38,12 +38,13 @@ export async function listDocumentSecretsForWallet(
 ): Promise<DocumentSecretRow[]> {
   const supabase = createAdminClient();
 
+  const w = wallet.toLowerCase();
   const { data, error } = await supabase
     .from("document_secrets")
     .select(
       "id, document_id, uploader_wallet, patient_wallet, iv, encrypted_keys, uploader_public_key, created_at",
     )
-    .eq("patient_wallet", wallet.toLowerCase())
+    .or(`patient_wallet.eq.${w},uploader_wallet.eq.${w}`)
     .order("created_at", { ascending: false });
 
   if (error || !data) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
@@ -23,6 +23,7 @@ import { useKeyConflictStore } from "@/state/key-conflict.store";
 
 export default function UploadPage() {
   const t = useTranslations("dashboard.upload");
+  const router = useRouter();
   const tModal = useTranslations("uploadModal");
   const walletAddress = useWalletAddress();
   const { user } = usePrivy();
@@ -117,6 +118,8 @@ export default function UploadPage() {
 
           await updateOrderStatusOnChain({ request, orderId: linkedOrderId, status: 2 });
           sileo.success({ title: t("uploadSuccess"), description: t("orderCompleted") });
+          router.push("/dashboard/lab-orders");
+          return;
         } catch (err) {
           console.error("[upload] Order status update failed:", err);
           sileo.warning({ title: t("uploadSuccess"), description: t("orderStatusFailed") });

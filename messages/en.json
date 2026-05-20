@@ -952,7 +952,7 @@
   "myDocuments": {
     "title": "My Documents",
     "loading": "Loading…",
-    "empty": "No documents found for your wallet.",
+    "empty": "No documents found.",
     "loadError": "Failed to load documents",
     "view": "View",
     "download": "Download",

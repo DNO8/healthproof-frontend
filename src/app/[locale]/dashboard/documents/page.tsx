@@ -25,6 +25,7 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedDoc, setSelectedDoc] = useState<DocumentSecretRow | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const { decrypt, decryptedFile, loading: decryptLoading, error: decryptError, clear } = useDocumentDecrypt();
 
@@ -58,7 +59,13 @@ export default function DocumentsPage() {
   async function handleView(doc: DocumentSecretRow) {
     setSelectedDoc(doc);
     clear();
+    setModalOpen(true);
     await performDecrypt(doc);
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    clear();
   }
 
   async function handleDownload(doc: DocumentSecretRow) {
@@ -158,17 +165,56 @@ export default function DocumentsPage() {
                   <p>{t("uploadedBy")}: {formatAddress(doc.uploader_wallet)}</p>
                 </div>
 
-                {isSelected && decryptedFile && (
-                  <div className="mt-3 pt-3 border-t border-slate-200/60">
-                    <FilePreview file={decryptedFile} />
-                  </div>
-                )}
                 {isSelected && decryptError && (
                   <p className="mt-2 text-xs text-red-500">{decryptError}</p>
                 )}
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Document Viewer Modal */}
+      {modalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeModal();
+          }}
+        >
+          <div className="relative w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+              <p className="text-sm font-semibold text-slate-700">
+                {selectedDoc ? formatAddress(selectedDoc.document_id) : t("documentTitle")}
+              </p>
+              <button
+                onClick={closeModal}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                type="button"
+                aria-label="Close"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-auto p-4 bg-slate-50">
+              {decryptLoading ? (
+                <div className="flex items-center justify-center h-64">
+                  <p className="text-sm text-slate-400">{t("decrypting")}</p>
+                </div>
+              ) : decryptedFile ? (
+                <FilePreview file={decryptedFile} />
+              ) : decryptError ? (
+                <p className="text-sm text-red-500 text-center py-12">{decryptError}</p>
+              ) : (
+                <div className="flex items-center justify-center h-64">
+                  <p className="text-sm text-slate-400">{t("loading")}</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </main>
