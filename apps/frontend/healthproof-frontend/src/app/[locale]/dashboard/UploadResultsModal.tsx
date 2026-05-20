@@ -78,6 +78,8 @@ export function UploadResultsModal({
     if (dropped) setFile(dropped);
   }
 
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+
   async function handleUpload() {
     if (!file) return;
 
@@ -86,6 +88,14 @@ export function UploadResultsModal({
       sileo.warning({
         title: t("patientRequired"),
         description: t("patientRequiredDesc"),
+      });
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      sileo.error({
+        title: t("uploadFailed"),
+        description: t("fileTooLarge"),
       });
       return;
     }
