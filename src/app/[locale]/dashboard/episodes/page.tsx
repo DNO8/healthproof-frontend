@@ -346,7 +346,16 @@ export default function EpisodesPage() {
 
             {selectedEpisode && !episode && (
               <div className="mt-4 neu-inset rounded-xl p-4 space-y-2">
-                <p className="text-sm font-semibold text-slate-800">{t("episodeDetails")}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-slate-800">{t("episodeDetails")}</p>
+                  <button
+                    className="rounded-lg px-2 py-1 text-xs font-semibold text-slate-500 transition-all hover:bg-slate-100"
+                    onClick={() => setSelectedEpisode(null)}
+                    type="button"
+                  >
+                    ✕
+                  </button>
+                </div>
                 <DetailRow label={t("episodeId")} value={selectedEpisode.episodeId} />
                 <DetailRow label={t("patient")} value={`${selectedEpisode.patient.slice(0, 8)}…${selectedEpisode.patient.slice(-4)}`} />
                 <DetailRow label={t("doctor")} value={`${selectedEpisode.openedBy.slice(0, 8)}…${selectedEpisode.openedBy.slice(-4)}`} />

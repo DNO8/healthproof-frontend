@@ -501,7 +501,9 @@
       "status": "Estado",
       "myOrders": "Mis Órdenes",
       "manualLookup": "Buscar por ID",
-      "orderCardTitle": "Orden"
+      "orderCardTitle": "Orden",
+      "filterByPatient": "Filtrar por paciente",
+      "filterByPatientPlaceholder": "Selecciona un paciente..."
     },
     "episodes": {
       "title": "Episodios Clínicos",

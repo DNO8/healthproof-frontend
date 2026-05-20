@@ -44,12 +44,13 @@ async function handler(
   const orders: OrderRef[] = [];
   for (const orderId of orderIds) {
     try {
-      const order = (await publicClient.readContract({
+      const raw = await publicClient.readContract({
         address: CONTRACT_ADDRESSES.MedicalOrderRegistry as `0x${string}`,
         abi: MedicalOrderRegistryAbi,
-        functionName: "orders",
+        functionName: "getOrder",
         args: [orderId as `0x${string}`],
-      })) as {
+      });
+      const order = raw as {
         patient: string;
         doctor: string;
         institution: string;
