@@ -28,12 +28,16 @@ async function openEpisodeHandler(
   data: OpenEpisodeMetaTx,
   auth: AuthContext
 ): Promise<{ txHash: string; episodeId: string }> {
+  console.log("[openEpisodeHandler] Called with auth.wallet:", auth.wallet, "request.from:", data.request.from);
   if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
+    console.error("[openEpisodeHandler] Signer mismatch! auth.wallet:", auth.wallet, "request.from:", data.request.from);
     throw new Error("Signer mismatch: request.from != authenticated wallet");
   }
 
   const result = await executeForwardRequest(data.request);
+  console.log("[openEpisodeHandler] executeForwardRequest result:", result);
   if (!result.success) {
+    console.error("[openEpisodeHandler] Meta-transaction failed on-chain. txHash:", result.txHash);
     throw new Error("Meta-transaction failed on-chain");
   }
 
@@ -73,12 +77,16 @@ async function closeEpisodeHandler(
   data: CloseEpisodeMetaTx,
   auth: AuthContext
 ): Promise<{ txHash: string }> {
+  console.log("[closeEpisodeHandler] Called with auth.wallet:", auth.wallet, "request.from:", data.request.from);
   if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
+    console.error("[closeEpisodeHandler] Signer mismatch!");
     throw new Error("Signer mismatch: request.from != authenticated wallet");
   }
 
   const result = await executeForwardRequest(data.request);
+  console.log("[closeEpisodeHandler] executeForwardRequest result:", result);
   if (!result.success) {
+    console.error("[closeEpisodeHandler] Meta-transaction failed on-chain. txHash:", result.txHash);
     throw new Error("Meta-transaction failed on-chain");
   }
 
@@ -105,6 +113,7 @@ async function getEpisodeHandler(
   data: { episodeId: string },
   _auth: AuthContext
 ): Promise<OnChainEpisode | null> {
+  console.log("[getEpisodeHandler] Looking up episodeId:", data.episodeId);
   const publicClient = createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() });
 
   const episodeIdBytes =
@@ -118,6 +127,7 @@ async function getEpisodeHandler(
     functionName: "getEpisode",
     args: [episodeIdBytes],
   });
+  console.log("[getEpisodeHandler] Raw contract result:", result);
 
   const ep = result as {
     patient: string;
@@ -129,8 +139,12 @@ async function getEpisodeHandler(
     active: boolean;
   };
 
-  if (Number(ep.openedAt) === 0) return null;
+  if (Number(ep.openedAt) === 0) {
+    console.log("[getEpisodeHandler] Episode not found (openedAt === 0)");
+    return null;
+  }
 
+  console.log("[getEpisodeHandler] Episode found:", ep);
   return {
     episodeId: data.episodeId,
     patient: ep.patient,

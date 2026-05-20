@@ -61,15 +61,18 @@ export default function EpisodesPage() {
     }
 
     setLoading(true);
+    console.log("[handleOpen] Starting open episode for patient:", trimmed, "type:", episodeType);
     try {
       const viemWallet = await getViemWalletClient(activeWallet);
       const doctorAddress = (await viemWallet.getAddresses())[0];
       if (!doctorAddress) throw new Error("No wallet address");
+      console.log("[handleOpen] Doctor address:", doctorAddress);
 
       const episodeId = keccak256(
         toHex(`${trimmed}-${episodeType}-${Date.now()}`),
       );
       const episodeTypeBytes = stringToHex(episodeType, { size: 32 });
+      console.log("[handleOpen] Generated episodeId:", episodeId);
 
       const request = await signGatewayMetaTx(
         viemWallet,
@@ -84,6 +87,7 @@ export default function EpisodesPage() {
         ],
         HealthProofGatewayAbi,
       );
+      console.log("[handleOpen] Meta-tx signed. request.to:", request.to, "request.from:", request.from);
 
       const res = await openEpisodeOnChain({
         request,
@@ -91,6 +95,7 @@ export default function EpisodesPage() {
         episodeType,
         episodeId,
       });
+      console.log("[handleOpen] Server action result:", res);
       if (!res.success) {
         sileo.error({ title: t("openError"), description: (res.error ?? "").slice(0, 120) });
       } else {
@@ -101,6 +106,7 @@ export default function EpisodesPage() {
         });
       }
     } catch (e) {
+      console.error("[handleOpen] Error:", e);
       sileo.error({ title: t("openError"), description: String(e).slice(0, 120) });
     } finally {
       setLoading(false);
@@ -109,14 +115,18 @@ export default function EpisodesPage() {
 
   const fetchEpisodes = useCallback(async () => {
     if (!walletAddress) return;
+    console.log("[fetchEpisodes] Loading episodes for wallet:", walletAddress);
     setLoadingEpisodes(true);
     try {
       const res = await listEpisodesByDoctor({ doctorWallet: walletAddress });
+      console.log("[fetchEpisodes] Server response:", res);
       if (res.success && res.data) {
         setEpisodes(res.data.episodes);
+      } else if (!res.success) {
+        console.error("[fetchEpisodes] Server action failed:", res.error);
       }
     } catch (e) {
-      console.error(e);
+      console.error("[fetchEpisodes] Exception:", e);
     } finally {
       setLoadingEpisodes(false);
     }
@@ -128,10 +138,12 @@ export default function EpisodesPage() {
 
   async function handleLookup() {
     if (!lookupId.trim()) return;
+    console.log("[handleLookup] Looking up episodeId:", lookupId.trim());
     setLookupLoading(true);
     setEpisode(null);
     try {
       const res = await getEpisodeOnChain({ episodeId: lookupId.trim() });
+      console.log("[handleLookup] Server response:", res);
       if (res.success) {
         setEpisode(res.data);
         if (!res.data) {
@@ -141,6 +153,7 @@ export default function EpisodesPage() {
         sileo.error({ title: t("lookupError"), description: (res.error ?? "").slice(0, 120) });
       }
     } catch (e) {
+      console.error("[handleLookup] Exception:", e);
       sileo.error({ title: t("lookupError"), description: String(e).slice(0, 120) });
     } finally {
       setLookupLoading(false);
@@ -163,6 +176,7 @@ export default function EpisodesPage() {
     }
 
     setLoading(true);
+    console.log("[handleClose] Closing episode:", id);
     try {
       const viemWallet = await getViemWalletClient(activeWallet);
       const doctorAddress = (await viemWallet.getAddresses())[0];
@@ -179,8 +193,10 @@ export default function EpisodesPage() {
         [episodeIdBytes, doctorAddress],
         HealthProofGatewayAbi,
       );
+      console.log("[handleClose] Meta-tx signed. request.to:", request.to);
 
       const res = await closeEpisodeOnChain({ request, episodeId: id });
+      console.log("[handleClose] Server response:", res);
       if (!res.success) {
         sileo.error({ title: t("closeError"), description: (res.error ?? "").slice(0, 120) });
       } else {
@@ -192,6 +208,7 @@ export default function EpisodesPage() {
         setEpisode(null);
       }
     } catch (e) {
+      console.error("[handleClose] Exception:", e);
       sileo.error({ title: t("closeError"), description: String(e).slice(0, 120) });
     } finally {
       setLoading(false);
