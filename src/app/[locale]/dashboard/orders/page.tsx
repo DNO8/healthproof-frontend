@@ -5,7 +5,9 @@ import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { createMedicalOrderOnChain, getOrderOnChain } from "@/actions/medical-orders-onchain";
 import { listOrdersByDoctor } from "@/actions/list-orders-by-doctor";
+import { listEpisodesByPatient } from "@/actions/list-episodes-by-patient";
 import type { OrderRef } from "@/actions/list-orders-by-doctor";
+import type { OnChainEpisode } from "@/lib/medical-constants";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
 import { UserSelect } from "@/components/forms/UserSelect";
 
@@ -23,6 +25,8 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ orderId: string; txHash: string } | null>(null);
   const [lookupId, setLookupId] = useState("");
+  const [patientEpisodes, setPatientEpisodes] = useState<OnChainEpisode[]>([]);
+  const [loadingEpisodes, setLoadingEpisodes] = useState(false);
   const [order, setOrder] = useState<{ orderId: string; patient: string; doctor: string; examType: string; status: number; episodeId: string } | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
 
@@ -36,12 +40,16 @@ export default function OrdersPage() {
       sileo.error({ title: t("patientRequiredTitle"), description: t("patientRequiredDesc") });
       return;
     }
+    if (!episodeId.trim()) {
+      sileo.error({ title: t("episodeRequiredTitle"), description: t("episodeRequiredDesc") });
+      return;
+    }
     setLoading(true);
     try {
       const res = await createMedicalOrderOnChain({
         patientWallet: trimmed,
         examType,
-        episodeId: episodeId.trim() || undefined,
+        episodeId: episodeId.trim(),
       });
       if (!res.success) {
         sileo.error({ title: t("createError"), description: (res.error ?? "").slice(0, 120) });
@@ -63,6 +71,7 @@ export default function OrdersPage() {
     setResult(null);
     setPatientId("");
     setEpisodeId("");
+    setPatientEpisodes([]);
   }
 
   const fetchOrders = useCallback(async () => {
@@ -83,6 +92,33 @@ export default function OrdersPage() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  useEffect(() => {
+    if (!patientId.trim()) {
+      setPatientEpisodes([]);
+      setEpisodeId("");
+      return;
+    }
+    let cancelled = false;
+    async function load() {
+      setLoadingEpisodes(true);
+      try {
+        const res = await listEpisodesByPatient({ patientWallet: patientId.trim() });
+        if (cancelled) return;
+        if (res.success && res.data) {
+          setPatientEpisodes(res.data.episodes.filter((ep) => ep.active));
+        } else {
+          setPatientEpisodes([]);
+        }
+      } catch {
+        if (!cancelled) setPatientEpisodes([]);
+      } finally {
+        if (!cancelled) setLoadingEpisodes(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [patientId]);
 
   async function handleLookup() {
     if (!lookupId.trim()) return;
@@ -154,16 +190,32 @@ export default function OrdersPage() {
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("episodeLabel")}</label>
-            <input
-              className="neu-pressed w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none"
-              placeholder={t("episodePlaceholder")}
+            <select
+              className="neu-pressed w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none disabled:opacity-50"
               value={episodeId}
               onChange={(e) => setEpisodeId(e.target.value)}
-            />
+              disabled={!patientId.trim() || loadingEpisodes || patientEpisodes.length === 0}
+            >
+              <option value="">{t("episodePlaceholder")}</option>
+              {patientEpisodes.map((ep) => (
+                <option key={ep.episodeId} value={ep.episodeId}>
+                  {ep.episodeType} — {ep.classification} ({new Date(ep.openedAt * 1000).toLocaleDateString()})
+                </option>
+              ))}
+            </select>
+            {!patientId.trim() && (
+              <p className="mt-1 text-[11px] text-slate-400">{t("patientRequiredDesc")}</p>
+            )}
+            {patientId.trim() && loadingEpisodes && (
+              <p className="mt-1 text-[11px] text-slate-400">{t("episodeLoading")}</p>
+            )}
+            {patientId.trim() && !loadingEpisodes && patientEpisodes.length === 0 && (
+              <p className="mt-1 text-[11px] text-slate-400">{t("episodeEmpty")}</p>
+            )}
           </div>
           <button
             className="neu-surface hover:neu-pressed w-full rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition-all disabled:opacity-50"
-            disabled={loading || !patientId.trim()}
+            disabled={loading || !patientId.trim() || !episodeId.trim()}
             onClick={handleCreate}
             type="button"
           >
