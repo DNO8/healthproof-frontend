@@ -44,7 +44,7 @@ export async function executeForwardRequest(
   console.log("[relay-core] Relayer wallet:", walletClient.account.address);
 
   const forwarderAddress = (await publicClient.readContract({
-    address: CONTRACT_ADDRESSES.MedicalOrderRegistry,
+    address: CONTRACT_ADDRESSES.HealthProofGateway,
     abi: [
       {
         inputs: [],
@@ -57,7 +57,7 @@ export async function executeForwardRequest(
     functionName: "trustedForwarder",
     args: [],
   })) as `0x${string}`;
-  console.log("[relay-core] Forwarder address from MedicalOrderRegistry:", forwarderAddress);
+  console.log("[relay-core] Forwarder address from HealthProofGateway:", forwarderAddress);
 
   const txHash = await walletClient.writeContract({
     address: forwarderAddress,
