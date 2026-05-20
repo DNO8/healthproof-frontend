@@ -523,6 +523,7 @@
       "statusCompleted": "Completada",
       "statusCancelled": "Cancelada",
       "doctor": "Doctor",
+      "assignedLab": "Laboratorio Asignado",
       "createdAt": "Creado",
       "status": "Estado",
       "orderLabel": "Orden",

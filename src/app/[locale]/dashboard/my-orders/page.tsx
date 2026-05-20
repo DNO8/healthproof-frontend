@@ -10,7 +10,7 @@ import { assignLabToOrder, getOrderOnChain } from "@/actions/medical-orders-onch
 import { listOrdersByPatient } from "@/actions/list-orders-by-patient";
 import { signMetaTransaction } from "@/lib/metatx/forwarder";
 import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
-import type { OrderRef } from "@/actions/list-orders-by-doctor";
+import type { OrderRef } from "@/actions/list-orders-by-patient";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
 import { LabSelect } from "@/components/forms/LabSelect";
 
@@ -249,6 +249,11 @@ export default function MyOrdersPage() {
                       ? t("statusCompleted")
                       : t("statusCancelled")}
               </p>
+              {selectedOrder.assignedLab && selectedOrder.assignedLab !== "0x0000000000000000000000000000000000000000" && (
+                <p>
+                  {t("assignedLab")}: {formatAddress(selectedOrder.assignedLab)}
+                </p>
+              )}
               <p>
                 {t("createdAt")}:{" "}
                 {new Date(selectedOrder.createdAt * 1000).toLocaleString()}
