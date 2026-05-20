@@ -30,7 +30,18 @@ async function getRelayerClients() {
 export async function executeForwardRequest(
   request: SignedForwardRequest
 ): Promise<{ txHash: `0x${string}`; success: boolean }> {
+  console.log("[relay-core] executeForwardRequest called with:", {
+    from: request.from,
+    to: request.to,
+    value: request.value.toString(),
+    gas: request.gas.toString(),
+    deadline: request.deadline.toString(),
+    data: request.data,
+    signature: request.signature.slice(0, 20) + "...",
+  });
+
   const { publicClient, walletClient } = await getRelayerClients();
+  console.log("[relay-core] Relayer wallet:", walletClient.account.address);
 
   const forwarderAddress = (await publicClient.readContract({
     address: CONTRACT_ADDRESSES.MedicalOrderRegistry,
@@ -46,6 +57,7 @@ export async function executeForwardRequest(
     functionName: "trustedForwarder",
     args: [],
   })) as `0x${string}`;
+  console.log("[relay-core] Forwarder address from MedicalOrderRegistry:", forwarderAddress);
 
   const txHash = await walletClient.writeContract({
     address: forwarderAddress,
@@ -64,9 +76,16 @@ export async function executeForwardRequest(
     ],
     value: request.value,
   });
+  console.log("[relay-core] Transaction submitted, hash:", txHash);
 
   const receipt = await publicClient.waitForTransactionReceipt({
     hash: txHash,
+  });
+  console.log("[relay-core] Receipt received:", {
+    status: receipt.status,
+    gasUsed: receipt.gasUsed.toString(),
+    blockNumber: receipt.blockNumber.toString(),
+    logs: receipt.logs.length,
   });
 
   return {
