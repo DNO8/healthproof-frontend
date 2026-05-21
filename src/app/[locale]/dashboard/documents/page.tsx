@@ -182,7 +182,7 @@ export default function DocumentsPage() {
             if (e.target === e.currentTarget) closeModal();
           }}
         >
-          <div className="relative w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col">
+          <div className="relative w-full max-w-5xl h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
               <p className="text-sm font-semibold text-slate-700">

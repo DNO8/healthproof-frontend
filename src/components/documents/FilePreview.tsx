@@ -81,10 +81,10 @@ export function FilePreview({ file }: { file: DecryptedFile }) {
 
   if (file.mime === "application/pdf") {
     return (
-      <div className="mt-4">
+      <div className="h-full w-full">
         <iframe
           src={file.url}
-          className="h-80 w-full rounded-xl border border-slate-200"
+          className="h-full w-full rounded-xl border border-slate-200"
           title="Decrypted PDF"
         />
       </div>
