@@ -1,6 +1,9 @@
 "use server";
 
 import { PinataSDK } from "pinata";
+import { getAuthContext } from "@/lib/auth/server-auth";
+
+const SERVER_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB — conservative for medical PDFs
 
 let pinataInstance: PinataSDK | null = null;
 
@@ -31,11 +34,20 @@ export async function uploadToIpfsAction(
   formData: FormData,
 ): Promise<IpfsUploadResult> {
   try {
+    const auth = await getAuthContext();
+    if (!auth) {
+      throw new Error("[uploadToIpfsAction] Unauthorized.");
+    }
+
     const pinata = getPinata();
     const file = formData.get("file") as File | null;
 
     if (!file) {
       throw new Error("[uploadToIpfsAction] No file provided.");
+    }
+
+    if (file.size > SERVER_MAX_FILE_SIZE) {
+      throw new Error(`[uploadToIpfsAction] File too large. Max ${SERVER_MAX_FILE_SIZE / 1024 / 1024} MB allowed.`);
     }
 
     const result = await pinata.upload.public.file(file);
