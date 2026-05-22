@@ -696,6 +696,8 @@
       "invalidQR": "Datos QR inválidos",
       "expiredQR": "El código QR ha expirado",
       "noAccess": "No se encontró acceso on-chain",
+      "accessGranted": "Acceso concedido",
+      "redirecting": "Redirigiendo a documentos compartidos…",
       "decryptSuccess": "Archivo descifrado correctamente",
       "download": "Descargar Archivo",
       "preview": "Vista Previa"

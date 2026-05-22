@@ -8,7 +8,6 @@ import { useOnChainRole } from "@/hooks/useOnChainRole";
 import { useDbUser } from "@/hooks/useDbUser";
 import type { UserRole } from "@/types/domain.types";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
-import { MobileSheet } from "@/components/layout/MobileSheet";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export default function DashboardLayout({
@@ -52,7 +51,6 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen">
       <DashboardSidebar role={effectiveRole} walletAddress={walletAddress} />
-      <MobileSheet role={effectiveRole} walletAddress={walletAddress} />
       <main className="flex-1 md:ml-64 min-h-screen p-4 sm:p-6">
         <Breadcrumbs />
         {children}
