@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { usePrivy } from "@privy-io/react-auth";
@@ -9,7 +10,7 @@ import { listSharedDocuments } from "@/actions/list-shared-documents";
 import { getUserPublicKey } from "@/actions/get-user-public-key";
 import { checkAccessOnChain } from "@/actions/check-access-onchain";
 import { useDocumentDecrypt } from "@/hooks/useDocumentDecrypt";
-import { FilePreview, getExtensionFromMime } from "@/components/documents/FilePreview";
+import { FilePreview } from "@/components/documents/FilePreview";
 import type { SharedDocument } from "@/actions/list-shared-documents";
 
 function formatAddress(addr: string): string {
@@ -22,11 +23,12 @@ export default function SharedDocumentsPage() {
   const walletAddress = useWalletAddress();
   const { user } = usePrivy();
   const userId = user?.id ?? "";
+  const searchParams = useSearchParams();
+  const highlightDocId = searchParams.get("doc");
 
   const [docs, setDocs] = useState<SharedDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDoc, setSelectedDoc] = useState<SharedDocument | null>(null);
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [patientKeys, setPatientKeys] = useState<Record<string, string | null>>({});
 
   const { decrypt, decryptedFile, loading: decryptLoading, error: decryptError, clear } = useDocumentDecrypt();
@@ -64,6 +66,18 @@ export default function SharedDocumentsPage() {
   useEffect(() => {
     fetchDocs();
   }, [fetchDocs]);
+
+  // Auto-select document from QR scan redirect
+  useEffect(() => {
+    if (!highlightDocId || docs.length === 0 || !patientKeys) return;
+    const doc = docs.find((d) => d.document_id === highlightDocId);
+    if (doc && doc.document_id !== selectedDoc?.document_id) {
+      setSelectedDoc(doc);
+      clear();
+      performDecrypt(doc);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightDocId, docs, patientKeys]);
 
   async function performDecrypt(doc: SharedDocument, silent = false) {
     if (!walletAddress || !userId) return null;
@@ -115,28 +129,7 @@ export default function SharedDocumentsPage() {
     await performDecrypt(doc);
   }
 
-  async function handleDownload(doc: SharedDocument) {
-    setDownloadingId(doc.document_id);
-    try {
-      const file = await performDecrypt(doc, true);
-      if (file) {
-        const ext = getExtensionFromMime(file.mime);
-        const name = `shared-doc-${doc.document_id.slice(0, 8)}${ext}`;
-        const a = document.createElement("a");
-        a.href = file.url;
-        a.download = name;
-        a.click();
-      } else {
-        sileo.error({ title: t("downloadError"), description: t("decryptFailed") });
-      }
-    } catch (e) {
-      sileo.error({ title: t("downloadError"), description: String(e).slice(0, 120) });
-    } finally {
-      setDownloadingId(null);
-    }
-  }
-
-  const isDecrypting = decryptLoading || !!downloadingId;
+  const isDecrypting = decryptLoading;
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
@@ -167,24 +160,14 @@ export default function SharedDocumentsPage() {
                       {t("sharedOn")}: {new Date(doc.created_at).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      className="rounded-lg bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100 disabled:opacity-50"
-                      disabled={isBusy}
-                      onClick={() => handleView(doc)}
-                      type="button"
-                    >
-                      {isBusy ? t("decrypting") : t("view")}
-                    </button>
-                    <button
-                      className="rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
-                      disabled={isDecrypting}
-                      onClick={() => handleDownload(doc)}
-                      type="button"
-                    >
-                      {downloadingId === doc.document_id ? t("decrypting") : t("download")}
-                    </button>
-                  </div>
+                  <button
+                    className="rounded-lg bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100 disabled:opacity-50"
+                    disabled={isBusy}
+                    onClick={() => handleView(doc)}
+                    type="button"
+                  >
+                    {isBusy ? t("decrypting") : t("view")}
+                  </button>
                 </div>
 
                 <div className="text-xs text-slate-500 space-y-1">

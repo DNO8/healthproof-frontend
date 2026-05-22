@@ -11,16 +11,13 @@ import {
   usePathname as useIntlPathname,
 } from "@/i18n/navigation";
 import { useUiStore } from "@/state/ui.store";
+import { useWalletAddress } from "@/hooks/useWalletAddress";
+import { useOnChainRole } from "@/hooks/useOnChainRole";
+import { useDbUser, clearDbUserCache } from "@/hooks/useDbUser";
 import { LINKS_BY_ROLE } from "@/lib/navigation";
 import type { UserRole } from "@/types/domain.types";
-import { clearDbUserCache } from "@/hooks/useDbUser";
 
-interface MobileSheetProps {
-  role: UserRole | null;
-  walletAddress: string | null;
-}
-
-export function MobileSheet({ role, walletAddress }: MobileSheetProps) {
+export function MobileSheet() {
   const t = useTranslations("nav");
   const tSidebar = useTranslations("dashboard.sidebar");
   const router = useRouter();
@@ -33,8 +30,16 @@ export function MobileSheet({ role, walletAddress }: MobileSheetProps) {
   const intlPathname = useIntlPathname();
   const sheetRef = useRef<HTMLDivElement>(null);
 
+  const walletAddress = useWalletAddress();
+  const { role: onChainRole } = useOnChainRole(walletAddress ?? undefined);
+  const { dbUser } = useDbUser();
+
   const isDashboard = pathname.startsWith("/dashboard");
-  const effectiveRole: UserRole = role ?? "patient";
+  const dbRole = dbUser?.role?.toLowerCase() as UserRole | null;
+  const intended = typeof window !== "undefined"
+    ? (localStorage.getItem("hp_intended_role") as UserRole | null)
+    : null;
+  const effectiveRole: UserRole = onChainRole ?? dbRole ?? intended ?? "patient";
   const sidebarLinks = LINKS_BY_ROLE[effectiveRole] ?? LINKS_BY_ROLE.patient;
 
   useEffect(() => {
