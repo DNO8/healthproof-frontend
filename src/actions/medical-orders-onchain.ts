@@ -1,5 +1,22 @@
 "use server";
 
+/**
+ * ─── Gateway Proxy Architecture Note ───
+ *
+ * HealthProofGateway exposes proxy functions (createOrderViaGateway,
+ * assignLabViaGateway, updateOrderStatusViaGateway, closeEpisodeViaGateway)
+ * designed as a unified entry point for external SDKs.
+ *
+ * Current frontend usage:
+ * - Medical orders (this file) → Gateway proxies (historical, still active)
+ * - Permissions (permissions/page.tsx) → Direct meta-tx against PermissionManager
+ *   (less indirection, lower gas)
+ *
+ * Both paths use EIP-2771 meta-transactions signed by the user and relayed
+ * through the TrustedForwarder. The Gateway remains available for future
+ * third-party integrations but is not required for internal flows.
+ */
+
 import { createPublicClient, http, keccak256, toHex, fromHex } from "viem";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";

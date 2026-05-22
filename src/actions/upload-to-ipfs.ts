@@ -30,22 +30,27 @@ export interface IpfsUploadResult {
 export async function uploadToIpfsAction(
   formData: FormData,
 ): Promise<IpfsUploadResult> {
-  const pinata = getPinata();
-  const file = formData.get("file") as File | null;
+  try {
+    const pinata = getPinata();
+    const file = formData.get("file") as File | null;
 
-  if (!file) {
-    throw new Error("No file provided.");
+    if (!file) {
+      throw new Error("[uploadToIpfsAction] No file provided.");
+    }
+
+    const result = await pinata.upload.public.file(file);
+    const cid = result.cid;
+
+    const gw = process.env.NEXT_PUBLIC_PINATA_GATEWAY ?? "gateway.pinata.cloud";
+    const gateway = gw.startsWith("http") ? gw : `https://${gw}`;
+
+    return {
+      cid,
+      ipfsUrl: `ipfs://${cid}`,
+      gatewayUrl: `${gateway}/ipfs/${cid}`,
+    };
+  } catch (error) {
+    console.error("[uploadToIpfsAction] Failed:", error);
+    throw error;
   }
-
-  const result = await pinata.upload.public.file(file);
-  const cid = result.cid;
-
-  const gw = process.env.NEXT_PUBLIC_PINATA_GATEWAY ?? "gateway.pinata.cloud";
-  const gateway = gw.startsWith("http") ? gw : `https://${gw}`;
-
-  return {
-    cid,
-    ipfsUrl: `ipfs://${cid}`,
-    gatewayUrl: `${gateway}/ipfs/${cid}`,
-  };
 }

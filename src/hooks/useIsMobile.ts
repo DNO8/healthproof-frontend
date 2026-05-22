@@ -2,19 +2,20 @@
 
 import { useState, useEffect } from "react";
 
-export function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(false);
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(false);
 
   useEffect(() => {
-    const check = () => {
-      setIsMobile(
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-      );
-    };
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+    const mql = window.matchMedia(query);
+    setMatches(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, [query]);
 
-  return isMobile;
+  return matches;
+}
+
+export function useIsMobile(): boolean {
+  return useMediaQuery("(max-width: 768px)");
 }

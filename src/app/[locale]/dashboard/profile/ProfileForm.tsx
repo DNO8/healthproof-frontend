@@ -14,6 +14,8 @@ type ProfileFormProps = {
   walletAddress: string;
   role: string;
   roleLabel: string;
+  specialty: string;
+  institution: string;
 };
 
 export function ProfileForm({
@@ -23,6 +25,8 @@ export function ProfileForm({
   walletAddress,
   role,
   roleLabel,
+  specialty,
+  institution,
 }: ProfileFormProps) {
   const t = useTranslations("dashboard.profile");
   const [fullName, setFullName] = useState(initialName);
@@ -104,6 +108,32 @@ export function ProfileForm({
           placeholder={t("fullNamePlaceholder")}
           type="text"
           value={fullName}
+        />
+      </div>
+
+      <div>
+        <label className={labelClass} htmlFor="specialty">
+          {t("specialtyLabel")}
+        </label>
+        <input
+          className={readOnlyClass}
+          id="specialty"
+          readOnly
+          type="text"
+          value={specialty || t("notSet")}
+        />
+      </div>
+
+      <div>
+        <label className={labelClass} htmlFor="institution">
+          {t("institutionLabel")}
+        </label>
+        <input
+          className={readOnlyClass}
+          id="institution"
+          readOnly
+          type="text"
+          value={institution || t("notSet")}
         />
       </div>
 

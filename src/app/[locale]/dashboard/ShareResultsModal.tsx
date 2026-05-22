@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useWallets } from "@privy-io/react-auth";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
 import { QRCodeSVG } from "qrcode.react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
+import { createWalletClient, custom, keccak256, toHex } from "viem";
+import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import type { GrantedToRole, EncryptedQRData } from "@/types/domain.types";
 import { QR_EXPIRY_MINUTES } from "@/lib/constants";
 import { buildPermissionPayload } from "@/features/permissions";
@@ -20,6 +23,16 @@ import { exportPublicKey } from "@/services/encryption/ecdh";
 import { getKeyPair } from "@/services/encryption/keystore";
 import { UserSelect } from "@/components/forms/UserSelect";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
+import { savePermissionKey } from "@/actions/save-permission-key";
+import { signMetaTransaction } from "@/lib/metatx/forwarder";
+import PermissionManagerArtifact from "@/lib/abis/PermissionManager.json";
+
+const PermissionManagerAbi = PermissionManagerArtifact.abi;
+
+async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
+  const provider = await wallet.getEthereumProvider();
+  return createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+}
 
 const GRANTED_ROLES: {
   key: GrantedToRole;
@@ -40,6 +53,7 @@ export function ShareResultsModal({
 }) {
   const t = useTranslations("shareModal");
   const walletAddress = useWalletAddress();
+  const { wallets } = useWallets();
   const [grantedTo, setGrantedTo] = useState<GrantedToRole | null>(null);
   const [recipientId, setRecipientId] = useState("");
   const [results, setResults] = useState<DocumentSecretRow[]>([]);
@@ -98,6 +112,12 @@ export function ShareResultsModal({
       return;
     }
 
+    const activeWallet = wallets.find((w) => w.address);
+    if (!activeWallet) {
+      sileo.error({ title: t("errorTitle"), description: "No active wallet found" });
+      return;
+    }
+
     setGenerating(true);
 
     try {
@@ -144,41 +164,65 @@ export function ShareResultsModal({
 
       // 5. Resolve wallet address
       const resolvedWalletAddress = walletAddress ?? patientId;
+      const documentId = selectedResult.document_id;
 
       // 6. Build permission payload
       const payload = buildPermissionPayload({
         patientWallet: resolvedWalletAddress,
         granteeWallet: trimmedRecipient,
         grantedToRole: grantedTo,
-        documentId: selectedResult.document_id,
+        documentId,
       });
 
-      // 7. Sign — signature stored for audit but not required for on-chain grant
-      const signature = "unsigned";
-      void signature;
+      // 7. Sign on-chain permission grant via EIP-2771 meta-transaction
+      const viemWallet = await getViemWalletClient(activeWallet);
+      const resourceId =
+        documentId.startsWith("0x") && documentId.length === 66
+          ? (documentId as `0x${string}`)
+          : keccak256(toHex(documentId));
 
-      // 7.5 Grant permission on-chain
+      const request = await signMetaTransaction(
+        viemWallet,
+        CONTRACT_ADDRESSES.PermissionManager as `0x${string}`,
+        "grantPermission",
+        [
+          resolvedWalletAddress.toLowerCase(),
+          trimmedRecipient.toLowerCase(),
+          0, // Scope.DOCUMENT
+          resourceId,
+          BigInt(0), // no expiry
+        ],
+        PermissionManagerAbi,
+      );
+
       const grantResult = await grantPermissionOnChain({
+        request,
         patientWallet: resolvedWalletAddress,
         granteeWallet: trimmedRecipient,
-        documentId: selectedResult.document_id,
+        documentId,
+        scope: 0,
       });
-      if ("error" in grantResult) {
-        console.warn(
-          "[ShareResultsModal] On-chain grant failed:",
-          grantResult.error,
-        );
+      if (!grantResult.success) {
+        throw new Error(grantResult.error ?? "On-chain grant failed");
       }
 
-      // 8. Build encrypted QR data
+      // 8. Persist rewrapped key so grantee can access without QR scan
+      await savePermissionKey({
+        document_id: documentId,
+        patient_wallet: resolvedWalletAddress,
+        grantee_wallet: trimmedRecipient,
+        encrypted_key: JSON.stringify(rewrapped),
+      });
+
+      // 9. Build encrypted QR data
       const qr: EncryptedQRData = {
         type: "healthproof_permission",
         payload,
-        signature,
+        signature: "unsigned",
         wallet: resolvedWalletAddress,
         crypto: {
-          document_id: selectedResult.document_id,
-          cid: selectedResult.document_id,
+          document_id: documentId,
+          cid: documentId,
           iv: selectedResult.iv,
           encrypted_key: rewrapped,
           patient_public_key: myPublicKeyJwk,

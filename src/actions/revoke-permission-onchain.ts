@@ -1,60 +1,40 @@
 "use server";
 
-import {
-  createPublicClient,
-  createWalletClient,
-  http
-} from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { CONTRACT_ADDRESSES } from "@/lib/contracts";
 import PermissionManagerArtifact from "@/lib/abis/PermissionManager.json";
 const PermissionManagerAbi = PermissionManagerArtifact.abi;
-import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth";
+import { withAuth, auditLog } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
 import { validatePatientAccess } from "@/lib/auth/permissions";
 import { logAuditEvent } from "@/lib/audit-onchain";
 import { AuditAction } from "@/lib/medical-constants";
+import { executeForwardRequest } from "./relay-core";
+import type { SignedForwardRequest } from "@/lib/metatx/types";
 
 interface RevokePermissionData {
+  request: SignedForwardRequest;
   patientWallet: string;
   granteeWallet: string;
 }
 
 /**
- * Revoke all permissions from a patient to a specific grantee on-chain.
+ * Revoke all permissions from a patient to a specific grantee on-chain via EIP-2771 meta-transaction.
+ * The patient (or guardian) signs the ForwardRequest in the frontend;
+ * the deployer relays it through the TrustedForwarder.
  * Requires caller to be authenticated and either the patient or a guardian.
  */
 async function revokePermissionHandler(
   data: RevokePermissionData,
   auth: AuthContext
 ): Promise<{ txHash: string }> {
-  const pk = await getDeployerPrivateKey();
-  if (!pk) throw new Error("DEPLOYER_PRIVATE_KEY not set");
+  if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
+    throw new Error("Signer mismatch: request.from != authenticated wallet");
+  }
 
-  const account = privateKeyToAccount(`0x${pk.replace(/^0x/, "")}`);
-
-  const publicClient = createPublicClient({
-    chain: HEALTHPROOF_CHAIN,
-    transport: http(),
-  });
-
-  const walletClient = createWalletClient({
-    account,
-    chain: HEALTHPROOF_CHAIN,
-    transport: http(),
-  });
-
-  const txHash = await walletClient.writeContract({
-    address: CONTRACT_ADDRESSES.PermissionManager as `0x${string}`,
-    abi: PermissionManagerAbi,
-    functionName: "revokePermission",
-    args: [
-      data.patientWallet as `0x${string}`,
-      data.granteeWallet as `0x${string}`,
-    ],
-  });
-
-  await publicClient.waitForTransactionReceipt({ hash: txHash });
+  const result = await executeForwardRequest(data.request);
+  if (!result.success) {
+    throw new Error("Meta-transaction failed on-chain");
+  }
 
   try {
     await logAuditEvent(data.patientWallet, data.granteeWallet, AuditAction.PERMISSION_REVOKED);
@@ -67,7 +47,7 @@ async function revokePermissionHandler(
     granteeWallet: data.granteeWallet,
   });
 
-  return { txHash };
+  return { txHash: result.txHash };
 }
 
 /**

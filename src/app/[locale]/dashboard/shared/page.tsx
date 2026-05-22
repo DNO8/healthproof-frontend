@@ -7,6 +7,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
 import { listSharedDocuments } from "@/actions/list-shared-documents";
 import { getUserPublicKey } from "@/actions/get-user-public-key";
+import { checkAccessOnChain } from "@/actions/check-access-onchain";
 import { useDocumentDecrypt } from "@/hooks/useDocumentDecrypt";
 import { FilePreview, getExtensionFromMime } from "@/components/documents/FilePreview";
 import type { SharedDocument } from "@/actions/list-shared-documents";
@@ -70,6 +71,23 @@ export default function SharedDocumentsPage() {
       if (!silent) sileo.error({ title: t("noIv"), description: t("noIvDesc") });
       return null;
     }
+
+    // 1. On-chain permission gate
+    try {
+      const accessResult = await checkAccessOnChain({
+        patientWallet: doc.patient_wallet,
+        requesterWallet: walletAddress,
+        documentId: doc.document_id,
+      });
+      if (!accessResult.success || !accessResult.data) {
+        if (!silent) sileo.error({ title: t("accessRevoked"), description: t("accessRevokedDesc") });
+        return null;
+      }
+    } catch {
+      if (!silent) sileo.error({ title: t("accessCheckError"), description: t("accessCheckErrorDesc") });
+      return null;
+    }
+
     const senderKey = patientKeys[doc.patient_wallet];
     if (!senderKey) {
       if (!silent) sileo.error({ title: t("noKey"), description: t("noPatientKey") });
