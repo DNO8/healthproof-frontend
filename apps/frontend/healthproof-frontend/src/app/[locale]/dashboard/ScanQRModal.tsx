@@ -7,6 +7,7 @@ import type { EncryptedQRData } from "@/types/domain.types";
 import { isExpired } from "@/features/permissions";
 import { savePermissionKey } from "@/actions/save-permission-key";
 import { checkAccessOnChain } from "@/actions/check-access-onchain";
+import { Modal } from "@/components/ui/Modal";
 import { useDocumentDecrypt } from "@/hooks/useDocumentDecrypt";
 import { FilePreview, getExtensionFromMime } from "@/components/documents/FilePreview";
 
@@ -109,92 +110,80 @@ export function ScanQRModal({ onClose, doctorId }: ScanQRModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className={`neu-shell mx-4 w-full border border-white/70 p-5 sm:p-8 ${decryptedFile ? "max-w-2xl" : "max-w-lg"}`}>
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-800">{t("title")}</h2>
-          <button className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" onClick={onClose} type="button">
-            <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeWidth="2" viewBox="0 0 24 24" width="20">
-              <title>{t("close")}</title>
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+    <Modal open onClose={onClose} title={t("title")} size={decryptedFile ? "lg" : "md"}>
+      {!decryptedFile ? (
+        <>
+          <p className="text-sm text-slate-500">{t("description")}</p>
+          <div className="mt-4">
+            <label className="mb-1.5 block text-xs font-medium text-slate-700" htmlFor="qrPayload">
+              {t("qrPayload")}
+            </label>
+            <textarea
+              id="qrPayload"
+              className="neu-inset w-full rounded-xl px-4 py-3 text-xs font-mono text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
+              placeholder={t("qrPlaceholder")}
+              rows={6}
+              value={rawInput}
+              onChange={(e) => setRawInput(e.target.value)}
+            />
+          </div>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <button
+              className="flex-1 rounded-2xl border border-white/60 bg-(--hp-primary) px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-(--hp-shadow-raised) transition hover:bg-(--hp-primary-soft) disabled:opacity-50"
+              disabled={!rawInput.trim() || processing}
+              onClick={handleProcess}
+              type="button"
+            >
+              {processing ? t("processing") : t("verifyDecrypt")}
+            </button>
+            <button className="rounded-2xl px-4 py-2.5 text-sm font-medium text-slate-500 transition hover:text-slate-700" onClick={onClose} type="button">
+              {t("cancel")}
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="flex flex-col items-center gap-3">
+            <span className="text-4xl">🔓</span>
+            <p className="text-sm font-semibold text-slate-800">{t("fileDecrypted")}</p>
+          </div>
 
-        {!decryptedFile ? (
-          <>
-            <p className="mt-3 text-sm text-slate-500">{t("description")}</p>
-            <div className="mt-5">
-              <label className="mb-1.5 block text-xs font-medium text-slate-700" htmlFor="qrPayload">
-                {t("qrPayload")}
-              </label>
-              <textarea
-                id="qrPayload"
-                className="neu-inset w-full rounded-xl px-4 py-3 text-xs font-mono text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                placeholder={t("qrPlaceholder")}
-                rows={6}
-                value={rawInput}
-                onChange={(e) => setRawInput(e.target.value)}
-              />
-            </div>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <button
-                className="flex-1 rounded-2xl border border-white/60 bg-(--hp-primary) px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-(--hp-shadow-raised) transition hover:bg-(--hp-primary-soft) disabled:opacity-50"
-                disabled={!rawInput.trim() || processing}
-                onClick={handleProcess}
-                type="button"
-              >
-                {processing ? t("processing") : t("verifyDecrypt")}
-              </button>
-              <button className="rounded-2xl px-4 py-2.5 text-sm font-medium text-slate-500 transition hover:text-slate-700" onClick={onClose} type="button">
-                {t("cancel")}
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="mt-6 flex flex-col items-center gap-3">
-              <span className="text-4xl">🔓</span>
-              <p className="text-sm font-semibold text-slate-800">{t("fileDecrypted")}</p>
-            </div>
+          {decryptedFile && <FilePreview file={decryptedFile} />}
 
-            {decryptedFile && <FilePreview file={decryptedFile} />}
-
-            {resultMeta && (
-              <details className="mt-4">
-                <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-700">{t("viewDetails")}</summary>
-                <div className="mt-2 space-y-2">
-                  <div className="neu-inset rounded-xl p-3">
-                    <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{t("patientLabel")}</p>
-                    <p className="mt-0.5 font-mono text-xs text-slate-600 break-all">{resultMeta.payload.patient_wallet}</p>
-                  </div>
-                  <div className="neu-inset rounded-xl p-3">
-                    <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{t("cidLabel")}</p>
-                    <p className="mt-0.5 font-mono text-xs text-slate-600 break-all">{resultMeta.crypto.cid}</p>
-                  </div>
-                  <div className="neu-inset rounded-xl p-3">
-                    <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{t("signatureLabel")}</p>
-                    <p className="mt-0.5 font-mono text-xs text-slate-600 break-all">{resultMeta.signature.slice(0, 30)}...</p>
-                  </div>
+          {resultMeta && (
+            <details className="mt-4">
+              <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-700">{t("viewDetails")}</summary>
+              <div className="mt-2 space-y-2">
+                <div className="neu-inset rounded-xl p-3">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{t("patientLabel")}</p>
+                  <p className="mt-0.5 font-mono text-xs text-slate-600 break-all">{resultMeta.payload.patient_wallet}</p>
                 </div>
-              </details>
-            )}
+                <div className="neu-inset rounded-xl p-3">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{t("cidLabel")}</p>
+                  <p className="mt-0.5 font-mono text-xs text-slate-600 break-all">{resultMeta.crypto.cid}</p>
+                </div>
+                <div className="neu-inset rounded-xl p-3">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{t("signatureLabel")}</p>
+                  <p className="mt-0.5 font-mono text-xs text-slate-600 break-all">{resultMeta.signature.slice(0, 30)}...</p>
+                </div>
+              </div>
+            </details>
+          )}
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <button
-                className="flex-1 rounded-2xl border border-white/60 bg-(--hp-primary) px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-(--hp-shadow-raised) transition hover:bg-(--hp-primary-soft)"
-                onClick={handleDownload}
-                type="button"
-              >
-                {t("downloadFile")}
-              </button>
-              <button className="rounded-2xl px-4 py-2.5 text-sm font-medium text-slate-500 transition hover:text-slate-700" onClick={onClose} type="button">
-                {t("done")}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <button
+              className="flex-1 rounded-2xl border border-white/60 bg-(--hp-primary) px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-(--hp-shadow-raised) transition hover:bg-(--hp-primary-soft)"
+              onClick={handleDownload}
+              type="button"
+            >
+              {t("downloadFile")}
+            </button>
+            <button className="rounded-2xl px-4 py-2.5 text-sm font-medium text-slate-500 transition hover:text-slate-700" onClick={onClose} type="button">
+              {t("done")}
+            </button>
+          </div>
+        </>
+      )}
+    </Modal>
   );
 }

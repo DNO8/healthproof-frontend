@@ -1,27 +1,19 @@
 "use server";
 
-import {
-  createPublicClient,
-  createWalletClient,
-  http,
-  keccak256,
-  toHex,
-  stringToHex
-} from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { keccak256, toHex } from "viem";
+import { CONTRACT_ADDRESSES } from "@/lib/contracts";
 import PermissionManagerArtifact from "@/lib/abis/PermissionManager.json";
 const PermissionManagerAbi = PermissionManagerArtifact.abi;
-import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth";
+import { withAuth, auditLog } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
 import { validatePatientAccess } from "@/lib/auth/permissions";
 import { logAuditEvent } from "@/lib/audit-onchain";
 import { AuditAction } from "@/lib/medical-constants";
-
-const ZERO_BYTES32 =
-  "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
+import { executeForwardRequest } from "./relay-core";
+import type { SignedForwardRequest } from "@/lib/metatx/types";
 
 interface GrantPermissionData {
+  request: SignedForwardRequest;
   patientWallet: string;
   granteeWallet: string;
   documentId: string;
@@ -30,56 +22,28 @@ interface GrantPermissionData {
 }
 
 /**
- * Grant a permission on-chain using the deployer key (as proxy for the patient).
+ * Grant a permission on-chain via EIP-2771 meta-transaction.
+ * The patient (or guardian) signs the ForwardRequest in the frontend;
+ * the deployer relays it through the TrustedForwarder.
  * Requires caller to be authenticated and either the patient or a guardian.
  */
 async function grantPermissionHandler(
   data: GrantPermissionData,
   auth: AuthContext
 ): Promise<{ txHash: string }> {
-  const pk = await getDeployerPrivateKey();
-  if (!pk) throw new Error("DEPLOYER_PRIVATE_KEY not set");
+  if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
+    throw new Error("Signer mismatch: request.from != authenticated wallet");
+  }
 
-  const account = privateKeyToAccount(`0x${pk.replace(/^0x/, "")}`);
-
-  const publicClient = createPublicClient({
-    chain: HEALTHPROOF_CHAIN,
-    transport: http(),
-  });
-
-  const walletClient = createWalletClient({
-    account,
-    chain: HEALTHPROOF_CHAIN,
-    transport: http(),
-  });
+  const result = await executeForwardRequest(data.request);
+  if (!result.success) {
+    throw new Error("Meta-transaction failed on-chain");
+  }
 
   // resourceId = keccak256(documentId) if it's a CID, or use directly if already bytes32
   const resourceId = data.documentId.startsWith("0x") && data.documentId.length === 66
     ? (data.documentId as `0x${string}`)
     : keccak256(toHex(data.documentId));
-
-  // Scope: 0 = DOCUMENT (default)
-  const scope = data.scope ?? 0;
-
-  // Expiry: default 60 minutes from now, 0 = no expiry
-  const expiresAt = data.expiresInMinutes
-    ? BigInt(Math.floor(Date.now() / 1000) + data.expiresInMinutes * 60)
-    : BigInt(0);
-
-  const txHash = await walletClient.writeContract({
-    address: CONTRACT_ADDRESSES.PermissionManager as `0x${string}`,
-    abi: PermissionManagerAbi,
-    functionName: "grantPermission",
-    args: [
-      data.patientWallet as `0x${string}`,
-      data.granteeWallet as `0x${string}`,
-      scope,
-      resourceId,
-      expiresAt,
-    ],
-  });
-
-  await publicClient.waitForTransactionReceipt({ hash: txHash });
 
   try {
     await logAuditEvent(data.patientWallet, resourceId, AuditAction.PERMISSION_GRANTED);
@@ -91,11 +55,11 @@ async function grantPermissionHandler(
     patientWallet: data.patientWallet,
     granteeWallet: data.granteeWallet,
     documentId: data.documentId,
-    scope,
-    expiresAt: expiresAt.toString(),
+    scope: data.scope ?? 0,
+    expiresAt: data.request.deadline.toString(),
   });
 
-  return { txHash };
+  return { txHash: result.txHash };
 }
 
 /**

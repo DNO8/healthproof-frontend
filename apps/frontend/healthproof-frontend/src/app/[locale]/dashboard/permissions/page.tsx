@@ -3,16 +3,37 @@
 import { useState, useEffect } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
+import { useWallets } from "@privy-io/react-auth";
+import { createWalletClient, custom, keccak256, toHex } from "viem";
+import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import { listPermissionsOnChain } from "@/actions/list-permissions-onchain";
 import { grantPermissionOnChain } from "@/actions/grant-permission-onchain";
 import { revokePermissionOnChain } from "@/actions/revoke-permission-onchain";
+import { listDocumentSecretsForWallet } from "@/actions/get-document-secret";
+import { getUserPublicKey } from "@/actions/get-user-public-key";
+import { savePermissionKey } from "@/actions/save-permission-key";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
+import { usePrivy } from "@privy-io/react-auth";
 import { UserSelect } from "@/components/forms/UserSelect";
+import { batchRewrapForGrantee } from "@/services/encryption/rewrap";
+import { signMetaTransaction } from "@/lib/metatx/forwarder";
+import PermissionManagerArtifact from "@/lib/abis/PermissionManager.json";
 import type { OnChainPermission } from "@/lib/medical-constants";
+
+const PermissionManagerAbi = PermissionManagerArtifact.abi;
+const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
+
+async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
+  const provider = await wallet.getEthereumProvider();
+  return createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+}
 
 export default function PermissionsPage() {
   const t = useTranslations("dashboard.permissions");
   const walletAddress = useWalletAddress();
+  const { user } = usePrivy();
+  const { wallets } = useWallets();
+  const userId = user?.id ?? "";
   const [permissions, setPermissions] = useState<OnChainPermission[]>([]);
   const [loading, setLoading] = useState(true);
   const [granteeWallet, setGranteeWallet] = useState("");
@@ -50,18 +71,79 @@ export default function PermissionsPage() {
 
   async function handleGrant() {
     if (!walletAddress || !granteeWallet.trim()) return;
+
+    const activeWallet = wallets.find((w) => w.address);
+    if (!activeWallet) {
+      sileo.error({ title: t("grantError"), description: "No active wallet found" });
+      return;
+    }
+
     setGrantLoading(true);
     try {
+      const viemWallet = await getViemWalletClient(activeWallet);
+
+      const trimmedDocId = documentId.trim();
+      const resourceId =
+        !trimmedDocId || trimmedDocId === "all"
+          ? ZERO_BYTES32
+          : keccak256(toHex(trimmedDocId));
+      const expiresAt = expiresInMinutes
+        ? BigInt(Math.floor(Date.now() / 1000) + Number(expiresInMinutes) * 60)
+        : BigInt(0);
+
+      const request = await signMetaTransaction(
+        viemWallet,
+        CONTRACT_ADDRESSES.PermissionManager as `0x${string}`,
+        "grantPermission",
+        [
+          walletAddress.toLowerCase(),
+          granteeWallet.trim().toLowerCase(),
+          scope,
+          resourceId,
+          expiresAt,
+        ],
+        PermissionManagerAbi,
+      );
+
       const res = await grantPermissionOnChain({
+        request,
         patientWallet: walletAddress,
         granteeWallet: granteeWallet.trim(),
-        documentId: documentId.trim() || "all",
+        documentId: trimmedDocId || "all",
         scope,
         expiresInMinutes: expiresInMinutes ? Number(expiresInMinutes) : undefined,
       });
       if (!res.success) {
         throw new Error(res.error);
       }
+
+      // Batch rewrap keys for broad scopes (FULL_ACCESS, INSTITUTION)
+      if (scope >= 2) {
+        const recipientPubKeyJwk = await getUserPublicKey(granteeWallet.trim());
+        if (recipientPubKeyJwk) {
+          const secrets = await listDocumentSecretsForWallet(walletAddress);
+          const results = await batchRewrapForGrantee({
+            myUserId: userId,
+            myWalletAddress: walletAddress,
+            secrets,
+            recipientPublicKeyJwk: recipientPubKeyJwk,
+          });
+          for (const r of results) {
+            await savePermissionKey({
+              document_id: r.documentId,
+              patient_wallet: walletAddress,
+              grantee_wallet: granteeWallet.trim(),
+              encrypted_key: JSON.stringify(r.rewrapped),
+            });
+          }
+          sileo.success({
+            title: t("batchRewrapSuccess") ?? "Keys rewrapped",
+            description: `${results.length} document(s) prepared for grantee.`,
+            duration: 3000,
+          });
+        }
+      }
+
       sileo.success({
         title: t("grantSuccess"),
         description: `TX: ${res.data.txHash.slice(0, 16)}…`,
@@ -81,9 +163,27 @@ export default function PermissionsPage() {
 
   async function handleRevoke(grantee: string) {
     if (!walletAddress) return;
+
+    const activeWallet = wallets.find((w) => w.address);
+    if (!activeWallet) {
+      sileo.error({ title: t("revokeError"), description: "No active wallet found" });
+      return;
+    }
+
     setRevokeLoading(grantee);
     try {
+      const viemWallet = await getViemWalletClient(activeWallet);
+
+      const request = await signMetaTransaction(
+        viemWallet,
+        CONTRACT_ADDRESSES.PermissionManager as `0x${string}`,
+        "revokePermission",
+        [walletAddress.toLowerCase(), grantee.toLowerCase()],
+        PermissionManagerAbi,
+      );
+
       const res = await revokePermissionOnChain({
+        request,
         patientWallet: walletAddress,
         granteeWallet: grantee,
       });

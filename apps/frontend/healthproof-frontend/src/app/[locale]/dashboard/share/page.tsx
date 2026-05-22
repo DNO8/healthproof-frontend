@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
 import { QRCodeSVG } from "qrcode.react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
+import { createWalletClient, custom, keccak256, toHex } from "viem";
+import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import type { GrantedToRole, EncryptedQRData } from "@/types/domain.types";
 import { QR_EXPIRY_MINUTES } from "@/lib/constants";
 import { buildPermissionPayload } from "@/features/permissions";
@@ -20,6 +22,17 @@ import { exportPublicKey } from "@/services/encryption/ecdh";
 import { getKeyPair } from "@/services/encryption/keystore";
 import { UserSelect } from "@/components/forms/UserSelect";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
+import { savePermissionKey } from "@/actions/save-permission-key";
+import { signMetaTransaction } from "@/lib/metatx/forwarder";
+import PermissionManagerArtifact from "@/lib/abis/PermissionManager.json";
+
+const PermissionManagerAbi = PermissionManagerArtifact.abi;
+const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
+
+async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
+  const provider = await wallet.getEthereumProvider();
+  return createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+}
 
 const GRANTED_ROLES: {
   key: GrantedToRole;
@@ -36,6 +49,7 @@ export default function SharePage() {
   const tPage = useTranslations("dashboard.share");
   const walletAddress = useWalletAddress();
   const { user } = usePrivy();
+  const { wallets } = useWallets();
   const userId = user?.id ?? "";
   const [grantedTo, setGrantedTo] = useState<GrantedToRole | null>(null);
   const [recipientId, setRecipientId] = useState("");
@@ -83,6 +97,12 @@ export default function SharePage() {
     }
     if (!walletAddress) return;
 
+    const activeWallet = wallets.find((w) => w.address);
+    if (!activeWallet) {
+      sileo.error({ title: t("generateFailed"), description: "No active wallet found" });
+      return;
+    }
+
     setGenerating(true);
 
     try {
@@ -129,14 +149,45 @@ export default function SharePage() {
         documentId,
       });
 
+      // Sign on-chain permission grant via EIP-2771 meta-transaction
+      const viemWallet = await getViemWalletClient(activeWallet);
+      const resourceId =
+        documentId.startsWith("0x") && documentId.length === 66
+          ? (documentId as `0x${string}`)
+          : keccak256(toHex(documentId));
+
+      const request = await signMetaTransaction(
+        viemWallet,
+        CONTRACT_ADDRESSES.PermissionManager as `0x${string}`,
+        "grantPermission",
+        [
+          resolvedWalletAddress.toLowerCase(),
+          trimmedRecipient.toLowerCase(),
+          0, // Scope.DOCUMENT
+          resourceId,
+          BigInt(0), // no expiry
+        ],
+        PermissionManagerAbi,
+      );
+
       const grantResult = await grantPermissionOnChain({
+        request,
         patientWallet: resolvedWalletAddress,
         granteeWallet: trimmedRecipient,
         documentId,
+        scope: 0,
       });
-      if ("error" in grantResult) {
-        console.warn("[SharePage] On-chain grant failed:", grantResult.error);
+      if (!grantResult.success) {
+        throw new Error(grantResult.error ?? "On-chain grant failed");
       }
+
+      // Persist rewrapped key so grantee can access without QR scan
+      await savePermissionKey({
+        document_id: documentId,
+        patient_wallet: resolvedWalletAddress,
+        grantee_wallet: trimmedRecipient,
+        encrypted_key: JSON.stringify(rewrapped),
+      });
 
       const qr: EncryptedQRData = {
         type: "healthproof_permission",

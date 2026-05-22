@@ -2,13 +2,14 @@
 
 import { usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { UserRole } from "@/types/domain.types";
 import { ROLES } from "@/types/domain.types";
 import { useDbUser } from "@/hooks/useDbUser";
 import { useOnChainRole } from "@/hooks/useOnChainRole";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
+import { getEntityOnChain } from "@/actions/register-entity-onchain";
 import { ProfileForm } from "./ProfileForm";
 
 const ROLE_LABEL_KEYS: Partial<
@@ -29,6 +30,7 @@ export default function ProfilePage() {
   const walletAddress = useWalletAddress() ?? "";
 
   const { role: onChainRole } = useOnChainRole(walletAddress || null);
+  const [entity, setEntity] = useState<{ specialty: string; institution: string } | null>(null);
 
   useEffect(() => {
     if (ready && !authenticated) {
@@ -36,6 +38,15 @@ export default function ProfilePage() {
       if (!loggingOut) router.replace("/auth");
     }
   }, [ready, authenticated, router]);
+
+  useEffect(() => {
+    if (!walletAddress) return;
+    getEntityOnChain({ wallet: walletAddress }).then((res) => {
+      if (res.success && res.data) {
+        setEntity({ specialty: res.data.specialty, institution: res.data.institution });
+      }
+    });
+  }, [walletAddress]);
 
   if (!ready || !authenticated || !user) {
     return (
@@ -82,6 +93,8 @@ export default function ProfilePage() {
           role={effectiveRole}
           roleLabel={roleLabel}
           walletAddress={walletAddress}
+          specialty={entity?.specialty ?? ""}
+          institution={entity?.institution ?? ""}
         />
       </div>
     </main>

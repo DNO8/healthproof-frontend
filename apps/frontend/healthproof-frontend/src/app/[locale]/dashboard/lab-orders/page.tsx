@@ -13,6 +13,7 @@ import { signGatewayMetaTx } from "@/lib/metatx/forwarder";
 import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import type { OrderRef } from "@/actions/list-orders-by-lab";
 import { useWalletAddress } from "@/hooks/useWalletAddress";
+import { truncateAddress } from "@/lib/utils";
 
 async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
   const provider = await wallet.getEthereumProvider();
@@ -39,11 +40,6 @@ function statusBadgeClass(status: number): string {
     default:
       return "bg-slate-100 text-slate-600";
   }
-}
-
-function formatAddress(addr: string): string {
-  if (!addr || addr.length < 10) return addr;
-  return `${addr.slice(0, 8)}…${addr.slice(-4)}`;
 }
 
 export default function LabOrdersPage() {
@@ -217,8 +213,8 @@ export default function LabOrdersPage() {
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                  <span>{t("patient")}: <span className="font-mono">{formatAddress(o.patient)}</span></span>
-                  <span>{t("doctor")}: <span className="font-mono">{formatAddress(o.doctor)}</span></span>
+                  <span>{t("patient")}: <span className="font-mono">{truncateAddress(o.patient)}</span></span>
+                  <span>{t("doctor")}: <span className="font-mono">{truncateAddress(o.doctor)}</span></span>
                   <span>{t("createdAt")}: {new Date(o.createdAt * 1000).toLocaleDateString()}</span>
                 </div>
                 {(o.status === 0 || o.status === 1) && (
