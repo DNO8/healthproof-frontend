@@ -78,7 +78,7 @@ export function UploadResultsModal({
     if (dropped) setFile(dropped);
   }
 
-  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
   async function handleUpload() {
     if (!file) return;
