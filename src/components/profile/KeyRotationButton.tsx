@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePrivy } from "@privy-io/react-auth";
 import { sileo } from "sileo";
-import { rotateUserKeys } from "@/actions/rotate-user-keys";
+import { rotateUserKeys } from "@/actions/auth/rotate-user-keys";
 
 export function KeyRotationButton() {
   const t = useTranslations("profile");

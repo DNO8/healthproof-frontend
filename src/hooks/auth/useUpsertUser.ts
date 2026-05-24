@@ -3,8 +3,8 @@
 import { useEffect, useRef } from "react";
 import { usePrivy, useLogout, useWallets } from "@privy-io/react-auth";
 import { sileo } from "sileo";
-import { upsertUser } from "@/actions/upsert-user";
-import { clearDbUserCache } from "@/hooks/useDbUser";
+import { upsertUser } from "@/actions/auth/upsert-user";
+import { clearDbUserCache } from "@/hooks/auth/useDbUser";
 
 const SESSION_KEY = "hp_upserted";
 

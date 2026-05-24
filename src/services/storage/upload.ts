@@ -6,7 +6,7 @@ import {
 import {
   uploadToIpfsAction,
   type IpfsUploadResult,
-} from "@/actions/upload-to-ipfs";
+} from "@/actions/documents/upload-to-ipfs";
 import {
   wrapSessionKey,
   importPublicKey,

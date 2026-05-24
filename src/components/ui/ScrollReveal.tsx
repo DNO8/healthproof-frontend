@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { useScrollReveal } from "@/hooks/ui/useScrollReveal";
 
 type ScrollRevealProps = {
   children: ReactNode;

@@ -10,7 +10,7 @@ import {
   PRE_BLOCKCHAIN_ASSETS,
 } from "@/components/landing/constants";
 import { Button, DecorativeCircle, DecorativeCross } from "@/components/ui";
-import { useHeroPathAnimation } from "@/hooks/useHeroPathAnimation";
+import { useHeroPathAnimation } from "@/hooks/ui/useHeroPathAnimation";
 
 type HeroCarouselSectionProps = {
   verified: boolean;

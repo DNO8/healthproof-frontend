@@ -6,12 +6,12 @@ import { useTranslations } from "next-intl";
 import { useWallets } from "@privy-io/react-auth";
 import { createWalletClient, custom, keccak256, toHex } from "viem";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import { assignLabToOrder, getOrderOnChain } from "@/actions/medical-orders-onchain";
-import { listOrdersByPatient } from "@/actions/list-orders-by-patient";
+import { assignLabToOrder, getOrderOnChain } from "@/actions/medical-orders/medical-orders-onchain";
+import { listOrdersByPatient } from "@/actions/medical-orders/list-orders-by-patient";
 import { signMetaTransaction } from "@/lib/metatx/forwarder";
 import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
-import type { OrderRef } from "@/actions/list-orders-by-patient";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
+import type { OrderRef } from "@/actions/medical-orders/list-orders-by-patient";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { LabSelect } from "@/components/forms/LabSelect";
 
 const STATUS_FILTERS = [

@@ -5,7 +5,7 @@ export {
   getOrderOnChain as getOrder,
   assignLabToOrder,
   updateOrderStatusOnChain as updateOrderStatus,
-} from "@/actions/medical-orders-onchain";
+} from "@/actions/medical-orders/medical-orders-onchain";
 
 export {
   OrderStatus,

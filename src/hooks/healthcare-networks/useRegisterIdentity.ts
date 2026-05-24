@@ -7,9 +7,9 @@ import {
   registerEntityOnChain,
   verifyEntityOnChain,
   getEntityOnChain,
-} from "@/actions/register-entity-onchain";
+} from "@/actions/healthcare-networks/register-entity-onchain";
 import { ROLE_TO_CONTRACT, CONTRACT_TO_ROLE, type UserRole } from "@/types/domain.types";
-import { clearOnChainRoleCache } from "@/hooks/useOnChainRole";
+import { clearOnChainRoleCache } from "@/hooks/healthcare-networks/useOnChainRole";
 
 const ROLE_KEY = "hp_selected_role";           // transient: cleared after registration
 const INTENDED_KEY = "hp_intended_role";        // persistent: survives across sessions

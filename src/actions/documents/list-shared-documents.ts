@@ -6,6 +6,7 @@ import type { AuthContext } from "@/lib/auth/with-auth";
 
 export interface SharedDocument {
   document_id: string;
+  file_name: string | null;
   patient_wallet: string;
   grantee_wallet: string;
   encrypted_key: string;
@@ -37,7 +38,7 @@ async function handler(
   const documentIds = permissions.map((p) => p.document_id);
   const { data: secrets, error: secretsError } = await supabase
     .from("document_secrets")
-    .select("document_id, uploader_wallet, iv, uploader_public_key, created_at")
+    .select("document_id, file_name, uploader_wallet, iv, uploader_public_key, created_at")
     .in("document_id", documentIds);
 
   if (secretsError || !secrets) {
@@ -45,6 +46,7 @@ async function handler(
     return {
       documents: permissions.map((p) => ({
         document_id: p.document_id,
+        file_name: null,
         patient_wallet: p.patient_wallet,
         grantee_wallet: p.grantee_wallet,
         encrypted_key: p.encrypted_key,
@@ -63,6 +65,7 @@ async function handler(
     const secret = secretMap.get(p.document_id);
     return {
       document_id: p.document_id,
+      file_name: (secret as { file_name?: string | null })?.file_name ?? null,
       patient_wallet: p.patient_wallet,
       grantee_wallet: p.grantee_wallet,
       encrypted_key: p.encrypted_key,

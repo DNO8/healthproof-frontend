@@ -6,10 +6,10 @@ import { useTranslations } from "next-intl";
 import { uploadHybridEncryptedFile } from "@/services/storage/upload";
 import { getKeyPair } from "@/services/encryption/keystore";
 import { exportPublicKey } from "@/services/encryption/ecdh";
-import { getUserPublicKey } from "@/actions/get-user-public-key";
-import { saveDocumentSecret } from "@/actions/save-document-secret";
-import { getDbUser } from "@/actions/get-user";
-import { registerDocumentOnChain } from "@/actions/register-document-onchain";
+import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
+import { saveDocumentSecret } from "@/actions/documents/save-document-secret";
+import { getDbUser } from "@/actions/auth/get-user";
+import { registerDocumentOnChain } from "@/actions/documents/register-document-onchain";
 import { UserSelect } from "@/components/forms/UserSelect";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
 
@@ -101,7 +101,7 @@ export function UploadResultsModal({
     }
 
     // Hard guard: verify encryption key backup exists
-    const { checkKeyBackup } = await import("@/actions/check-key-backup");
+    const { checkKeyBackup } = await import("@/actions/auth/check-key-backup");
     const backupResult = await checkKeyBackup({ userId: labId });
     if (!backupResult.success || !backupResult.data?.hasBackup) {
       sileo.error({

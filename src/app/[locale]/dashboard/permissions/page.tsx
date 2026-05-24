@@ -6,15 +6,18 @@ import { useTranslations } from "next-intl";
 import { useWallets } from "@privy-io/react-auth";
 import { createWalletClient, custom, keccak256, toHex } from "viem";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import { listPermissionsOnChain } from "@/actions/list-permissions-onchain";
-import { grantPermissionOnChain } from "@/actions/grant-permission-onchain";
-import { revokePermissionOnChain } from "@/actions/revoke-permission-onchain";
-import { listDocumentSecretsForWallet } from "@/actions/get-document-secret";
-import { getUserPublicKey } from "@/actions/get-user-public-key";
-import { savePermissionKey } from "@/actions/save-permission-key";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
+import { listPermissionsOnChain } from "@/actions/permissions/list-permissions-onchain";
+import { grantPermissionOnChain } from "@/actions/permissions/grant-permission-onchain";
+import { revokePermissionOnChain } from "@/actions/permissions/revoke-permission-onchain";
+import { listDocumentSecretsForWallet } from "@/actions/documents/get-document-secret";
+import type { DocumentSecretRow } from "@/actions/documents/get-document-secret";
+import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
+import { savePermissionKey } from "@/actions/permissions/save-permission-key";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { usePrivy } from "@privy-io/react-auth";
 import { UserSelect } from "@/components/forms/UserSelect";
+import { EmptyState, SkeletonList } from "@/components/ui";
+import { ShieldOff } from "lucide-react";
 import { batchRewrapForGrantee } from "@/services/encryption/rewrap";
 import { signMetaTransaction } from "@/lib/metatx/forwarder";
 import PermissionManagerArtifact from "@/lib/abis/PermissionManager.json";
@@ -38,6 +41,8 @@ export default function PermissionsPage() {
   const [loading, setLoading] = useState(true);
   const [granteeWallet, setGranteeWallet] = useState("");
   const [documentId, setDocumentId] = useState("");
+  const [userDocs, setUserDocs] = useState<DocumentSecretRow[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
   const [scope, setScope] = useState(0);
   const [expiresInMinutes, setExpiresInMinutes] = useState<number | "">("");
   const [grantLoading, setGrantLoading] = useState(false);
@@ -67,7 +72,21 @@ export default function PermissionsPage() {
 
   useEffect(() => {
     load();
+    loadUserDocs();
   }, [walletAddress]);
+
+  async function loadUserDocs() {
+    if (!walletAddress) return;
+    setLoadingDocs(true);
+    try {
+      const docs = await listDocumentSecretsForWallet(walletAddress);
+      setUserDocs(docs);
+    } catch {
+      setUserDocs([]);
+    } finally {
+      setLoadingDocs(false);
+    }
+  }
 
   async function handleGrant() {
     if (!walletAddress || !granteeWallet.trim()) return;
@@ -231,9 +250,12 @@ export default function PermissionsPage() {
       {activeTab === "list" && (
         <div className="neu-shell border border-white/70 p-6 sm:p-8">
           {loading ? (
-            <p className="py-8 text-center text-sm text-slate-400">{t("loading")}</p>
+            <SkeletonList count={3} />
           ) : permissions.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-400">{t("empty")}</p>
+            <EmptyState
+              icon={ShieldOff}
+              title={t("empty")}
+            />
           ) : (
             <div className="space-y-3">
               {permissions.map((p) => (
@@ -283,12 +305,23 @@ export default function PermissionsPage() {
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("documentLabel")}</label>
-            <input
-              className="neu-pressed w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none"
-              placeholder={t("documentPlaceholder")}
-              value={documentId}
-              onChange={(e) => setDocumentId(e.target.value)}
-            />
+            {loadingDocs ? (
+              <div className="neu-pressed h-10 w-full animate-pulse rounded-xl bg-slate-200" />
+            ) : (
+              <select
+                className="neu-pressed w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none"
+                value={documentId}
+                onChange={(e) => setDocumentId(e.target.value)}
+              >
+                <option value="">{t("documentPlaceholder")}</option>
+                <option value="all">{t("allDocuments")}</option>
+                {userDocs.map((doc) => (
+                  <option key={doc.document_id} value={doc.document_id}>
+                    {doc.file_name ?? doc.document_id.slice(0, 20) + "…"}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           <div className="flex gap-3">
             <div className="flex-1">

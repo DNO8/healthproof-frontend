@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
-import { listGuardiansOnChain } from "@/actions/list-guardians-onchain";
-import { revokeGuardianshipOnChain } from "@/actions/revoke-guardianship-onchain";
-import { grantGuardianshipOnChain } from "@/actions/grant-guardianship-onchain";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
+import { listGuardiansOnChain } from "@/actions/guardians/list-guardians-onchain";
+import { revokeGuardianshipOnChain } from "@/actions/guardians/revoke-guardianship-onchain";
+import { grantGuardianshipOnChain } from "@/actions/guardians/grant-guardianship-onchain";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { truncateAddress } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { UserSelect } from "@/components/forms/UserSelect";

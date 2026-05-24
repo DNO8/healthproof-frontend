@@ -4,11 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { usePrivy } from "@privy-io/react-auth";
-import { listDocumentSecretsForWallet } from "@/actions/get-document-secret";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
-import { useDocumentDecrypt } from "@/hooks/useDocumentDecrypt";
+import { listDocumentSecretsForWallet } from "@/actions/documents/get-document-secret";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { useDocumentDecrypt } from "@/hooks/documents/useDocumentDecrypt";
 import { FilePreview, getExtensionFromMime } from "@/components/documents/FilePreview";
-import type { DocumentSecretRow } from "@/actions/get-document-secret";
+import { EmptyState, SkeletonList } from "@/components/ui";
+import { FileText } from "lucide-react";
+import type { DocumentSecretRow } from "@/actions/documents/get-document-secret";
 
 function formatAddress(addr: string): string {
   if (!addr || addr.length < 10) return addr;
@@ -116,11 +118,13 @@ export default function DocumentsPage() {
       <h1 className="mb-6 text-2xl font-bold text-slate-800">{t("title")}</h1>
 
       {loading ? (
-        <p className="py-8 text-center text-sm text-slate-400">{t("loading")}</p>
+        <SkeletonList count={3} />
       ) : docs.length === 0 ? (
-        <div className="neu-shell border border-white/70 p-8 text-center">
-          <p className="text-sm text-slate-400">{t("empty")}</p>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title={t("empty")}
+          action={{ label: t("uploadFirst"), href: "/dashboard/upload" }}
+        />
       ) : (
         <div className="space-y-4">
           {docs.map((doc) => {
@@ -135,7 +139,12 @@ export default function DocumentsPage() {
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">{t("documentTitle")}</p>
+                    <p className="text-sm font-semibold text-slate-800">
+                      {doc.file_name ?? t("documentTitle")}
+                    </p>
+                    <p className="text-[10px] font-mono text-slate-400 mt-0.5">
+                      {formatAddress(doc.document_id)}
+                    </p>
                     <p className="text-[10px] text-slate-400 mt-0.5">
                       {new Date(doc.created_at).toLocaleDateString()}
                     </p>
@@ -161,7 +170,6 @@ export default function DocumentsPage() {
                 </div>
 
                 <div className="text-xs text-slate-500 space-y-1">
-                  <p className="font-mono text-[11px]">{formatAddress(doc.document_id)}</p>
                   <p>{t("uploadedBy")}: {formatAddress(doc.uploader_wallet)}</p>
                 </div>
 
@@ -185,9 +193,16 @@ export default function DocumentsPage() {
           <div className="relative w-full max-w-5xl h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-              <p className="text-sm font-semibold text-slate-700">
-                {selectedDoc ? formatAddress(selectedDoc.document_id) : t("documentTitle")}
-              </p>
+              <div>
+                <p className="text-sm font-semibold text-slate-700">
+                  {selectedDoc ? (selectedDoc.file_name ?? t("documentTitle")) : t("documentTitle")}
+                </p>
+                {selectedDoc && (
+                  <p className="text-[10px] font-mono text-slate-400">
+                    {formatAddress(selectedDoc.document_id)}
+                  </p>
+                )}
+              </div>
               <button
                 onClick={closeModal}
                 className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"

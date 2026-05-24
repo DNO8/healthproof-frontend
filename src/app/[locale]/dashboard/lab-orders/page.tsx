@@ -7,13 +7,15 @@ import { useTranslations } from "next-intl";
 import { useWallets } from "@privy-io/react-auth";
 import { createWalletClient, custom, keccak256, toHex } from "viem";
 import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
-import { assignLabToOrder, getOrderOnChain } from "@/actions/medical-orders-onchain";
-import { listOrdersByLab } from "@/actions/list-orders-by-lab";
+import { assignLabToOrder, getOrderOnChain } from "@/actions/medical-orders/medical-orders-onchain";
+import { listOrdersByLab } from "@/actions/medical-orders/list-orders-by-lab";
 import { signGatewayMetaTx } from "@/lib/metatx/forwarder";
 import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
-import type { OrderRef } from "@/actions/list-orders-by-lab";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
+import type { OrderRef } from "@/actions/medical-orders/list-orders-by-lab";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { truncateAddress } from "@/lib/utils";
+import { EmptyState, SkeletonList } from "@/components/ui";
+import { ClipboardList } from "lucide-react";
 
 async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
   const provider = await wallet.getEthereumProvider();
@@ -196,9 +198,9 @@ export default function LabOrdersPage() {
         </div>
 
         {loadingOrders ? (
-          <p className="py-8 text-center text-sm text-slate-400">{t("loading")}</p>
+          <SkeletonList count={3} />
         ) : filteredOrders.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-400">{t("empty")}</p>
+          <EmptyState icon={ClipboardList} title={t("empty")} />
         ) : (
           <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
             {filteredOrders.map((o) => (

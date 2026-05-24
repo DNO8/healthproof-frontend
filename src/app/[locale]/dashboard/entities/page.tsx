@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
-import { adminRegisterEntity, adminVerifyEntity, adminGetEntity } from "@/actions/admin-onchain";
+import { adminRegisterEntity, adminVerifyEntity, adminGetEntity } from "@/actions/admin/admin-onchain";
 import type { ContractRole } from "@/types/domain.types";
 
 const CONTRACT_ROLES: ContractRole[] = [1, 2, 3, 4, 5];

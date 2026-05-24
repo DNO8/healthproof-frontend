@@ -9,7 +9,7 @@ import type { AuthContext } from "@/lib/auth/with-auth";
 import { validatePatientAccess } from "@/lib/auth/permissions";
 import { logAuditEvent } from "@/lib/audit-onchain";
 import { AuditAction } from "@/lib/medical-constants";
-import { executeForwardRequest } from "./relay-core";
+import { executeForwardRequest } from "../relay/relay-core";
 import type { SignedForwardRequest } from "@/lib/metatx/types";
 
 interface GrantPermissionData {

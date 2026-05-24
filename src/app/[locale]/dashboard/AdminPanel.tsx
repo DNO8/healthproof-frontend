@@ -9,7 +9,7 @@ import {
   adminRegisterEntity,
   adminVerifyEntity,
   adminGetEntity,
-} from "@/actions/admin-onchain";
+} from "@/actions/admin/admin-onchain";
 import { ContractRole } from "@/types/domain.types";
 
 type AdminPanelProps = {

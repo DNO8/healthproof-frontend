@@ -4,8 +4,8 @@ import { Link } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
-import { updateProfile } from "@/actions/update-profile";
-import { clearDbUserCache } from "@/hooks/useDbUser";
+import { updateProfile } from "@/actions/auth/update-profile";
+import { clearDbUserCache } from "@/hooks/auth/useDbUser";
 
 type ProfileFormProps = {
   userId: string;

@@ -26,7 +26,7 @@ import { isVerifiedDoctor, isVerifiedLab } from "@/lib/auth/permissions";
 import type { OnChainOrder } from "@/lib/medical-constants";
 import { logAuditEvent } from "@/lib/audit-onchain";
 import { AuditAction } from "@/lib/medical-constants";
-import { executeForwardRequest } from "./relay-core";
+import { executeForwardRequest } from "../relay/relay-core";
 import type { SignedForwardRequest } from "@/lib/metatx/types";
 
 interface CreateOrderMetaTx {

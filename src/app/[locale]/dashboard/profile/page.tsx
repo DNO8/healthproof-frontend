@@ -6,11 +6,12 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { UserRole } from "@/types/domain.types";
 import { ROLES } from "@/types/domain.types";
-import { useDbUser } from "@/hooks/useDbUser";
-import { useOnChainRole } from "@/hooks/useOnChainRole";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
-import { getEntityOnChain } from "@/actions/register-entity-onchain";
+import { useDbUser } from "@/hooks/auth/useDbUser";
+import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { getEntityOnChain } from "@/actions/healthcare-networks/register-entity-onchain";
 import { ProfileForm } from "./ProfileForm";
+import { ROLE_ICONS } from "@/lib/icons";
 
 const ROLE_LABEL_KEYS: Partial<
   Record<UserRole, "patient" | "laboratory" | "doctor">
@@ -73,7 +74,10 @@ export default function ProfilePage() {
     <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
       <div className="neu-shell border border-white/70 p-6 sm:p-10">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">{roleConfig?.icon}</span>
+          {(() => {
+            const Icon = ROLE_ICONS[effectiveRole];
+            return Icon ? <Icon className="h-6 w-6 text-sky-600" /> : null;
+          })()}
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">
               {t("eyebrow")}
