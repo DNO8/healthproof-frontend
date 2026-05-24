@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { useWallets } from "@privy-io/react-auth";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { QRCodeSVG } from "qrcode.react";
@@ -26,6 +26,7 @@ import { useKeyConflictStore } from "@/state/key-conflict.store";
 import { savePermissionKey } from "@/actions/permissions/save-permission-key";
 import { signMetaTransaction } from "@/lib/metatx/forwarder";
 import PermissionManagerArtifact from "@/lib/abis/PermissionManager.json";
+import { Stethoscope, FlaskConical, Building2, AlertTriangle } from "lucide-react";
 
 const PermissionManagerAbi = PermissionManagerArtifact.abi;
 
@@ -37,11 +38,11 @@ async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<
 const GRANTED_ROLES: {
   key: GrantedToRole;
   labelKey: string;
-  icon: string;
+  icon: ReactNode;
 }[] = [
-  { key: "doctor", labelKey: "doctor", icon: "🩺" },
-  { key: "lab", labelKey: "laboratory", icon: "🔬" },
-  { key: "institution", labelKey: "medicalCenter", icon: "🏥" },
+  { key: "doctor", labelKey: "doctor", icon: <Stethoscope className="h-5 w-5" /> },
+  { key: "lab", labelKey: "laboratory", icon: <FlaskConical className="h-5 w-5" /> },
+  { key: "institution", labelKey: "medicalCenter", icon: <Building2 className="h-5 w-5" /> },
 ];
 
 export function ShareResultsModal({
@@ -57,8 +58,7 @@ export function ShareResultsModal({
   const [grantedTo, setGrantedTo] = useState<GrantedToRole | null>(null);
   const [recipientId, setRecipientId] = useState("");
   const [results, setResults] = useState<DocumentSecretRow[]>([]);
-  const [selectedResult, setSelectedResult] =
-    useState<DocumentSecretRow | null>(null);
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [loadingResults, setLoadingResults] = useState(true);
   const [qrData, setQrData] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -89,25 +89,34 @@ export function ShareResultsModal({
   }, [fetchResults]);
 
   async function handleGenerate() {
-    if (!selectedResult) {
+    if (!selectedDocId) {
       sileo.warning({
-        title: t("selectResultTitle"),
-        description: t("selectResultDesc"),
+        title: t("selectDocumentTitle"),
+        description: t("selectDocumentDesc"),
       });
       return;
     }
     if (!grantedTo) {
       sileo.warning({
-        title: t("selectRecipient"),
-        description: t("selectRecipientDesc"),
+        title: t("selectRoleTitle"),
+        description: t("selectRoleDesc"),
       });
       return;
     }
     const trimmedRecipient = recipientId.trim();
     if (!trimmedRecipient) {
       sileo.warning({
-        title: t("recipientRequired"),
-        description: t("recipientRequiredDesc"),
+        title: t("selectRecipient"),
+        description: t("selectRecipientDesc"),
+      });
+      return;
+    }
+
+    const selectedResult = results.find((r) => r.document_id === selectedDocId) ?? null;
+    if (!selectedResult) {
+      sileo.warning({
+        title: t("selectDocumentTitle"),
+        description: t("selectDocumentDesc"),
       });
       return;
     }
@@ -284,37 +293,35 @@ export function ShareResultsModal({
             {/* Select result */}
             <div className="mt-5">
               <p className="mb-2 text-xs font-medium text-slate-700">
-                {t("selectResult")}
+                {t("selectDocument")}
               </p>
               {loadingResults ? (
-                <div className="flex items-center gap-2 py-4 text-xs text-slate-400">
-                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-sky-500" />
-                  {t("loadingResults")}
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="neu-pressed h-10 w-full animate-pulse rounded-xl bg-slate-200" />
+                  ))}
                 </div>
               ) : results.length === 0 ? (
                 <p className="py-4 text-center text-xs text-slate-400">
                   {t("noResults")}
                 </p>
               ) : (
-                <div className="max-h-36 space-y-1.5 overflow-y-auto">
+                <div className="neu-inset rounded-xl p-4 space-y-2 max-h-56 overflow-y-auto">
                   {results.map((r) => (
-                    <button
-                      className={`w-full rounded-xl px-3 py-2.5 text-left transition-all duration-200 ${
-                        selectedResult?.document_id === r.document_id
-                          ? "neu-pressed border border-sky-200 text-sky-700"
-                          : "neu-surface border border-transparent text-slate-600 hover:border-slate-200"
-                      }`}
-                      key={r.document_id}
-                      onClick={() => setSelectedResult(r)}
-                      type="button"
-                    >
-                      <p className="truncate font-mono text-[11px]">
-                        CID: {r.document_id.slice(0, 20)}...
-                      </p>
-                      <p className="mt-0.5 text-[10px] text-slate-400">
+                    <label key={r.document_id} className="flex items-center gap-2 cursor-pointer py-1">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-200"
+                        checked={selectedDocId === r.document_id}
+                        onChange={() => setSelectedDocId(r.document_id)}
+                      />
+                      <span className="text-sm text-slate-700 truncate">
+                        {r.file_name ?? r.document_id.slice(0, 24) + "…"}
+                      </span>
+                      <span className="text-xs text-slate-400 ml-auto shrink-0">
                         {new Date(r.created_at).toLocaleDateString()}
-                      </p>
-                    </button>
+                      </span>
+                    </label>
                   ))}
                 </div>
               )}
@@ -340,7 +347,7 @@ export function ShareResultsModal({
                     }}
                     type="button"
                   >
-                    <span className="text-xl">{role.icon}</span>
+                    {role.icon}
                     <span className="text-[11px] font-semibold">
                       {t(role.labelKey)}
                     </span>
@@ -370,8 +377,8 @@ export function ShareResultsModal({
 
             {/* Key conflict warning */}
             {keyConflict && (
-              <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                ⚠️{" "}
+              <p className="mt-4 flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
                 {keyConflict === "missing_local_keys"
                   ? t("keyConflictMissing")
                   : t("keyConflictMismatch")}
@@ -381,7 +388,7 @@ export function ShareResultsModal({
             {/* Generate button */}
             <button
               className="mt-6 w-full rounded-2xl border border-white/60 bg-(--hp-primary) px-6 py-3 text-sm font-semibold text-slate-800 shadow-(--hp-shadow-raised) transition hover:bg-(--hp-primary-soft) active:translate-y-px disabled:opacity-60"
-              disabled={generating || !selectedResult || !!keyConflict}
+              disabled={generating || !!keyConflict}
               onClick={handleGenerate}
               type="button"
             >
@@ -439,7 +446,7 @@ export function ShareResultsModal({
                 onClick={() => {
                   setQrData(null);
                   setGrantedTo(null);
-                  setSelectedResult(null);
+                  setSelectedDocId(null);
                   setRecipientId("");
                 }}
                 type="button"
