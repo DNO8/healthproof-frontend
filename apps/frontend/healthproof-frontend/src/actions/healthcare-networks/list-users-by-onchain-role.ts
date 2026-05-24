@@ -59,7 +59,7 @@ export interface FilteredUserOption {
 }
 
 export async function listUsersByOnChainRole(
-  filterRole?: UserRole,
+  filterRole?: UserRole | UserRole[],
   excludeWallet?: string,
 ): Promise<FilteredUserOption[]> {
   const supabase = createAdminClient();
@@ -127,7 +127,8 @@ export async function listUsersByOnChainRole(
 
   // 3. Filter by role if specified
   if (filterRole) {
-    return results.filter((u) => u.onChainRole === filterRole);
+    const roles = Array.isArray(filterRole) ? filterRole : [filterRole];
+    return results.filter((u) => u.onChainRole !== null && roles.includes(u.onChainRole));
   }
 
   return results;
