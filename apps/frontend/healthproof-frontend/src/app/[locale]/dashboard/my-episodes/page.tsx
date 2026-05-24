@@ -45,8 +45,8 @@ export default function MyEpisodesPage() {
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-800">{ep.episodeType || t("unknownType")}</p>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {t("doctor")}: {truncateAddress(ep.openedBy)}
-                    {" · "}{t("institution")}: {truncateAddress(ep.institution)}
+                    {t("doctor")}: {ep.openedByName || truncateAddress(ep.openedBy)}
+                    {" · "}{t("institution")}: {ep.institutionName || truncateAddress(ep.institution)}
                   </p>
                   <p className="text-[10px] text-slate-400 mt-0.5">
                     {new Date(ep.openedAt * 1000).toLocaleDateString()}

@@ -204,18 +204,15 @@ export default function MyOrdersPage() {
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 mt-1">
                   <span>
-                    {t("doctor")}:{" "}
-                    <span className="font-mono">{formatAddress(o.doctor)}</span>
+                    {t("doctor")}: {o.doctorName || formatAddress(o.doctor)}
                   </span>
                   {o.assignedLab && o.assignedLab !== "0x0000000000000000000000000000000000000000" && (
                     <span>
-                      {t("assignedLab")}:{" "}
-                      {o.assignedLabName ?? formatAddress(o.assignedLab)}
+                      {t("assignedLab")}: {o.assignedLabName || formatAddress(o.assignedLab)}
                     </span>
                   )}
                   <span>
-                    {t("createdAt")}:{" "}
-                    {new Date(o.createdAt * 1000).toLocaleDateString()}
+                    {t("createdAt")}: {new Date(o.createdAt * 1000).toLocaleDateString()}
                   </span>
                 </div>
               </button>
@@ -243,26 +240,18 @@ export default function MyOrdersPage() {
             </div>
             <div className="space-y-1 text-xs text-slate-500">
               <p>
-                {t("doctor")}: {formatAddress(selectedOrder.doctor)}
+                {t("doctor")}: {selectedOrder.doctorName || formatAddress(selectedOrder.doctor)}
               </p>
               <p>
-                {t("status")}:{" "}
-                {selectedOrder.status === 0
-                  ? t("statusPending")
-                  : selectedOrder.status === 1
-                    ? t("statusAssigned")
-                    : selectedOrder.status === 2
-                      ? t("statusCompleted")
-                      : t("statusCancelled")}
+                {t("status")}: {selectedOrder.status === 0 ? t("statusPending") : selectedOrder.status === 1 ? t("statusAssigned") : selectedOrder.status === 2 ? t("statusCompleted") : t("statusCancelled")}
               </p>
               {selectedOrder.assignedLab && selectedOrder.assignedLab !== "0x0000000000000000000000000000000000000000" && (
                 <p>
-                  {t("assignedLab")}: {selectedOrder.assignedLabName ?? formatAddress(selectedOrder.assignedLab)}
+                  {t("assignedLab")}: {selectedOrder.assignedLabName || formatAddress(selectedOrder.assignedLab)}
                 </p>
               )}
               <p>
-                {t("createdAt")}:{" "}
-                {new Date(selectedOrder.createdAt * 1000).toLocaleString()}
+                {t("createdAt")}: {new Date(selectedOrder.createdAt * 1000).toLocaleString()}
               </p>
             </div>
 

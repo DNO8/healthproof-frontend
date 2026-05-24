@@ -7,7 +7,7 @@ export const env = {
   BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001",
   RPC_URL:
     process.env.NEXT_PUBLIC_RPC_URL ??
-    "http://3.141.110.34:9654/ext/bc/2GyyV9JKfw3ZqLHVra8UzJ53avgFZbAvVRjVXQnVjPYM2xsNYq/rpc",
+    "",
   CHAIN_ID: Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? "21668"),
   DEPLOYER_PRIVATE_KEY: process.env.DEPLOYER_PRIVATE_KEY ?? "",
   DEPLOYER_ADDRESS:

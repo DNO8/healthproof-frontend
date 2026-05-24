@@ -120,7 +120,7 @@ infra/avalanche/
 ### Red objetivo: Hygieia (L1)
 
 - **Network name**: `Hygieia`
-- **RPC**: `http://18.223.252.59:9650/ext/bc/kZYSkYiknAeZJbwtz4M6tN9YmbriGiLQwLKR4Pr7S2UEXQQuW/rpc`
+- **RPC**: `http://3.141.110.34:9654/ext/bc/2qXqVm6f7B8LeMt4Gxa7V39LW8YVQiRuhzqH57Vaik9dD4VPRq/rpc`
 - **Chain ID**: `21668`
 - **Currency symbol**: `HVE`
 
@@ -148,7 +148,7 @@ Crea un archivo `.env` en `contracts/`:
 
 ```env
 PRIVATE_KEY=0x...          # Clave privada del deployer (sin 0x opcional)
-HYGIEIA_RPC_URL=http://18.223.252.59:9650/ext/bc/kZYSkYiknAeZJbwtz4M6tN9YmbriGiLQwLKR4Pr7S2UEXQQuW/rpc   # Opcional, hay valor por defecto
+HYGIEIA_RPC_URL=http://3.141.110.34:9654/ext/bc/2qXqVm6f7B8LeMt4Gxa7V39LW8YVQiRuhzqH57Vaik9dD4VPRq/rpc   # Opcional, hay valor por defecto
 ```
 
 ### Opciones de deployment
