@@ -10,6 +10,8 @@ import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { truncateAddress } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { UserSelect } from "@/components/forms/UserSelect";
+import { EmptyState, SkeletonList } from "@/components/ui";
+import { User, UserX, ShieldOff } from "lucide-react";
 import type { OnChainGuardianship } from "@/lib/medical-constants";
 
 type Tab = "list" | "assign" | "revoke";
@@ -41,6 +43,12 @@ export default function GuardiansPage() {
   useEffect(() => {
     if (!walletAddress) return;
     fetchGuardians();
+  }, [walletAddress]);
+
+  useEffect(() => {
+    if (walletAddress) {
+      setAssignGuardian(walletAddress);
+    }
   }, [walletAddress]);
 
   async function fetchGuardians() {
@@ -122,9 +130,9 @@ export default function GuardiansPage() {
       {tab === "list" && (
         <div className="neu-shell border border-white/70 p-6 sm:p-8">
           {loading ? (
-            <p className="py-8 text-center text-sm text-slate-400">{t("loading")}</p>
+            <SkeletonList count={3} />
           ) : guardians.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-400">{t("empty")}</p>
+            <EmptyState icon={ShieldOff} title={t("empty")} />
           ) : (
             <div className="space-y-3">
               {guardians.map((g) => (
@@ -141,7 +149,11 @@ export default function GuardiansPage() {
                       <p className="text-[10px] text-slate-400 mt-0.5">{t("expires")}: {new Date(g.validUntil * 1000).toLocaleDateString()}</p>
                     )}
                   </div>
-                  <span className="text-xl shrink-0">{g.active ? "👤" : "🚫"}</span>
+                  {g.active ? (
+                    <User className="h-5 w-5 text-sky-600 shrink-0" />
+                  ) : (
+                    <UserX className="h-5 w-5 text-slate-400 shrink-0" />
+                  )}
                 </div>
               ))}
             </div>
@@ -154,11 +166,15 @@ export default function GuardiansPage() {
           <p className="text-xs text-slate-500">{t("assignNote")}</p>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("patientLabel")}</label>
-            <UserSelect label="" value={assignPatient} onChange={setAssignPatient} placeholder={t("patientPlaceholder")} />
+            <UserSelect label="" value={assignPatient} onChange={setAssignPatient} placeholder={t("patientPlaceholder")} filterRole="patient" excludeWallet={walletAddress ?? undefined} />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("guardianLabel")}</label>
-            <UserSelect label="" value={assignGuardian} onChange={setAssignGuardian} placeholder={t("guardianPlaceholder")} excludeWallet={assignPatient} />
+            <div className="neu-inset w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 flex items-center gap-2">
+              <User className="h-4 w-4 text-sky-600" />
+              <span className="font-mono">{walletAddress ? truncateAddress(walletAddress) : "—"}</span>
+              <span className="text-xs text-slate-400 ml-1">({t("you")})</span>
+            </div>
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("typeLabel")}</label>
@@ -181,7 +197,7 @@ export default function GuardiansPage() {
       {tab === "revoke" && (
         <div className="neu-shell border border-white/70 p-6 sm:p-8">
           {activeGuardians.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-400">{t("noActive")}</p>
+            <EmptyState icon={ShieldOff} title={t("noActive")} />
           ) : (
             <div className="space-y-3">
               {activeGuardians.map((g) => (

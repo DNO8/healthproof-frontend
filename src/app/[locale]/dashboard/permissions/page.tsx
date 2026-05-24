@@ -40,7 +40,8 @@ export default function PermissionsPage() {
   const [permissions, setPermissions] = useState<OnChainPermission[]>([]);
   const [loading, setLoading] = useState(true);
   const [granteeWallet, setGranteeWallet] = useState("");
-  const [documentId, setDocumentId] = useState("");
+  const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+  const [selectAllDocs, setSelectAllDocs] = useState(false);
   const [userDocs, setUserDocs] = useState<DocumentSecretRow[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [scope, setScope] = useState(0);
@@ -97,48 +98,55 @@ export default function PermissionsPage() {
       return;
     }
 
+    const docsToGrant = selectedDocs.length > 0 ? selectedDocs : ["all"];
+
     setGrantLoading(true);
     try {
       const viemWallet = await getViemWalletClient(activeWallet);
-
-      const trimmedDocId = documentId.trim();
-      const resourceId =
-        !trimmedDocId || trimmedDocId === "all"
-          ? ZERO_BYTES32
-          : keccak256(toHex(trimmedDocId));
+      const grantee = granteeWallet.trim().toLowerCase();
       const expiresAt = expiresInMinutes
         ? BigInt(Math.floor(Date.now() / 1000) + Number(expiresInMinutes) * 60)
         : BigInt(0);
 
-      const request = await signMetaTransaction(
-        viemWallet,
-        CONTRACT_ADDRESSES.PermissionManager as `0x${string}`,
-        "grantPermission",
-        [
-          walletAddress.toLowerCase(),
-          granteeWallet.trim().toLowerCase(),
-          scope,
-          resourceId,
-          expiresAt,
-        ],
-        PermissionManagerAbi,
-      );
+      let lastTxHash = "";
 
-      const res = await grantPermissionOnChain({
-        request,
-        patientWallet: walletAddress,
-        granteeWallet: granteeWallet.trim(),
-        documentId: trimmedDocId || "all",
-        scope,
-        expiresInMinutes: expiresInMinutes ? Number(expiresInMinutes) : undefined,
-      });
-      if (!res.success) {
-        throw new Error(res.error);
+      for (const docId of docsToGrant) {
+        const resourceId =
+          docId === "all"
+            ? ZERO_BYTES32
+            : keccak256(toHex(docId));
+
+        const request = await signMetaTransaction(
+          viemWallet,
+          CONTRACT_ADDRESSES.PermissionManager as `0x${string}`,
+          "grantPermission",
+          [
+            walletAddress.toLowerCase(),
+            grantee,
+            scope,
+            resourceId,
+            expiresAt,
+          ],
+          PermissionManagerAbi,
+        );
+
+        const res = await grantPermissionOnChain({
+          request,
+          patientWallet: walletAddress,
+          granteeWallet: grantee,
+          documentId: docId === "all" ? "all" : docId,
+          scope,
+          expiresInMinutes: expiresInMinutes ? Number(expiresInMinutes) : undefined,
+        });
+        if (!res.success) {
+          throw new Error(res.error);
+        }
+        lastTxHash = res.data.txHash;
       }
 
       // Batch rewrap keys for broad scopes (FULL_ACCESS, INSTITUTION)
-      if (scope >= 2) {
-        const recipientPubKeyJwk = await getUserPublicKey(granteeWallet.trim());
+      if (scope >= 2 && docsToGrant.includes("all")) {
+        const recipientPubKeyJwk = await getUserPublicKey(grantee);
         if (recipientPubKeyJwk) {
           const secrets = await listDocumentSecretsForWallet(walletAddress);
           const results = await batchRewrapForGrantee({
@@ -151,7 +159,7 @@ export default function PermissionsPage() {
             await savePermissionKey({
               document_id: r.documentId,
               patient_wallet: walletAddress,
-              grantee_wallet: granteeWallet.trim(),
+              grantee_wallet: grantee,
               encrypted_key: JSON.stringify(r.rewrapped),
             });
           }
@@ -165,10 +173,11 @@ export default function PermissionsPage() {
 
       sileo.success({
         title: t("grantSuccess"),
-        description: `TX: ${res.data.txHash.slice(0, 16)}…`,
+        description: `TX: ${lastTxHash.slice(0, 16)}…`,
       });
       setGranteeWallet("");
-      setDocumentId("");
+      setSelectedDocs([]);
+      setSelectAllDocs(false);
       setScope(0);
       setExpiresInMinutes("");
       setActiveTab("list");
@@ -300,27 +309,62 @@ export default function PermissionsPage() {
               onChange={setGranteeWallet}
               label={t("granteeLabel")}
               placeholder={t("granteePlaceholder")}
+              filterRoles={["doctor", "lab", "institution"]}
               excludeWallet={walletAddress ?? undefined}
             />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("documentLabel")}</label>
             {loadingDocs ? (
-              <div className="neu-pressed h-10 w-full animate-pulse rounded-xl bg-slate-200" />
-            ) : (
-              <select
-                className="neu-pressed w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none"
-                value={documentId}
-                onChange={(e) => setDocumentId(e.target.value)}
-              >
-                <option value="">{t("documentPlaceholder")}</option>
-                <option value="all">{t("allDocuments")}</option>
-                {userDocs.map((doc) => (
-                  <option key={doc.document_id} value={doc.document_id}>
-                    {doc.file_name ?? doc.document_id.slice(0, 20) + "…"}
-                  </option>
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="neu-pressed h-10 w-full animate-pulse rounded-xl bg-slate-200" />
                 ))}
-              </select>
+              </div>
+            ) : userDocs.length === 0 ? (
+              <p className="py-4 text-center text-xs text-slate-400">{t("noDocuments")}</p>
+            ) : (
+              <div className="neu-inset rounded-xl p-4 space-y-2 max-h-56 overflow-y-auto">
+                <label className="flex items-center gap-2 cursor-pointer pb-2 border-b border-slate-200/50">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-200"
+                    checked={selectAllDocs}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setSelectAllDocs(checked);
+                      if (checked) {
+                        setSelectedDocs(["all"]);
+                      } else {
+                        setSelectedDocs([]);
+                      }
+                    }}
+                  />
+                  <span className="text-sm font-medium text-slate-700">{t("allDocuments")}</span>
+                </label>
+                {userDocs.map((doc) => (
+                  <label key={doc.document_id} className="flex items-center gap-2 cursor-pointer py-1">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-200"
+                      checked={selectedDocs.includes(doc.document_id) || selectedDocs.includes("all")}
+                      disabled={selectAllDocs}
+                      onChange={(e) => {
+                        if (selectAllDocs) return;
+                        const checked = e.target.checked;
+                        setSelectedDocs((prev) =>
+                          checked
+                            ? [...prev, doc.document_id]
+                            : prev.filter((id) => id !== doc.document_id),
+                        );
+                      }}
+                    />
+                    <span className="text-sm text-slate-700 truncate">
+                      {doc.file_name ?? doc.document_id.slice(0, 24) + "…"}
+                    </span>
+                  </label>
+                ))}
+              </div>
             )}
           </div>
           <div className="flex gap-3">

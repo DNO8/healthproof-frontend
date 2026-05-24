@@ -13,6 +13,7 @@ export type UserSelectProps = {
   label: string;
   placeholder: string;
   filterRole?: UserRole;
+  filterRoles?: UserRole[];
   excludeWallet?: string;
 };
 
@@ -22,17 +23,20 @@ export function UserSelect({
   label,
   placeholder,
   filterRole,
+  filterRoles,
   excludeWallet,
 }: UserSelectProps) {
   const [users, setUsers] = useState<FilteredUserOption[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const roleFilter = filterRoles ?? filterRole;
+
   useEffect(() => {
     setLoading(true);
-    listUsersByOnChainRole(filterRole, excludeWallet)
+    listUsersByOnChainRole(roleFilter, excludeWallet)
       .then(setUsers)
       .finally(() => setLoading(false));
-  }, [filterRole, excludeWallet]);
+  }, [JSON.stringify(roleFilter), excludeWallet]);
 
   function formatLabel(u: FilteredUserOption) {
     const name = u.full_name || u.email || "Unknown";
