@@ -15,13 +15,24 @@ const GATEWAY_URL = PINATA_GATEWAY.startsWith("http")
   ? PINATA_GATEWAY
   : `https://${PINATA_GATEWAY}`;
 
-async function fetchFromGateway(cid: string): Promise<ArrayBuffer> {
+async function fetchFromGateway(cid: string, timeoutMs = 30000): Promise<ArrayBuffer> {
   const url = `${GATEWAY_URL}/ipfs/${cid}`;
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch from IPFS: ${response.statusText}`);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch from IPFS: ${response.statusText}`);
+    }
+    return response.arrayBuffer();
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error("IPFS fetch timed out. The file may no longer be available on the gateway.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
   }
-  return response.arrayBuffer();
 }
 
 export interface DecryptedResult {

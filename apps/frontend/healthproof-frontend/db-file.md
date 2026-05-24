@@ -45,6 +45,24 @@ CREATE TABLE public.sync_state (
   last_sync_at timestamp without time zone DEFAULT now()
 );
 
+CREATE TABLE public.permission_invitations (
+  id uuid NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
+  patient_wallet character varying NOT NULL,
+  grantee_wallet character varying NOT NULL,
+  document_ids text[] NOT NULL DEFAULT '{}',
+  scope integer NOT NULL DEFAULT 0,
+  expires_at_unix bigint DEFAULT 0,
+  status character varying NOT NULL DEFAULT 'pending',
+  signed_requests jsonb NOT NULL DEFAULT '[]',
+  encrypted_keys jsonb NOT NULL DEFAULT '{}',
+  tx_hash character varying,
+  created_at timestamp without time zone DEFAULT now(),
+  responded_at timestamp without time zone,
+  CONSTRAINT permission_invitations_patient_wallet_fkey FOREIGN KEY (patient_wallet) REFERENCES public.users(wallet_address),
+  CONSTRAINT permission_invitations_grantee_wallet_fkey FOREIGN KEY (grantee_wallet) REFERENCES public.users(wallet_address),
+  CONSTRAINT permission_invitations_status_check CHECK (status IN ('pending', 'accepted', 'rejected', 'cancelled', 'expired'))
+);
+
 CREATE TABLE public.audit_events (
   id uuid NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
   actor character varying NOT NULL,

@@ -1,524 +1,718 @@
-# HealthProof — Verifiable Health Data Infrastructure on Avalanche
+# HealthProof — Verifiable Health Data Infrastructure
 
-HealthProof is a **Web3 medical verification infrastructure** that enables patients, laboratories, and healthcare providers to securely exchange medical documents while preserving privacy and patient sovereignty.
+HealthProof is a **Web3 medical verification and interoperability infrastructure** that enables patients, laboratories, and healthcare providers in Chile to securely exchange medical documents while preserving **patient sovereignty, data confidentiality, and legal compliance**.
 
-The protocol combines **client-side encryption, off-chain storage, and blockchain verification** to ensure that medical records remain private while being cryptographically verifiable.
+The protocol combines **client-side hybrid encryption (ECDH + AES-GCM), sovereign blockchain infrastructure (Avalanche L1), and distributed storage** to ensure that medical records remain private, portable, and interoperable across institutions.
 
-The MVP currently runs on **Avalanche C-Chain**, with the long-term vision of evolving into a **dedicated Avalanche Layer 1 optimized for healthcare verification infrastructure**.
+**Legal context:** HealthProof is designed to comply with **Chilean Law 21.668** (published May 28, 2024), which modifies Law 20.584 to establish the **interoperability of clinical records** across public and private healthcare providers. The law mandates that providers adopt measures enabling interoperability, guarantee continuity of patient care, and ensure proper protection and conservation of records for at least 15 years.
 
+---
+
+# Table of Contents
+
+- [Vision](#vision)
+- [Legal Compliance (Chile)](#legal-compliance-chile)
+- [Architecture Overview](#architecture-overview)
+  - [Client Layer](#client-layer)
+  - [Protocol Layer](#protocol-layer)
+  - [Security & Encryption Layer](#security--encryption-layer)
+  - [Storage Layer](#storage-layer)
+  - [Blockchain Layer (Hygieia L1)](#blockchain-layer-hygieia-l1)
+- [Encryption Deep Dive](#encryption-deep-dive)
+- [Authentication (Privy)](#authentication-privy)
+- [Smart Contracts](#smart-contracts)
+- [Database Schema](#database-schema)
+- [Meta-Transactions (EIP-2771)](#meta-transactions-eip-2771)
+- [Guardians & Key Recovery](#guardians--key-recovery)
+- [Interoperability & Distributed Nodes (Roadmap)](#interoperability--distributed-nodes-roadmap)
+- [Technology Stack](#technology-stack)
+- [Monorepo Structure](#monorepo-structure)
+- [Environment Variables](#environment-variables)
+- [Quick Start](#quick-start)
+- [Contract Addresses](#contract-addresses)
+- [Roadmap](#roadmap)
+
+---
 
 # Vision
 
 Healthcare systems today suffer from critical structural problems:
 
-- Fragmented medical records
-- Lack of interoperability between institutions
-- Limited patient control over medical data
+- **Fragmented medical records**: A patient with chronic illness has their history scattered across clinics, labs, and hospitals.
+- **Lack of interoperability**: Institutions cannot share essential data to guarantee continuity of care.
+- **Limited patient control**: Patients do not decide who accesses their sensitive data or for how long.
+- **Data residency gaps**: Medical data often leaves national territory, violating sovereignty and legal requirements.
 
 HealthProof introduces a new paradigm:
 
-**Patients become the sovereign controllers of their medical records while healthcare providers can verify medical documents without relying on centralized intermediaries.**
+> **Patients become the sovereign controllers of their medical records through cryptographic key ownership, while healthcare providers can verify medical documents and interoperate without relying on centralized intermediaries or foreign infrastructure.**
 
+---
 
-# Key Features
+# Legal Compliance (Chile)
 
-- Patient-controlled medical records
-- Cryptographic verification of medical documents
-- On-chain permission management
-- Encrypted medical document storage
-- Verifiable medical orders
-- Immutable audit trail of document access
+## Law 21.668 — Interoperability of Clinical Records
 
+Published in the *Diario Oficial* on **May 28, 2024**, Law 21.668 modifies Law 20.584 (Rights and Duties of Persons regarding Healthcare) to establish:
 
-# Protocol Architecture
+### Key Legal Mandates
 
-HealthProof follows a **multi-layer protocol architecture**, separating clinical interaction, cryptographic security, and blockchain verification.
+| Mandate | HealthProof Implementation |
+|---------|---------------------------|
+| **Interoperability between providers** | Distributed node network with encrypted replication; every provider runs a node that replicates data it is authorized to access. |
+| **Continuity of patient care** | Real-time permission grants via on-chain `PermissionManager`; emergency access (break-the-glass) for critical scenarios. |
+| **Data conservation (15 years)** | Each node commits to long-term replication; `document_secrets` include `storage_node` mapping for traceability. |
+| **Proper protection & confidentiality** | Client-side ECDH + AES-GCM encryption; documents are unreadable to any node or attacker without the patient's private key. |
+| **Custody by each provider** | Each provider (lab, clinic) stores only the documents it emits, fulfilling the legal requirement that each custodies its own records. |
+| **Access to essential data for continuity of care** | Permission system allows doctors to request and patients to grant access to specific documents or full episodes. |
 
-## Architecture Layers
+### Regulatory Gap to Close
 
-### Client Layer
+The Ministry of Health has **18 months** (until November 2025) to publish the technical regulation detailing the "form and conditions" of interoperability. HealthProof positions itself as a **reference implementation** for a distributed, privacy-preserving, sovereign standard.
 
-The **HealthProof Clinical Client** provides the interface used by:
+---
 
-- Doctors
-- Patients
-- Laboratories
+# Architecture Overview
 
-Users can:
+HealthProof follows a **multi-layer protocol architecture**, separating clinical interaction, cryptographic security, distributed storage, and blockchain verification.
 
-- Issue medical orders
-- Upload medical results
-- Grant or revoke access permissions
-- Verify medical documents
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     CLIENT LAYER                                │
+│  Next.js 16 App · Privy Auth · i18n (es/en) · Neumorphism UI   │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│                   PROTOCOL LAYER                                │
+│  Identity · Permissions · Documents · Episodes · Orders · Audit │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│              SECURITY & ENCRYPTION LAYER                        │
+│  ECDH P-256 · AES-GCM · HKDF · IndexedDB · Key Backup/Recovery  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│                    STORAGE LAYER                                │
+│  Encrypted blobs · IPFS/Pinata (current) · Private nodes (future)│
+└─────────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│              BLOCKCHAIN LAYER (Hygieia L1)                      │
+│  IdentityRegistry · PermissionManager · GuardianRegistry · ... │
+│  UUPS Proxies · EIP-2771 Meta-TX · Native currency: HVE        │
+└─────────────────────────────────────────────────────────────────┘
+```
 
+## Client Layer
 
-### Protocol Layer
+The **HealthProof Clinical Client** (`apps/frontend/healthproof-frontend`) provides role-based interfaces for:
 
-This layer contains the core modules of the HealthProof system:
+- **Patients**: View documents, grant/revoke permissions, manage guardians, scan QR codes.
+- **Doctors**: Issue medical orders, request document access, verify permissions.
+- **Laboratories**: Receive orders, upload exam results, share via QR.
+- **Institutions / Medical Centers**: Manage staff, verify network participants.
 
-- Identity Module
-- Permission Module
-- Medical Orders Module
-- Document Verification Module
-- Audit Module
+Users authenticate via **Privy** (email OTP, Google OAuth, or external wallets like MetaMask). The system auto-generates an ECDH P-256 key pair on first login and stores the private key in the browser's IndexedDB.
 
-These modules coordinate the logic between users, storage, and blockchain verification.
+## Protocol Layer
 
+Core domain modules live under `src/features/` and `src/actions/`:
 
-### Security Layer
+| Module | Responsibility |
+|--------|---------------|
+| `features/permissions` | QR generation, permission payload building, on-chain grant/revoke |
+| `features/documents` | Document listing, metadata retrieval |
+| `features/medical-orders` | Create order, list orders, get results |
+| `actions/*-onchain.ts` | Server actions that interact with Hygieia via Wagmi + Viem |
+| `actions/permissions/*` | Invitation flow (send/accept/reject/cancel), permission keys |
+| `actions/auth/*` | User lookup, public key retrieval, backup management |
 
-The security layer handles:
+## Security & Encryption Layer
 
-- Client-side encryption
-- Key management
-- Secure document processing
+See [Encryption Deep Dive](#encryption-deep-dive).
 
-Sensitive medical data is encrypted **before leaving the user device**.
+## Storage Layer
 
+Currently, encrypted medical documents are uploaded to **Pinata IPFS** (public IPFS network). This is a **transitional architecture**.
 
-### Storage Layer
+**Planned migration (Phase 1):** Replace Pinata with **private object storage** (S3-compatible or MinIO) hosted in Chile to comply with data residency.
 
-Medical documents are stored **off-chain** in encrypted form.
+**Long-term vision (Phase 3):** Each healthcare provider runs its own **IPFS private-swarm / libp2p node**. Documents replicate across the national healthcare network, but only the encrypted blobs travel; decryption keys never leave the patient's control.
 
-Only the **hash of the encrypted document** is stored on blockchain.
+## Blockchain Layer (Hygieia L1)
 
-This guarantees:
+**Hygieia** is HealthProof's own Avalanche Layer 1 (Subnet), deployed via `avalanche-cli`.
 
-- Privacy
-- Scalability
-- Tamper-proof verification
+| Parameter | Value |
+|-----------|-------|
+| **Chain ID** | `21668` |
+| **Native currency** | `HVE` |
+| **VM** | Subnet-EVM |
+| **Deployment** | AWS-hosted node, RPC in Chile |
+| **Consensus** | Avalanche (proof-of-stake subnet validators) |
 
+### Why a dedicated L1?
 
-### Blockchain Layer
+1. **Sovereignty**: Transaction history, identity registry, and audit trail remain on infrastructure controlled by the Chilean healthcare network.
+2. **Performance**: Fast finality (~1s) and low fees, suitable for high-throughput medical orders and permissions.
+3. **Compliance**: No dependency on foreign L1s; regulatory audits can inspect the chain directly.
+4. **Interoperability foundation**: Smart contracts govern which nodes are authorized to join the network (`HealthcareNetworkRegistry`).
 
-Smart contracts deployed on **Avalanche C-Chain** handle:
+---
 
-- Document verification hashes
-- Permission records
-- Medical order registration
-- Audit logs
+# Encryption Deep Dive
 
-This layer acts as the **trust and verification engine of the system**.
+HealthProof uses a **hybrid encryption scheme** combining the **Web Crypto API** with on-chain identity:
 
+## 1. Key Generation (ECDH P-256)
 
-# Architecture Diagram
+On first authentication, the browser generates a non-extractable ECDH P-256 key pair:
 
-*(Diagram to be inserted)*
-<img width="1230" height="1156" alt="Diagrama de arquitectura" src="https://github.com/user-attachments/assets/2858f8a2-fc39-4fcc-a6f5-a1bc42c134cb" />
+```
+Public Key  → exported as JWK → saved to DB (users.public_key)
+Private Key → non-extractable CryptoKey → saved to IndexedDB
+```
 
+The private key is marked `non-extractable` (Web Crypto), meaning no JavaScript (including malicious XSS) can export it in raw form.
 
+## 2. Document Encryption (AES-GCM)
 
-# User Flow
+When a lab uploads a document:
 
-HealthProof replicates the real-world healthcare workflow between doctors, patients, and laboratories.
+1. **Generate AES-256-GCM session key** (random, one per document).
+2. **Encrypt the file** with AES-GCM → produces ciphertext + IV.
+3. **Wrap the session key** for each authorized recipient using ECDH:
+   - Derive shared secret between lab's private key and patient's public key (ECDH).
+   - Derive wrapping key via HKDF-SHA-256.
+   - Wrap AES session key → `encrypted_key`.
+4. **Store**:
+   - Encrypted blob → storage layer (IPFS / future node).
+   - `document_secrets` row → `document_id`, `uploader_wallet`, `patient_wallet`, `iv`, `encrypted_keys` JSONB.
 
-## Step 1 — Doctor Issues Medical Order
+## 3. Document Decryption
 
-During a consultation, a doctor creates a medical order linked to the patient identity.
+When a patient (or authorized doctor) downloads:
 
-The order metadata is recorded on blockchain.
+1. Fetch encrypted blob from storage.
+2. Fetch `document_secrets` row → obtain `iv` and `encrypted_keys[myWallet]`.
+3. Use **patient's private ECDH key** (from IndexedDB) to derive shared secret with uploader's public key.
+4. HKDF → unwrap AES session key.
+5. AES-GCM decrypt → original document.
 
+## 4. Sharing (Re-wrap)
 
-## Step 2 — Patient Receives Order
+When a patient shares with a doctor:
 
-The patient receives the medical order in their HealthProof dashboard.
+1. Patient uses their private key + doctor's public key to re-wrap the AES session key.
+2. New `encrypted_key` is saved to `permission_keys` table and/or included in a QR code.
+3. On-chain `PermissionManager.grantPermission` registers the authorization.
 
-The patient controls who can access this order.
+## 5. Key Backup & Recovery
 
+To prevent lockout when switching devices:
 
-## Step 3 — Patient Grants Laboratory Access
+- On first login, the private ECDH key is **exported temporarily** (as JWK), encrypted with PBKDF2+AES-GCM using a key derived from `userId + SHAMIR_ENCRYPTION_KEY`, and stored in the DB as `users.encrypted_private_key`.
+- On new browser/device: detect empty IndexedDB → attempt auto-recovery from backup.
+- **Key Conflict Prevention**: If the user has encrypted documents (`document_secrets`) but IndexedDB keys mismatch, a global `KeyConflictBanner` warns and blocks uploads/shares until resolved.
 
-The patient authorizes a laboratory to access the order by granting permission through a blockchain transaction.
+> **Note:** True **Shamir Secret Sharing** (threshold cryptography splitting the key among multiple guardians) is a **future enhancement** planned to integrate with `GuardianRegistry`. The current backup is single-party encrypted storage.
 
+---
 
-## Step 4 — Laboratory Performs Examination
+# Authentication (Privy)
 
-The laboratory performs the exam and generates a digital medical report.
+HealthProof migrated from Supabase Auth to **Privy** (`@privy-io/react-auth`).
 
+## Supported Login Methods
 
-## Step 5 — Laboratory Uploads Results
+- **Email + OTP**: User receives a one-time code via email. Privy auto-creates an MPC-based embedded Ethereum wallet.
+- **Google OAuth**: One-click social login; embedded wallet created automatically.
+- **External Wallet**: User connects an existing wallet (MetaMask, Rainbow, etc.) via Privy's wallet modal.
 
-Before leaving the browser:
+## Embedded Wallets (MPC)
 
-1. The document is encrypted locally
-2. The encrypted file is uploaded to storage
-3. A document hash is generated
-4. The hash is anchored on blockchain
+```tsx
+// providers.tsx
+embeddedWallets: {
+  ethereum: {
+    createOnLogin: "users-without-wallets",
+  },
+}
+```
 
+Privy's embedded wallets use **Multi-Party Computation (MPC)**: the private key is split into shards distributed between Privy, the user's device, and (optionally) a recovery service. No single party holds the complete key.
 
-## Step 6 — Patient Receives Verified Results
+### Custodial vs. Non-Custodial Reality
 
-The patient receives the exam results in their HealthProof vault.
+- **Embedded wallets** offer great UX (no seed phrase) but the user does not hold the full private key.
+- **External wallets** (MetaMask) are fully non-custodial: the user owns the seed phrase and the key never touches Privy's servers.
+- **Data sovereignty** in HealthProof is enforced at the **ECDH encryption layer**, not the wallet layer. Even if Privy disappeared, a patient with their ECDH private key (backed up or recovered) can still decrypt their medical documents.
 
-The document can now be shared with other doctors or institutions.
+## Future: Wallet Migration Path
 
+A planned feature will allow users who started with an embedded wallet to **link and migrate to an external wallet** while preserving their identity, on-chain permissions, and encrypted data history.
 
-# User Flow Diagram
+---
 
-<img width="2262" height="1278" alt="Diagrama de flujo de usuario" src="https://github.com/user-attachments/assets/009de3a4-6c65-4f30-aade-d1c8d80bcaff" />
+# Smart Contracts
 
+All contracts are **UUPS Upgradeable Proxies** deployed on Hygieia (Avalanche L1, `chainId 21668`).
 
-# Smart Contract Overview
+| Contract | Role |
+|----------|------|
+| `IdentityRegistry` | Role-based identity (PATIENT, DOCTOR, LAB, INSTITUTION, ADMIN). `hasRole()`, `grantRole()`, `revokeRole()`. |
+| `GuardianRegistry` | Guardian appointment for patients. Used for future key recovery and emergency access delegation. |
+| `PermissionManager` | O(1) permission lookups. `grantPermission()`, `revokePermission()`, `hasAccess()`. |
+| `ClinicalEpisodeRegistry` | Grouping of medical orders and documents under a single clinical episode. |
+| `MedicalOrderRegistry` | Issuance of medical orders by doctors, assignment to labs. |
+| `MedicalDocumentRegistry` | Registration of document metadata (hashes, URIs). |
+| `HealthcareNetworkRegistry` | Registry of authorized healthcare institutions and their nodes. |
+| `AuditTrail` | Immutable event log: order creation, document upload, permission grants/revocations. |
+| `HealthProofKernel` | Core protocol coordinator. |
+| `HealthProofGateway` | Proxy entry point for gasless meta-transactions and role-checked actions. |
+| `HealthProofProtocol` | High-level protocol orchestration. |
+| `TrustedForwarder` | EIP-2771 trusted forwarder for meta-transactions. |
 
-HealthProof smart contracts manage **verification, permissions, and auditability**.
+### Meta-Transactions (EIP-2771)
 
-## MedicalOrderRegistry
+Users sign transactions off-chain (no gas). A relayer (deployer or dedicated service) submits them via `TrustedForwarder`. The target contract extracts the original signer's address from the appended signature.
 
-Registers medical orders issued by physicians.
+This is essential for patients using embedded wallets who may not hold HVE gas tokens.
 
-Stores:
+---
 
-- Order ID
-- Physician identity
-- Patient address
-- Timestamp
-- Verification hash
+# Database Schema
 
+HealthProof uses **Supabase (PostgreSQL)** for structured data. Roles, permissions, and audit events live on-chain; the database stores encryption metadata and user profiles.
 
-## PermissionRegistry
+## Tables (Current — 3 Tables)
 
-Manages patient-controlled permissions.
+### 1. `users`
 
-Allows patients to:
+```sql
+id TEXT PRIMARY KEY,           -- Privy DID (did:privy:...)
+wallet_address TEXT UNIQUE,   -- Ethereum address
+email TEXT,
+full_name TEXT,
+public_key TEXT,              -- JWK of ECDH public key
+encrypted_private_key TEXT,   -- PBKDF2+AES-GCM encrypted backup
+created_at TIMESTAMPTZ
+```
 
-- Grant document access
-- Revoke permissions
-- Define scope of access
+> `role` has been removed from the DB and now lives **on-chain** in `IdentityRegistry`.
 
+### 2. `document_secrets`
 
-## DocumentRegistry
+```sql
+id UUID PRIMARY KEY,
+document_id VARCHAR UNIQUE,       -- CID or storage path
+file_name TEXT,                   -- human-readable name
+uploader_wallet TEXT REFERENCES users(wallet_address),
+patient_wallet TEXT REFERENCES users(wallet_address),
+iv TEXT,                          -- AES-GCM initialization vector
+encrypted_keys JSONB,             -- { wallet_address: wrapped_key }
+uploader_public_key TEXT,         -- JWK of uploader's pubkey at upload time
+created_at TIMESTAMPTZ
+```
 
-Stores hashes of uploaded medical documents.
+### 3. `permission_keys`
 
-Provides:
+```sql
+id UUID PRIMARY KEY,
+document_id TEXT REFERENCES document_secrets(document_id),
+patient_wallet TEXT REFERENCES users(wallet_address),
+grantee_wallet TEXT REFERENCES users(wallet_address),
+encrypted_key TEXT,               -- re-wrapped AES session key for grantee
+created_at TIMESTAMPTZ,
+UNIQUE(document_id, grantee_wallet)
+```
 
-- Tamper detection
-- Document authenticity verification
+### Future Additions
 
+- **`storage_node`** column in `document_secrets`: tracks which physical node (IPFS/libp2p endpoint) holds the encrypted blob.
+- **`invitations`** table: tracks pending permission invitations before on-chain execution (already implemented via server actions).
 
-## AuditRegistry
+---
 
-Maintains immutable records of:
+# Meta-Transactions (EIP-2771)
 
-- Order creation
-- Document uploads
-- Permission grants
-- Document verification events
+```typescript
+// 1. User signs off-chain
+const signed = await signMetaTransaction(
+  walletClient,
+  CONTRACT_ADDRESSES.PermissionManager,
+  "grantPermission",
+  [patientWallet, granteeWallet, scope, resourceId, expiry],
+  PermissionManagerAbi
+);
 
+// 2. Server relays
+const result = await grantPermissionOnChain({ request, ...payload });
+```
 
-# Smart Contract Interaction Diagram
+**Benefits:**
+- Patients do not need HVE tokens.
+- Embedded wallet users experience gasless UX.
+- The relayer pays gas, subsidized by the network or institution.
 
-<img width="3066" height="1174" alt="Diagrama de interacción de contratos" src="https://github.com/user-attachments/assets/4bfa9ecb-f1c5-4cbb-ade8-e068b4083b4b" />
+---
 
+# Guardians & Key Recovery
 
-# Data Encryption Flow
+## GuardianRegistry (On-Chain)
 
-HealthProof uses **client-side encryption** to ensure medical documents remain private before leaving the user's device.
+Patients can appoint **guardians** (trusted family members or doctors) who gain limited authority:
 
-## Encryption Workflow
+- **Future**: Participate in **Shamir Secret Sharing** threshold recovery (e.g., 2-of-3 guardians needed to reconstruct the patient's ECDH private key if the patient loses all devices).
+- **Emergency access**: A guardian may trigger a time-locked emergency permission request, logged immutably in `AuditTrail`.
 
-1. A medical document is generated by a laboratory or doctor.
-2. The document is encrypted locally in the browser.
-3. The encrypted file is uploaded to storage.
-4. A cryptographic hash of the encrypted file is generated.
-5. The hash is stored on blockchain.
-6. Any authorized party can verify the document against the blockchain hash.
+## Key Conflict Prevention
 
+The system prevents accidental ECDH key regeneration when encrypted data exists:
 
-# Encryption Flow Diagram
+```
+IndexedDB keys match DB public_key → OK
+IndexedDB empty + DB has key + documents exist → conflict (missing_local_keys)
+IndexedDB keys differ + documents exist → conflict (key_mismatch)
+```
 
-<img width="3046" height="327" alt="Diagrama de encriptación de datos" src="https://github.com/user-attachments/assets/c769c6ef-5908-4997-950b-27c5342b02ac" />
+Global `KeyConflictBanner` blocks uploads/shares until the user resolves the conflict via `KeyRecoveryModal`.
 
+---
+
+# Interoperability & Distributed Nodes (Roadmap)
+
+This is HealthProof's **Phase 3-4 vision** and directly addresses **Law 21.668**.
+
+## Current State (Phase 0)
+
+- Encrypted documents stored on **public IPFS via Pinata**.
+- All nodes (frontend + backend) connect to a single storage provider.
+- Data leaves Chilean territory (IPFS global DHT).
+
+## Phase 1 — Private Storage in Chile
+
+Replace Pinata with **S3-compatible or MinIO buckets** hosted on Chilean servers. The encrypted blobs never leave national territory. This satisfies immediate data-residency compliance.
+
+## Phase 2 — Institution-Owned Endpoints
+
+Each clinic or lab configures its own storage endpoint:
+
+```sql
+ALTER TABLE document_secrets ADD COLUMN storage_node TEXT;
+```
+
+- Lab A stores its documents on `node-a.healthproof.cl`.
+- The patient accesses them via the HealthProof frontend, which routes the download request to the correct node.
+- The node only serves the **encrypted blob**; it cannot decrypt it.
+
+## Phase 3 — Private P2P Healthcare Network
+
+Implement an **IPFS private swarm** or **libp2p permissioned network**:
+
+- Only nodes registered in `HealthcareNetworkRegistry` can join.
+- Node identity is tied to an on-chain `INSTITUTION` role.
+- Encrypted documents replicate across the network (e.g., 3 copies: emitter node + patient cache + regional archive).
+- Content is never announced to the public IPFS DHT.
+
+## Phase 4 — National Interoperability Grid
+
+- Every certified healthcare provider in Chile runs a HealthProof node.
+- The node validates its own data (digital signatures from the emitter) and replicates peers' data under SLAs encoded on-chain.
+- Patients have a **single unified view** of their clinical history, aggregated from all nodes, decrypted locally with their private key.
+- The Ministry of Health can audit the network via `AuditTrail` on Hygieia without accessing patient data.
+
+### Interoperability Without Centralization
+
+| Traditional Approach | HealthProof Distributed Approach |
+|-------------------|----------------------------------|
+| Single national database (monopoly, honeypot) | Each provider custodies its own data (Law 21.668 compliant) |
+| Unencrypted or weakly encrypted exports | End-to-end ECDH encryption; nodes only store ciphertext |
+| Complex HL7/FHIR point-to-point integrations | Standardized protocol via smart contracts + encrypted blob replication |
+| Patient has no audit trail | Every access logged immutably on-chain |
+
+---
 
 # Technology Stack
 
 ## Frontend
 
-- Next.js (App Router)
-- React
-- TypeScript
-- TailwindCSS
-- GSAP
-- Zustand
-- React Query
-
+| Technology | Purpose |
+|------------|---------|
+| Next.js 16 (App Router) | React framework with Server Actions |
+| TypeScript | Type safety |
+| TailwindCSS + custom neumorphism | UI styling |
+| Sileo | Toast notifications |
+| `next-intl` | i18n (Spanish / English) |
+| Zustand | Global state (auth, permissions, UI, key conflicts) |
+| React Query | Server state caching |
 
 ## Web3
 
-- Wagmi
-- Ethers
-- Avalanche C-Chain
+| Technology | Purpose |
+|------------|---------|
+| Privy (`@privy-io/react-auth`) | Authentication + embedded/external wallets |
+| Wagmi | Ethereum React hooks |
+| Viem | Modern TypeScript Ethereum library (wallet client, encoding) |
+| `qrcode.react` | QR code generation for permission sharing |
 
+## Encryption
 
-## Infrastructure
+| Technology | Purpose |
+|------------|---------|
+| Web Crypto API (`crypto.subtle`) | ECDH P-256, AES-GCM, HKDF, PBKDF2 |
+| IndexedDB | Non-extractable private key storage |
 
-- Client-side encryption
-- Secure off-chain storage
-- Smart contracts for verification and permissions
+## Blockchain
 
+| Technology | Purpose |
+|------------|---------|
+| Hardhat | Smart contract development, testing, deployment |
+| OpenZeppelin UUPS | Upgradeable proxy pattern |
+| EIP-2771 | Meta-transaction standard |
+| Avalanche-CLI | L1 / Subnet deployment |
 
-# Repository Structure
-src/
+## Backend & Database
 
-app/
-Routing and layout structure
+| Technology | Purpose |
+|------------|---------|
+| Supabase (PostgreSQL) | Structured data: users, document_secrets, permission_keys |
+| Pinata (transitional) | IPFS pinning for encrypted blobs |
+| Server Actions (Next.js) | Secure backend logic without separate API layer |
 
-components/
-Reusable UI components
+---
 
-features/
-Domain modules
-(auth, documents, identity, permissions)
+# Monorepo Structure
 
-services/
-Blockchain interaction
-Encryption
-Storage
-
-state/
-Global state management using Zustand
-
-types/
-Domain models and API types
-
-lib/
-Utilities and environment configuration
-
-
-# Security Model
-
-HealthProof follows a **privacy-first architecture**.
-
-Medical data is never stored directly on blockchain.
-
-Instead:
-
-1. Documents are encrypted locally
-2. Encrypted files are stored off-chain
-3. Document hashes are recorded on blockchain
-
-This guarantees:
-
-- Privacy
-- Integrity
-- Patient-controlled access
-
-
-# Feature Branch: Architecture Debt Resolution
-
-This branch (`feature/architecture-debt-resolution`) implements a comprehensive refactoring to address architectural debt and improve the security, scalability, and maintainability of the HealthProof protocol.
-
-## Overview
-
-The refactoring addresses 7 key areas:
-
-1. **Gateway Proxy Functions** - Server actions now use HealthProofGateway for proper on-chain access control
-2. **EIP-2771 Meta-transactions** - Gasless transactions for better UX
-3. **Guardian Auto-registration Removal** - Eliminated security risk of automatic deployer guardian assignment
-4. **PermissionManager Optimization** - O(1) permission lookups with nested mappings
-5. **Dead Code Cleanup** - Removed unused audit features
-6. **Testnet Faucet** - Easy token distribution for testing
-7. **KMS Abstraction** - Pluggable key management for production security
-
-## Key Changes
-
-### 1. Gateway Proxy Functions
-Server actions (`assignLabToOrder`, `updateOrderStatusOnChain`, `closeEpisodeOnChain`) now call proxy functions on `HealthProofGateway` instead of directly accessing registry contracts. This ensures proper on-chain access control is enforced.
-
-**Files modified:**
-- `src/actions/medical-orders-onchain.ts`
-- `src/actions/clinical-episodes-onchain.ts`
-
-### 2. EIP-2771 Meta-transactions
-Implemented infrastructure for gasless meta-transactions using a trusted forwarder pattern. Users can sign transactions off-chain, and a relayer (deployer) executes them on-chain.
-
-**New files:**
-- `src/lib/metatx/types.ts` - EIP-712 type definitions
-- `src/lib/metatx/forwarder.ts` - Signing utilities
-- `src/lib/abis/HealthProofTrustedForwarder.json` - Forwarder ABI
-- `src/actions/relay-metatx.ts` - Server action for relaying
-
-### 3. Guardian Auto-registration Removal
-Removed automatic registration of the deployer as a guardian for new patient identities. This was a security risk and is now handled explicitly when needed.
-
-**Files modified:**
-- `src/hooks/useRegisterIdentity.ts`
-
-### 4. PermissionManager Optimization
-The `PermissionManager` contract now uses nested mappings for O(1) permission lookups instead of O(N) array scans. Added a paginated `getPermissions` view function.
-
-**Files modified:**
-- `infra/avalanche/contracts/src/access/PermissionManager.sol`
-
-### 5. Dead Code Cleanup
-Removed unused audit features that were no longer part of the active architecture.
-
-**Files deleted:**
-- `src/features/audit/index.ts`
-- `src/features/audit/` directory
-
-### 6. Testnet Faucet
-Implemented a faucet server action to distribute testnet tokens (HVE) to users for testing. Includes rate limiting and cooldown periods.
-
-**New files:**
-- `src/actions/faucet.ts`
-
-### 7. KMS Abstraction
-Abstracted private key access behind a pluggable KMS interface. Currently uses environment variables (EnvKMSProvider) with AWS KMS support ready for future implementation.
-
-**New files:**
-- `src/lib/kms/interface.ts` - KMS provider abstraction
-
-**Files modified:**
-- `src/lib/auth/secure-key.ts` - Now uses KMS provider
-- All server actions using `getDeployerPrivateKey` - Updated to async
-
-### 8. ECDH Key Backup & Recovery
-Implemented Shamir Secret Sharing for automatic key recovery across browsers. Users no longer lose encryption keys when switching devices.
-
-**New files:**
-- `src/services/encryption/key-backup.ts` - PBKDF2+AES-GCM encryption
-- `src/actions/save-encrypted-private-key.ts` - Backup storage
-- `src/actions/get-user-with-backup.ts` - Backup retrieval
-- `src/components/auth/KeyRecoveryModal.tsx` - Recovery UI
-
-**Files modified:**
-- `src/hooks/useSyncKeys.ts` - Auto-backup and recovery logic
-- `src/services/encryption/ecdh.ts` - Added importPrivateKey
-
-### 9. Role Selection
-Registration now requires explicit role selection. No default "patient" assignment - users must choose their role during signup.
-
-**Files modified:**
-- `src/hooks/useRegisterIdentity.ts`
-
-## How It Works
-
-### Meta-transaction Flow
-1. User signs transaction off-chain using `signMetaTransaction()`
-2. Signed request sent to `relayMetaTransaction` server action
-3. Deployer (relayer) executes via `HealthProofTrustedForwarder`
-4. User pays no gas, relayer bears cost
-
-### Key Recovery Flow
-1. First login: Generates ECDH key pair, saves public_key + encrypted_private_key to DB
-2. Browser change: Detects empty IndexedDB + backup exists
-3. Auto-recovery: Uses Shamir shares (DB + derived from wallet|userId)
-4. Fallback: Legacy encrypted_private_key with PBKDF2
-5. Conflict detection: Prevents key regeneration if encrypted data exists
-
-### Permission Check Flow
-1. Fast-path: O(1) lookup via nested mapping `permissionLookup[grantee][target]`
-2. Fallback: Array scan for edge cases
-3. Paginated retrieval: `getPermissions(offset, limit)` for UI
-
-## Testing the Branch
-
-### Prerequisites
-- Deployer private key set in `DEPLOYER_PRIVATE_KEY`
-- Shamir encryption key set in `SHAMIR_ENCRYPTION_KEY`
-- Contracts deployed on target network
-
-### Test Meta-transactions
-```typescript
-import { signGatewayMetaTx } from "@/lib/metatx/forwarder";
-import { relayMetaTransaction } from "@/actions/relay-metatx";
-
-// Sign off-chain
-const signed = await signGatewayMetaTx(
-  walletClient,
-  CONTRACT_ADDRESSES.HealthProofGateway,
-  "closeEpisodeViaGateway",
-  [episodeId, account.address]
-);
-
-// Relay via server
-const result = await relayMetaTransaction(signed);
+```
+healthproof/
+├── apps/
+│   ├── backend/              # (future) dedicated backend services
+│   └── frontend/
+│       └── healthproof-frontend/   # Next.js 16 application
+│           ├── src/
+│           │   ├── app/[locale]/      # i18n routing (es, en)
+│           │   │   ├── auth/
+│           │   │   ├── dashboard/
+│           │   │   │   ├── documents/
+│           │   │   │   ├── guardians/
+│           │   │   │   ├── kernel/
+│           │   │   │   ├── permissions/
+│           │   │   │   ├── profile/
+│           │   │   │   ├── share/
+│           │   │   │   └── upload/
+│           │   │   └── landing/
+│           │   ├── actions/         # Server Actions (on-chain + DB)
+│           │   ├── components/
+│           │   ├── features/        # Domain modules
+│           │   ├── hooks/           # React hooks (auth, keys, sync)
+│           │   ├── lib/             # Utilities, env, contracts, metatx
+│           │   ├── services/        # Encryption, storage, API
+│           │   ├── state/           # Zustand stores
+│           │   └── types/           # Domain & API types
+│           ├── messages/en.json
+│           ├── messages/es.json
+│           └── public/
+├── infra/
+│   └── avalanche/
+│       ├── contracts/           # Solidity smart contracts
+│       │   ├── src/
+│       │   └── test/
+│       └── network/             # Subnet configuration
+├── packages/
+│   ├── blockchain-sdk/          # Shared blockchain utilities
+│   ├── contracts/               # Contract ABIs & deployment scripts
+│   ├── did/                     # DID utilities
+│   └── encryption/              # Shared encryption helpers
+├── docs/
+│   └── architecture-debt-v1.2.md
+└── supabase_migrations/         # SQL migrations
 ```
 
-### Test Faucet
-```typescript
-import { requestFaucet } from "@/actions/faucet";
+---
 
-const result = await requestFaucet({ wallet: userWallet });
-// Returns { txHash, amount }
-```
+# Environment Variables
 
-### Test Key Recovery
-1. Login on Browser A → keys generated, backup saved
-2. Login on Browser B → keys auto-recovered from backup
-3. Check IndexedDB → keys restored
+Create a `.env` file in `apps/frontend/healthproof-frontend/`:
 
-## Migration Notes
+```bash
+# Privy Authentication
+NEXT_PUBLIC_PRIVY_APP_ID=your-privy-app-id
 
-### Breaking Changes
-- `getDeployerPrivateKey()` is now async - all callers must await
-- Server actions require explicit role selection during registration
-- PermissionManager ABI updated - recompile contracts
+# Supabase (Database only — auth handled by Privy)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-### Environment Variables
-Add to `.env`:
-```
+# Pinata / Storage (Phase 0 — will migrate to private storage)
+PINATA_JWT_SECRET=your-pinata-jwt
+NEXT_PUBLIC_PINATA_GATEWAY=https://your-gateway.mypinata.cloud
+
+# Blockchain
+NEXT_PUBLIC_RPC_URL=http://your-hygieia-node:9654/ext/bc/.../rpc
+NEXT_PUBLIC_CHAIN_ID=21668
+
+# Contract Addresses (Hygieia L1)
+NEXT_PUBLIC_IDENTITY_REGISTRY=0x...
+NEXT_PUBLIC_GUARDIAN_REGISTRY=0x...
+NEXT_PUBLIC_PERMISSION_MANAGER=0x...
+NEXT_PUBLIC_CLINICAL_EPISODE_REGISTRY=0x...
+NEXT_PUBLIC_MEDICAL_ORDER_REGISTRY=0x...
+NEXT_PUBLIC_MEDICAL_DOCUMENT_REGISTRY=0x...
+NEXT_PUBLIC_HEALTHCARE_NETWORK_REGISTRY=0x...
+NEXT_PUBLIC_AUDIT_TRAIL=0x...
+NEXT_PUBLIC_HEALTHPROOF_KERNEL=0x...
+NEXT_PUBLIC_HEALTHPROOF_GATEWAY=0x...
+NEXT_PUBLIC_HEALTHPROOF_PROTOCOL=0x...
+NEXT_PUBLIC_TRUSTED_FORWARDER=0x...
+
+# Server-side secrets
 DEPLOYER_PRIVATE_KEY=0x...
-SHAMIR_ENCRYPTION_KEY=your-encryption-key
+SHAMIR_ENCRYPTION_KEY=your-shamir-key
 ```
-
-### Contract Deployment
-Redeploy `PermissionManager.sol` to enable O(1) lookups:
-```bash
-cd infra/avalanche/contracts
-npx hardhat run scripts/deployHealthProofUUPS.ts --network hygieia
-```
-
-## Rollback Plan
-
-If issues arise, rollback to `main` branch:
-```bash
-git checkout main
-git pull origin main
-```
-
-## Future Enhancements
-
-- AWS KMS integration for production key management
-- Additional meta-transaction support for all contract interactions
-- Enhanced faucet with CAPTCHA for abuse prevention
-- Multi-chain support for meta-transactions
 
 ---
 
-# Quick Start (Run Locally)
+# Quick Start
 
-## Requirements
+## Prerequisites
 
-- Node.js 18+
-- npm or pnpm
-- MetaMask or compatible wallet
-- Avalanche RPC endpoint
+- Node.js 20+
+- pnpm (recommended) or npm
+- Git
 
-
-## Testnet Deployment
-
-**Network:** Avalanche Fuji C-Chain — `chainId 43113`
-
-| Contract | Address |
-|----------|---------|
-| IdentityRegistry | [`0x9f196FC83abcBB47391f9D4aF9998E7a5c458D71`](https://testnet.snowtrace.io/address/0x9f196FC83abcBB47391f9D4aF9998E7a5c458D71) |
-| GuardianRegistry | [`0xBFe33f7014E3619f39359E14dDcdF25D386D408C`](https://testnet.snowtrace.io/address/0xBFe33f7014E3619f39359E14dDcdF25D386D408C) |
-| PermissionManager | [`0x322890CE0C0971e879003dD3A77f686e90f2E61F`](https://testnet.snowtrace.io/address/0x322890CE0C0971e879003dD3A77f686e90f2E61F) |
-| ClinicalEpisodeRegistry | [`0xD33a12d276e5a588dc87e8ab7D57F56c6aaA954f`](https://testnet.snowtrace.io/address/0xD33a12d276e5a588dc87e8ab7D57F56c6aaA954f) |
-| MedicalOrderRegistry | [`0xAa1381cECAA42ae0313ed1E987fA66007bD3bA26`](https://testnet.snowtrace.io/address/0xAa1381cECAA42ae0313ed1E987fA66007bD3bA26) |
-| MedicalDocumentRegistry | [`0x7f1D7C04C2e4f3DaD7BB8c10c852B6d51Ad8c251`](https://testnet.snowtrace.io/address/0x7f1D7C04C2e4f3DaD7BB8c10c852B6d51Ad8c251) |
-| HealthcareNetworkRegistry | [`0xC409f54D8FbEA73772d454995882442736fA0D91`](https://testnet.snowtrace.io/address/0xC409f54D8FbEA73772d454995882442736fA0D91) |
-| AuditTrail | [`0xFA62c68B31532c72B29a76e17D1e44C4CCe2C709`](https://testnet.snowtrace.io/address/0xFA62c68B31532c72B29a76e17D1e44C4CCe2C709) |
-| HealthProofKernel | [`0xAEFcc18cB8C66c60d488658944B55F1C42a41C72`](https://testnet.snowtrace.io/address/0xAEFcc18cB8C66c60d488658944B55F1C42a41C72) |
-| HealthProofGateway | [`0xdA58547915d85F053A5f2A086135036cAF5B0a5D`](https://testnet.snowtrace.io/address/0xdA58547915d85F053A5f2A086135036cAF5B0a5D) |
-| HealthProofProtocol | [`0xde323389d5Be45a947E354b840b1015d642E2BF2`](https://testnet.snowtrace.io/address/0xde323389d5Be45a947E354b840b1015d642E2BF2) |
-
----
-
-## Clone Repository
+## Install
 
 ```bash
 git clone https://github.com/jpgsChile/healthproof
 cd healthproof
+pnpm install
+```
+
+## Configure Environment
+
+```bash
+cd apps/frontend/healthproof-frontend
+cp .env.example .env
+# Fill in all required variables
+```
+
+## Run Development Server
+
+```bash
+pnpm dev
+# or
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+## Build
+
+```bash
+pnpm build
+```
+
+## Smart Contract Development
+
+```bash
+cd infra/avalanche/contracts
+npx hardhat compile
+npx hardhat test
+npx hardhat run scripts/deployHealthProofUUPS.ts --network hygieia
+```
+
+---
+
+# Contract Addresses
+
+## Hygieia L1 (Production / Staging)
+
+**RPC:** `http://3.141.110.34:9654/ext/bc/2qXqVm6f7B8LeMt4Gxa7V39LW8YVQiRuhzqH57Vaik9dD4VPRq/rpc`  
+**Chain ID:** `21668`  
+**Deployer:** `0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC`
+
+| Contract | Proxy Address |
+|----------|---------------|
+| IdentityRegistry | `0x68EA48917a3f9416613A48788BCe54578395a315` |
+| GuardianRegistry | `0xE742a4b5F98453027fA3A9b0de106e237B6746B1` |
+| PermissionManager | `0xb91b7959e715c059cE10eBEbe3288dA9d8012961` |
+| ClinicalEpisodeRegistry | `0x207Ac23cf698ce54ad2AE2391be5df4b8c66430F` |
+| MedicalOrderRegistry | `0x9E1222D98DBc740bbD406b5945084D363888CeA0` |
+| MedicalDocumentRegistry | `0x5b190A85fb41D7C1d173a4501f12b81c28F59824` |
+| HealthcareNetworkRegistry | `0x724820e539ae50f5fe7434fc9a6Cd2B17F832D31` |
+| AuditTrail | `0x1AA001Cd20F35F3F4EF1A945053CeE4Acc24aDb4` |
+| HealthProofKernel | `0xcad00692aa206527F64Fc683dB0f711dc49CB176` |
+| HealthProofGateway | `0x68adE62397958E78A728313D27d3B1227Abf93d3` |
+| HealthProofProtocol | `0x0D6F31D23704631417D8C55360aF2D493A578BF2` |
+| TrustedForwarder | `0xC76413e3c098DC67cfdE4C2E92351792EC6924bf` |
+
+> **Note:** Contracts are UUPS upgradeable. Implementation addresses are tracked separately.
+
+---
+
+# Roadmap
+
+## Completed
+
+- [x] ECDH P-256 hybrid encryption system
+- [x] Key backup & recovery (PBKDF2 + IndexedDB)
+- [x] Key conflict prevention (Zustand store + banner)
+- [x] Privy authentication (email, Google, wallet)
+- [x] Hygieia Avalanche L1 deployment
+- [x] UUPS smart contract suite (Identity, Permission, Guardian, Episode, Order, Document registries)
+- [x] EIP-2771 meta-transactions (gasless UX)
+- [x] Role-based dashboard (Patient, Doctor, Lab, Institution, Admin)
+- [x] Permission invitation flow (send / accept / reject / cancel)
+- [x] QR-code based permission sharing
+- [x] Neumorphism UI design system
+- [x] i18n (Spanish / English)
+
+## In Progress
+
+- [ ] Fix email/OTP on-chain registration (currently only Google login registers correctly)
+- [ ] Migrate storage from Pinata/IPFS public → private Chilean-hosted storage
+- [ ] Add `storage_node` column to `document_secrets`
+- [ ] Implement break-the-glass emergency access (compliance with Law 21.668 urgent care continuity)
+
+## Short Term
+
+- [ ] Wallet linking & migration (embedded → external wallet)
+- [ ] Multi-document permission grants (batch select in UI)
+- [ ] Push notifications for permission invitations
+- [ ] Document versioning & correction workflow
+- [ ] Enhanced audit dashboard for institutions
+
+## Medium Term
+
+- [ ] Institution-owned storage nodes (Phase 2)
+- [ ] IPFS private swarm / libp2p permissioned network (Phase 3)
+- [ ] Shamir Secret Sharing threshold recovery using `GuardianRegistry`
+- [ ] Mobile app (React Native) with biometric key protection (WebAuthn / Secure Enclave)
+- [ ] Integration with Chilean Ministry of Health regulation (once technical norm is published)
+
+## Long Term
+
+- [ ] National healthcare provider onboarding (every certified clinic/lab runs a node)
+- [ ] On-chain SLA agreements for data replication and 15-year conservation
+- [ ] Federated learning on encrypted medical data (privacy-preserving AI diagnostics)
+- [ ] Cross-border interoperability agreements (MERCOSUR / Pacific Alliance health data corridors)
+
+---
+
+# Contributing
+
+We welcome contributions from healthcare engineers, cryptographers, and blockchain developers focused on **privacy-preserving medical infrastructure**.
+
+Please open an issue or pull request at:  
+https://github.com/jpgsChile/healthproof
+
+---
+
+# License
+
+[License to be defined]
+
+---
+
+> **Disclaimer:** HealthProof is an experimental infrastructure project. It is not yet certified for production medical use in Chile. Clinical deployment requires review by the **Ministry of Health** and **Superintendence of Health** under the forthcoming technical regulation of Law 21.668.

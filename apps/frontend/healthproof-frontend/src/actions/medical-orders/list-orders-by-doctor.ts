@@ -4,6 +4,7 @@ import { createPublicClient, http, fromHex } from "viem";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveWalletNames } from "@/lib/supabase/resolve-wallet-names";
 import { withAuth } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
 
@@ -22,6 +23,8 @@ export interface OrderRef {
   assignedLab: string;
   assignedLabName: string | null;
   createdAt: number;
+  patientName?: string | null;
+  doctorName?: string | null;
 }
 
 async function handler(
@@ -81,34 +84,16 @@ async function handler(
     }
   }
 
-  // Enrich with lab names from Supabase
-  const labWallets = orders
-    .map((o) => o.assignedLab)
-    .filter((w) => w && w !== "0x0000000000000000000000000000000000000000");
-
-  const uniqueLabs = [...new Set(labWallets.map((w) => w.toLowerCase()))];
-  const labNameMap = new Map<string, string | null>();
-
-  if (uniqueLabs.length > 0) {
-    const supabase = createAdminClient();
-    const { data: users } = await supabase
-      .from("users")
-      .select("wallet_address, full_name")
-      .in("wallet_address", uniqueLabs);
-
-    if (users) {
-      for (const u of users) {
-        if (u.wallet_address) {
-          labNameMap.set(u.wallet_address.toLowerCase(), u.full_name ?? null);
-        }
-      }
-    }
-  }
+  // Enrich with names from Supabase
+  const allWallets = orders.flatMap((o) => [o.patient, o.doctor, o.assignedLab]);
+  const nameMap = await resolveWalletNames(allWallets);
 
   const enrichedOrders = orders.map((o) => ({
     ...o,
-    assignedLabName: o.assignedLab
-      ? (labNameMap.get(o.assignedLab.toLowerCase()) ?? null)
+    patientName: nameMap.get(o.patient.toLowerCase()) ?? null,
+    doctorName: nameMap.get(o.doctor.toLowerCase()) ?? null,
+    assignedLabName: o.assignedLab && o.assignedLab !== "0x0000000000000000000000000000000000000000"
+      ? (nameMap.get(o.assignedLab.toLowerCase()) ?? null)
       : null,
   }));
 

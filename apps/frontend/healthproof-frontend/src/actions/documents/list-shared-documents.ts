@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveWalletNames } from "@/lib/supabase/resolve-wallet-names";
 import { withAuth } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
 
@@ -15,6 +16,8 @@ export interface SharedDocument {
   uploader_wallet: string | null;
   uploader_public_key: string | null;
   doc_created_at: string | null;
+  patient_name?: string | null;
+  uploader_name?: string | null;
 }
 
 async function handler(
@@ -55,6 +58,8 @@ async function handler(
         uploader_wallet: null,
         uploader_public_key: null,
         doc_created_at: null,
+        patient_name: null,
+        uploader_name: null,
       })),
     };
   }
@@ -74,10 +79,26 @@ async function handler(
       uploader_wallet: secret?.uploader_wallet ?? null,
       uploader_public_key: secret?.uploader_public_key ?? null,
       doc_created_at: secret?.created_at ?? null,
+      patient_name: null,
+      uploader_name: null,
     };
   });
 
-  return { documents };
+  // 4. Enrich with user names
+  const wallets = documents.flatMap((d) =>
+    [d.patient_wallet, d.uploader_wallet].filter(Boolean) as string[]
+  );
+  const nameMap = await resolveWalletNames(wallets);
+
+  const enriched = documents.map((d) => ({
+    ...d,
+    patient_name: nameMap.get(d.patient_wallet.toLowerCase()) ?? null,
+    uploader_name: d.uploader_wallet
+      ? (nameMap.get(d.uploader_wallet.toLowerCase()) ?? null)
+      : null,
+  }));
+
+  return { documents: enriched };
 }
 
 export const listSharedDocuments = withAuth(handler, {

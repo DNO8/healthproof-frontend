@@ -7,7 +7,7 @@ Guía paso a paso para ejecutar los tests del protocolo HealthProof en entorno d
 ## Requisitos previos
 
 - **Node.js** 18 o superior
-- **npm** (incluido con Node.js)
+- **pnpm** (obligatorio por seguridad)
 
 ---
 
@@ -15,7 +15,7 @@ Guía paso a paso para ejecutar los tests del protocolo HealthProof en entorno d
 
 ```bash
 cd infra/avalanche/contracts
-npm install
+pnpm install
 ```
 
 ---
@@ -23,7 +23,7 @@ npm install
 ## Paso 2: Compilar contratos
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 Verifica que la compilación termine sin errores. Los artefactos se generan en `artifacts/`.
@@ -33,7 +33,7 @@ Verifica que la compilación termine sin errores. Los artefactos se generan en `
 ## Paso 3: Ejecutar todos los tests
 
 ```bash
-npm run test
+pnpm run test
 ```
 
 O directamente con Hardhat:
@@ -52,16 +52,16 @@ Para ejecutar solo un conjunto de tests:
 
 ```bash
 # Solo IdentityRegistry
-npx hardhat test test/IdentityRegistry.test.ts
+pnpm hardhat test test/IdentityRegistry.test.ts
 
 # Solo GuardianRegistry
-npx hardhat test test/GuardianRegistry.test.ts
+pnpm hardhat test test/GuardianRegistry.test.ts
 
 # Solo HealthProofKernel
-npx hardhat test test/HealthProofKernel.test.ts
+pnpm hardhat test test/HealthProofKernel.test.ts
 
 # Solo HealthProofGateway
-npx hardhat test test/HealthProofGateway.test.ts
+pnpm hardhat test test/HealthProofGateway.test.ts
 ```
 
 ---
@@ -71,9 +71,9 @@ npx hardhat test test/HealthProofGateway.test.ts
 Usa el flag `--grep` para filtrar por nombre:
 
 ```bash
-npx hardhat test --grep "Debe asignar admin"
-npx hardhat test --grep "createEpisode"
-npx hardhat test --grep "grantGuardianship"
+pnpm hardhat test --grep "Debe asignar admin"
+pnpm hardhat test --grep "createEpisode"
+pnpm hardhat test --grep "grantGuardianship"
 ```
 
 ---
@@ -83,7 +83,7 @@ npx hardhat test --grep "grantGuardianship"
 Para ver gas usado y más detalle:
 
 ```bash
-npx hardhat test --verbose
+pnpm hardhat test --verbose
 ```
 
 ---
@@ -117,8 +117,8 @@ El archivo `test/fixtures.ts` despliega todos los contratos y configura:
 
 ### Error: "Cannot find module"
 ```bash
-npm install
-npm run build
+pnpm install
+pnpm run build
 ```
 
 ### Tests lentos
@@ -126,9 +126,9 @@ La primera ejecución compila los contratos. Las siguientes son más rápidas (~
 
 ### Limpiar y recompilar
 ```bash
-npm run clean
-npm run build
-npm run test
+pnpm run clean
+pnpm run build
+pnpm run test
 ```
 
 ---
@@ -137,7 +137,7 @@ npm run test
 
 | Comando | Descripción |
 |---------|-------------|
-| `npm run test` | Ejecutar todos los tests |
-| `npx hardhat test test/X.test.ts` | Ejecutar tests de un archivo |
-| `npx hardhat test --grep "nombre"` | Ejecutar tests que coincidan |
-| `npx hardhat test --verbose` | Reporte detallado |
+| `pnpm run test` | Ejecutar todos los tests |
+| `pnpm hardhat test test/X.test.ts` | Ejecutar tests de un archivo |
+| `pnpm hardhat test --grep "nombre"` | Ejecutar tests que coincidan |
+| `pnpm hardhat test --verbose` | Reporte detallado |

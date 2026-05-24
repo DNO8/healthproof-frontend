@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveWalletNames } from "@/lib/supabase/resolve-wallet-names";
 
 export interface DocumentSecretRow {
   id: string;
@@ -12,6 +13,7 @@ export interface DocumentSecretRow {
   encrypted_keys: Record<string, { data: string; iv: string }>;
   uploader_public_key: string | null;
   created_at: string;
+  uploader_name?: string | null;
 }
 
 export async function getDocumentSecret(
@@ -31,7 +33,10 @@ export async function getDocumentSecret(
     return null;
   }
 
-  return data as DocumentSecretRow;
+  const row = data as DocumentSecretRow;
+  const nameMap = await resolveWalletNames([row.uploader_wallet]);
+  row.uploader_name = nameMap.get(row.uploader_wallet.toLowerCase()) ?? null;
+  return row;
 }
 
 export async function listDocumentSecretsForWallet(
@@ -52,5 +57,12 @@ export async function listDocumentSecretsForWallet(
     return [];
   }
 
-  return data as DocumentSecretRow[];
+  const rows = data as DocumentSecretRow[];
+  const wallets = rows.map((r) => r.uploader_wallet);
+  const nameMap = await resolveWalletNames(wallets);
+
+  return rows.map((r) => ({
+    ...r,
+    uploader_name: nameMap.get(r.uploader_wallet.toLowerCase()) ?? null,
+  }));
 }

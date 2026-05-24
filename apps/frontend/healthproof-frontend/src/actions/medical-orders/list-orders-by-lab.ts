@@ -3,6 +3,7 @@
 import { createPublicClient, http, fromHex } from "viem";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
+import { resolveWalletNames } from "@/lib/supabase/resolve-wallet-names";
 import { withAuth } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
 
@@ -19,6 +20,8 @@ export interface OrderRef {
   doctor: string;
   examType: string;
   createdAt: number;
+  patientName?: string | null;
+  doctorName?: string | null;
 }
 
 async function handler(
@@ -76,7 +79,17 @@ async function handler(
     }
   }
 
-  return { orders, total: Number(total) };
+  // Enrich with names from Supabase
+  const allWallets = orders.flatMap((o) => [o.patient, o.doctor]);
+  const nameMap = await resolveWalletNames(allWallets);
+
+  const enrichedOrders = orders.map((o) => ({
+    ...o,
+    patientName: nameMap.get(o.patient.toLowerCase()) ?? null,
+    doctorName: nameMap.get(o.doctor.toLowerCase()) ?? null,
+  }));
+
+  return { orders: enrichedOrders, total: Number(total) };
 }
 
 export const listOrdersByLab = withAuth(handler, {

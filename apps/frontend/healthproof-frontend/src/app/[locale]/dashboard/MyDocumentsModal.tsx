@@ -30,6 +30,7 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
   const [loading, setLoading] = useState(true);
   const [selectedDoc, setSelectedDoc] = useState<DocumentSecretRow | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [viewError, setViewError] = useState<string | null>(null);
 
   const { decrypt, decryptedFile, loading: decryptLoading, error: decryptError, clear } = useDocumentDecrypt();
 
@@ -53,15 +54,18 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
   function handleSelect(doc: DocumentSecretRow) {
     if (selectedDoc?.id === doc.id) {
       setSelectedDoc(null);
+      setViewError(null);
       clear();
       return;
     }
     setSelectedDoc(doc);
+    setViewError(null);
     clear();
   }
 
   async function handleView(doc: DocumentSecretRow) {
     setSelectedDoc(doc);
+    setViewError(null);
     clear();
     await performDecrypt(doc);
   }
@@ -86,16 +90,25 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
   }
 
   async function performDecrypt(doc: DocumentSecretRow, silent = false) {
-    if (!walletAddress || !userId) return null;
+    if (!walletAddress || !userId) {
+      if (!silent) setViewError(t("missingWallet") ?? "Wallet or user not available.");
+      return null;
+    }
     const wrappedKey =
       doc.encrypted_keys[walletAddress.toLowerCase()] ??
       doc.encrypted_keys[userId];
     if (!wrappedKey) {
-      if (!silent) sileo.error({ title: t("noKey"), description: t("noKeyDesc") });
+      if (!silent) {
+        setViewError(t("noKeyDesc") ?? "You don't have a decryption key for this document.");
+        sileo.error({ title: t("noKey"), description: t("noKeyDesc") });
+      }
       return null;
     }
     if (!doc.uploader_public_key) {
-      if (!silent) sileo.error({ title: t("noKey"), description: t("noUploaderKey") });
+      if (!silent) {
+        setViewError(t("noUploaderKey") ?? "Uploader public key is missing.");
+        sileo.error({ title: t("noKey"), description: t("noUploaderKey") });
+      }
       return null;
     }
     return await decrypt({
@@ -170,7 +183,7 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
                   </div>
                   <div className="text-xs text-slate-500 space-y-0.5">
                     <p className="font-mono text-[11px]">{formatAddress(doc.document_id)}</p>
-                    <p>{t("uploadedBy")}: {formatAddress(doc.uploader_wallet)}</p>
+                    <p>{t("uploadedBy")}: {doc.uploader_name || formatAddress(doc.uploader_wallet)}</p>
                   </div>
 
                   {/* Inline preview */}
@@ -179,8 +192,13 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
                       <FilePreview file={decryptedFile} />
                     </div>
                   )}
-                  {isSelected && decryptError && (
-                    <p className="mt-2 text-xs text-red-500">{decryptError}</p>
+                  {isSelected && (viewError || decryptError) && (
+                    <div className="mt-2 flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 border border-red-100">
+                      <svg className="h-4 w-4 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                      </svg>
+                      <p className="text-xs text-red-600">{viewError || decryptError}</p>
+                    </div>
                   )}
                 </div>
               );
