@@ -1,5 +1,7 @@
+import { Analytics } from "@vercel/analytics/next"
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+
 import "./globals.css";
 
 const manrope = Manrope({
@@ -36,6 +38,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${manrope.variable} antialiased`}>{children}</body>
+      <Analytics />
     </html>
   );
 }
