@@ -355,7 +355,8 @@ export default function EpisodesPage() {
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 mt-1">
-                      <span>{t("patient")}: <span className="font-mono">{ep.patient.slice(0, 8)}…{ep.patient.slice(-4)}</span></span>
+                      <span>{t("patient")}: {ep.patientName || `${ep.patient.slice(0, 8)}…${ep.patient.slice(-4)}`}</span>
+                      <span>{t("doctor")}: {ep.openedByName || `${ep.openedBy.slice(0, 8)}…${ep.openedBy.slice(-4)}`}</span>
                       <span>{t("createdAt")}: {new Date(ep.openedAt * 1000).toLocaleDateString()}</span>
                     </div>
                   </button>
@@ -376,8 +377,8 @@ export default function EpisodesPage() {
                   </button>
                 </div>
                 <DetailRow label={t("episodeId")} value={selectedEpisode.episodeId} />
-                <DetailRow label={t("patient")} value={`${selectedEpisode.patient.slice(0, 8)}…${selectedEpisode.patient.slice(-4)}`} />
-                <DetailRow label={t("doctor")} value={`${selectedEpisode.openedBy.slice(0, 8)}…${selectedEpisode.openedBy.slice(-4)}`} />
+                <DetailRow label={t("patient")} value={selectedEpisode.patientName || `${selectedEpisode.patient.slice(0, 8)}…${selectedEpisode.patient.slice(-4)}`} />
+                <DetailRow label={t("doctor")} value={selectedEpisode.openedByName || `${selectedEpisode.openedBy.slice(0, 8)}…${selectedEpisode.openedBy.slice(-4)}`} />
                 <DetailRow label={t("type")} value={selectedEpisode.episodeType} />
                 <DetailRow label={t("active")} value={selectedEpisode.active ? t("yes") : t("no")} />
                 <DetailRow label={t("createdAt")} value={new Date(selectedEpisode.openedAt * 1000).toLocaleString()} />

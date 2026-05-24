@@ -426,7 +426,8 @@ export default function OrdersPage() {
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 mt-1">
-                      <span>{t("patient")}: <span className="font-mono">{o.patient.slice(0, 8)}…{o.patient.slice(-4)}</span></span>
+                      <span>{t("patient")}: {o.patientName || `${o.patient.slice(0, 8)}…${o.patient.slice(-4)}`}</span>
+                      <span>{t("doctor")}: {o.doctorName || `${o.doctor.slice(0, 8)}…${o.doctor.slice(-4)}`}</span>
                       <span>{t("createdAt")}: {new Date(o.createdAt * 1000).toLocaleDateString()}</span>
                     </div>
                   </button>
@@ -446,8 +447,8 @@ export default function OrdersPage() {
                     ✕
                   </button>
                 </div>
-                <p className="text-xs text-slate-500">{t("patient")}: {selectedOrder.patient.slice(0, 8)}…{selectedOrder.patient.slice(-4)}</p>
-                <p className="text-xs text-slate-500">{t("doctor")}: {selectedOrder.doctor.slice(0, 8)}…{selectedOrder.doctor.slice(-4)}</p>
+                <p className="text-xs text-slate-500">{t("patient")}: {selectedOrder.patientName || `${selectedOrder.patient.slice(0, 8)}…${selectedOrder.patient.slice(-4)}`}</p>
+                <p className="text-xs text-slate-500">{t("doctor")}: {selectedOrder.doctorName || `${selectedOrder.doctor.slice(0, 8)}…${selectedOrder.doctor.slice(-4)}`}</p>
                 <p className="text-xs text-slate-500">{t("status")}: {selectedOrder.status === 0 ? t("statusPending") : selectedOrder.status === 1 ? t("statusAssigned") : selectedOrder.status === 2 ? t("statusCompleted") : t("statusCancelled")}</p>
               </div>
             )}

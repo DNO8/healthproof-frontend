@@ -215,8 +215,8 @@ export default function LabOrdersPage() {
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                  <span>{t("patient")}: <span className="font-mono">{truncateAddress(o.patient)}</span></span>
-                  <span>{t("doctor")}: <span className="font-mono">{truncateAddress(o.doctor)}</span></span>
+                  <span>{t("patient")}: {o.patientName || truncateAddress(o.patient)}</span>
+                  <span>{t("doctor")}: {o.doctorName || truncateAddress(o.doctor)}</span>
                   <span>{t("createdAt")}: {new Date(o.createdAt * 1000).toLocaleDateString()}</span>
                 </div>
                 {(o.status === 0 || o.status === 1) && (
