@@ -179,9 +179,9 @@ export default function SharedDocumentsPage() {
                 </div>
 
                 <div className="text-xs text-slate-500 space-y-1">
-                  <p>{t("patient")}: <span className="font-mono">{formatAddress(doc.patient_wallet)}</span></p>
+                  <p>{t("patient")}: {doc.patient_name || formatAddress(doc.patient_wallet)}</p>
                   {doc.uploader_wallet && (
-                    <p>{t("uploadedBy")}: <span className="font-mono">{formatAddress(doc.uploader_wallet)}</span></p>
+                    <p>{t("uploadedBy")}: {doc.uploader_name || formatAddress(doc.uploader_wallet)}</p>
                   )}
                   {doc.doc_created_at && (
                     <p>{t("uploadedOn")}: {new Date(doc.doc_created_at).toLocaleDateString()}</p>

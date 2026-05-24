@@ -28,6 +28,7 @@ export default function DocumentsPage() {
   const [selectedDoc, setSelectedDoc] = useState<DocumentSecretRow | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [viewError, setViewError] = useState<string | null>(null);
 
   const { decrypt, decryptedFile, loading: decryptLoading, error: decryptError, clear } = useDocumentDecrypt();
 
@@ -61,12 +62,14 @@ export default function DocumentsPage() {
   async function handleView(doc: DocumentSecretRow) {
     setSelectedDoc(doc);
     clear();
+    setViewError(null);
     setModalOpen(true);
     await performDecrypt(doc);
   }
 
   function closeModal() {
     setModalOpen(false);
+    setViewError(null);
     clear();
   }
 
@@ -90,16 +93,25 @@ export default function DocumentsPage() {
   }
 
   async function performDecrypt(doc: DocumentSecretRow, silent = false) {
-    if (!walletAddress || !userId) return null;
+    if (!walletAddress || !userId) {
+      if (!silent) setViewError(t("missingWallet") ?? "Wallet or user not available.");
+      return null;
+    }
     const wrappedKey =
       doc.encrypted_keys[walletAddress.toLowerCase()] ??
       doc.encrypted_keys[userId];
     if (!wrappedKey) {
-      if (!silent) sileo.error({ title: t("noKey"), description: t("noKeyDesc") });
+      if (!silent) {
+        setViewError(t("noKeyDesc") ?? "You don't have a decryption key for this document.");
+        sileo.error({ title: t("noKey"), description: t("noKeyDesc") });
+      }
       return null;
     }
     if (!doc.uploader_public_key) {
-      if (!silent) sileo.error({ title: t("noKey"), description: t("noUploaderKey") });
+      if (!silent) {
+        setViewError(t("noUploaderKey") ?? "Uploader public key is missing.");
+        sileo.error({ title: t("noKey"), description: t("noUploaderKey") });
+      }
       return null;
     }
     return await decrypt({
@@ -170,7 +182,7 @@ export default function DocumentsPage() {
                 </div>
 
                 <div className="text-xs text-slate-500 space-y-1">
-                  <p>{t("uploadedBy")}: {formatAddress(doc.uploader_wallet)}</p>
+                  <p>{t("uploadedBy")}: {doc.uploader_name || formatAddress(doc.uploader_wallet)}</p>
                 </div>
 
                 {isSelected && decryptError && (
@@ -221,8 +233,13 @@ export default function DocumentsPage() {
                 </div>
               ) : decryptedFile ? (
                 <FilePreview file={decryptedFile} />
-              ) : decryptError ? (
-                <p className="text-sm text-red-500 text-center py-12">{decryptError}</p>
+              ) : viewError || decryptError ? (
+                <div className="flex flex-col items-center justify-center h-64 gap-3">
+                  <svg className="h-8 w-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                  </svg>
+                  <p className="text-sm text-red-500 text-center px-4">{viewError || decryptError}</p>
+                </div>
               ) : (
                 <div className="flex items-center justify-center h-64">
                   <p className="text-sm text-slate-400">{t("loading")}</p>

@@ -7,8 +7,10 @@ import { useWallets } from "@privy-io/react-auth";
 import { createWalletClient, custom, keccak256, toHex } from "viem";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import { listPermissionsOnChain } from "@/actions/permissions/list-permissions-onchain";
-import { grantPermissionOnChain } from "@/actions/permissions/grant-permission-onchain";
 import { revokePermissionOnChain } from "@/actions/permissions/revoke-permission-onchain";
+import { createPermissionInvitation } from "@/actions/permissions/create-permission-invitation";
+import { listPermissionInvitations } from "@/actions/permissions/list-permission-invitations";
+import { respondPermissionInvitation } from "@/actions/permissions/respond-permission-invitation";
 import { listDocumentSecretsForWallet } from "@/actions/documents/get-document-secret";
 import type { DocumentSecretRow } from "@/actions/documents/get-document-secret";
 import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
@@ -48,7 +50,9 @@ export default function PermissionsPage() {
   const [expiresInMinutes, setExpiresInMinutes] = useState<number | "">("");
   const [grantLoading, setGrantLoading] = useState(false);
   const [revokeLoading, setRevokeLoading] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"list" | "grant">("list");
+  const [activeTab, setActiveTab] = useState<"list" | "grant" | "sent">("list");
+  const [sentInvitations, setSentInvitations] = useState<import("@/actions/permissions/list-permission-invitations").PermissionInvitation[]>([]);
+  const [loadingSent, setLoadingSent] = useState(false);
 
   async function load() {
     if (!walletAddress) return;
@@ -74,7 +78,8 @@ export default function PermissionsPage() {
   useEffect(() => {
     load();
     loadUserDocs();
-  }, [walletAddress]);
+    if (activeTab === "sent") loadSentInvitations();
+  }, [walletAddress, activeTab]);
 
   async function loadUserDocs() {
     if (!walletAddress) return;
@@ -89,7 +94,24 @@ export default function PermissionsPage() {
     }
   }
 
-  async function handleGrant() {
+  async function loadSentInvitations() {
+    if (!walletAddress) return;
+    setLoadingSent(true);
+    try {
+      const res = await listPermissionInvitations({ type: "sent", patientWallet: walletAddress });
+      if (res.success) {
+        setSentInvitations(res.data.invitations);
+      } else {
+        throw new Error(res.error);
+      }
+    } catch (e) {
+      sileo.error({ title: t("loadSentError") ?? "Error", description: String(e).slice(0, 120) });
+    } finally {
+      setLoadingSent(false);
+    }
+  }
+
+  async function handleSendInvitation() {
     if (!walletAddress || !granteeWallet.trim()) return;
 
     const activeWallet = wallets.find((w) => w.address);
@@ -108,7 +130,7 @@ export default function PermissionsPage() {
         ? BigInt(Math.floor(Date.now() / 1000) + Number(expiresInMinutes) * 60)
         : BigInt(0);
 
-      let lastTxHash = "";
+      const signedRequests: import("@/lib/metatx/types").SignedForwardRequest[] = [];
 
       for (const docId of docsToGrant) {
         const resourceId =
@@ -129,22 +151,11 @@ export default function PermissionsPage() {
           ],
           PermissionManagerAbi,
         );
-
-        const res = await grantPermissionOnChain({
-          request,
-          patientWallet: walletAddress,
-          granteeWallet: grantee,
-          documentId: docId === "all" ? "all" : docId,
-          scope,
-          expiresInMinutes: expiresInMinutes ? Number(expiresInMinutes) : undefined,
-        });
-        if (!res.success) {
-          throw new Error(res.error);
-        }
-        lastTxHash = res.data.txHash;
+        signedRequests.push(request);
       }
 
-      // Batch rewrap keys for broad scopes (FULL_ACCESS, INSTITUTION)
+      // Prepare encrypted keys
+      const encryptedKeys: Record<string, string> = {};
       if (scope >= 2 && docsToGrant.includes("all")) {
         const recipientPubKeyJwk = await getUserPublicKey(grantee);
         if (recipientPubKeyJwk) {
@@ -156,36 +167,54 @@ export default function PermissionsPage() {
             recipientPublicKeyJwk: recipientPubKeyJwk,
           });
           for (const r of results) {
-            await savePermissionKey({
-              document_id: r.documentId,
-              patient_wallet: walletAddress,
-              grantee_wallet: grantee,
-              encrypted_key: JSON.stringify(r.rewrapped),
-            });
+            encryptedKeys[r.documentId] = JSON.stringify(r.rewrapped);
           }
-          sileo.success({
-            title: t("batchRewrapSuccess") ?? "Keys rewrapped",
-            description: `${results.length} document(s) prepared for grantee.`,
-            duration: 3000,
-          });
         }
       }
 
+      const res = await createPermissionInvitation({
+        patientWallet: walletAddress,
+        granteeWallet: grantee,
+        documentIds: docsToGrant,
+        scope,
+        expiresAtUnix: Number(expiresAt),
+        signedRequests,
+        encryptedKeys: Object.keys(encryptedKeys).length > 0 ? encryptedKeys : undefined,
+      });
+
+      if (!res.success) {
+        throw new Error(res.error);
+      }
+
       sileo.success({
-        title: t("grantSuccess"),
-        description: `TX: ${lastTxHash.slice(0, 16)}…`,
+        title: t("invitationSent") ?? "Invitation sent",
+        description: t("invitationSentDesc") ?? `Permission invitation sent to ${grantee.slice(0, 10)}…`,
       });
       setGranteeWallet("");
       setSelectedDocs([]);
       setSelectAllDocs(false);
       setScope(0);
       setExpiresInMinutes("");
-      setActiveTab("list");
-      await load();
+      setActiveTab("sent");
+      await loadSentInvitations();
     } catch (e) {
       sileo.error({ title: t("grantError"), description: String(e).slice(0, 120) });
     } finally {
       setGrantLoading(false);
+    }
+  }
+
+  async function handleCancelInvitation(id: string) {
+    try {
+      const res = await respondPermissionInvitation({ invitationId: id, action: "cancel" });
+      if (res.success) {
+        sileo.success({ title: t("cancelSuccess") ?? "Cancelled", description: t("cancelSuccessDesc") ?? "Invitation cancelled." });
+        await loadSentInvitations();
+      } else {
+        throw new Error(res.error);
+      }
+    } catch (e) {
+      sileo.error({ title: t("cancelError") ?? "Error", description: String(e).slice(0, 120) });
     }
   }
 
@@ -253,6 +282,15 @@ export default function PermissionsPage() {
           >
             {t("tabGrant")}
           </button>
+          <button
+            className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+              activeTab === "sent" ? "neu-pressed text-slate-800" : "neu-surface text-slate-500"
+            }`}
+            onClick={() => setActiveTab("sent")}
+            type="button"
+          >
+            {t("tabSent") ?? "Sent"}
+          </button>
         </div>
       </div>
 
@@ -300,9 +338,53 @@ export default function PermissionsPage() {
         </div>
       )}
 
+      {activeTab === "sent" && (
+        <div className="neu-shell border border-white/70 p-6 sm:p-8">
+          <h2 className="mb-4 text-sm font-semibold text-slate-700">{t("sentInvitations") ?? "Sent Invitations"}</h2>
+          {loadingSent ? (
+            <SkeletonList count={3} />
+          ) : sentInvitations.length === 0 ? (
+            <EmptyState icon={ShieldOff} title={t("noSentInvitations") ?? "No invitations sent yet."} />
+          ) : (
+            <div className="space-y-3">
+              {sentInvitations.map((inv) => (
+                <div key={inv.id} className="neu-inset rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 truncate">
+                      {t("to") ?? "To"}: {inv.grantee_wallet.slice(0, 10)}…{inv.grantee_wallet.slice(-4)}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {t("scope")}: {inv.scope} · {inv.document_ids.length} {t("documents") ?? "docs"}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {inv.status === "pending" && <span className="text-amber-600">{t("pending") ?? "Pending"}</span>}
+                      {inv.status === "accepted" && <span className="text-green-600">{t("accepted") ?? "Accepted"}</span>}
+                      {inv.status === "rejected" && <span className="text-red-500">{t("rejected") ?? "Rejected"}</span>}
+                      {inv.status === "cancelled" && <span className="text-slate-500">{t("cancelled") ?? "Cancelled"}</span>}
+                      {inv.status === "expired" && <span className="text-slate-500">{t("expired") ?? "Expired"}</span>}
+                      {inv.expires_at_unix > 0 && ` · ${t("expires")}: ${new Date(inv.expires_at_unix * 1000).toLocaleString()}`}
+                    </p>
+                  </div>
+                  {inv.status === "pending" && (
+                    <button
+                      className="neu-surface hover:neu-pressed shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold text-red-500 transition-all"
+                      onClick={() => handleCancelInvitation(inv.id)}
+                      type="button"
+                    >
+                      {t("cancel") ?? "Cancel"}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === "grant" && (
         <div className="neu-shell border border-white/70 p-6 sm:p-8 space-y-4">
           <h2 className="text-sm font-semibold text-slate-700">{t("grantTitle")}</h2>
+          <p className="text-xs text-slate-500">{t("invitationNote") ?? "The recipient must accept the invitation before the permission is active on-chain."}</p>
           <div>
             <UserSelect
               value={granteeWallet}
@@ -394,10 +476,10 @@ export default function PermissionsPage() {
           <button
             className="neu-surface hover:neu-pressed w-full rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition-all disabled:opacity-50"
             disabled={grantLoading || !granteeWallet.trim()}
-            onClick={handleGrant}
+            onClick={handleSendInvitation}
             type="button"
           >
-            {grantLoading ? t("granting") : t("grantButton")}
+            {grantLoading ? t("sending") ?? "Sending…" : t("sendInvitation") ?? "Send Invitation"}
           </button>
         </div>
       )}

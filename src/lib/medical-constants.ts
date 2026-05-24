@@ -40,6 +40,9 @@ export interface OnChainEpisode {
   classification: string;
   openedAt: number;
   active: boolean;
+  patientName?: string | null;
+  openedByName?: string | null;
+  institutionName?: string | null;
 }
 
 // ─── On-chain Permission (matches PermissionManager.Permission) ───

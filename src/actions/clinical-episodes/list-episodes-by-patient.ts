@@ -5,6 +5,7 @@ import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import ClinicalEpisodeRegistryAbi from "@/lib/abis/ClinicalEpisodeRegistry.json";
 import { withAuth } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { resolveWalletNames } from "@/lib/supabase/resolve-wallet-names";
 import type { OnChainEpisode } from "@/lib/medical-constants";
 
 interface ListEpisodesParams {
@@ -68,7 +69,20 @@ async function handler(
     }
   }
 
-  return { episodes, total: Number(total) };
+  // Enrich with names from Supabase
+  const allWallets = episodes.flatMap((ep) => [ep.patient, ep.openedBy, ep.institution]);
+  const nameMap = await resolveWalletNames(allWallets);
+
+  const enriched = episodes.map((ep) => ({
+    ...ep,
+    patientName: nameMap.get(ep.patient.toLowerCase()) ?? null,
+    openedByName: nameMap.get(ep.openedBy.toLowerCase()) ?? null,
+    institutionName: ep.institution && ep.institution !== "0x0000000000000000000000000000000000000000"
+      ? (nameMap.get(ep.institution.toLowerCase()) ?? null)
+      : null,
+  }));
+
+  return { episodes: enriched, total: Number(total) };
 }
 
 export const listEpisodesByPatient = withAuth(handler, {
