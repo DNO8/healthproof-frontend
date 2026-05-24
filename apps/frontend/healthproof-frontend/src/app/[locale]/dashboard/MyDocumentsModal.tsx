@@ -4,11 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { usePrivy } from "@privy-io/react-auth";
-import { listDocumentSecretsForWallet } from "@/actions/get-document-secret";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
-import { useDocumentDecrypt } from "@/hooks/useDocumentDecrypt";
+import { listDocumentSecretsForWallet } from "@/actions/documents/get-document-secret";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { useDocumentDecrypt } from "@/hooks/documents/useDocumentDecrypt";
 import { FilePreview, getExtensionFromMime } from "@/components/documents/FilePreview";
-import type { DocumentSecretRow } from "@/actions/get-document-secret";
+import type { DocumentSecretRow } from "@/actions/documents/get-document-secret";
+import { X } from "lucide-react";
 
 type MyDocumentsModalProps = {
   onClose: () => void;
@@ -118,7 +119,7 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
             onClick={onClose}
             type="button"
           >
-            ✕
+            <X className="h-5 w-5" />
           </button>
         </div>
 
@@ -140,7 +141,12 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-slate-800">{t("documentTitle")}</p>
+                      <p className="text-sm font-semibold text-slate-800">
+                        {doc.file_name ?? t("documentTitle")}
+                      </p>
+                      <p className="text-[10px] font-mono text-slate-400">
+                        {formatAddress(doc.document_id)}
+                      </p>
                       <p className="text-[10px] text-slate-400">{new Date(doc.created_at).toLocaleDateString()}</p>
                     </div>
                     <div className="flex gap-2">

@@ -13,13 +13,13 @@ import {
   getKeyPair,
   deleteKeyPair,
 } from "@/services/encryption/keystore";
-import { updatePublicKey } from "@/actions/update-public-key";
-import { getUserPublicKey } from "@/actions/get-user-public-key";
-import { getUserWithBackup } from "@/actions/get-user-with-backup";
-import { hasEncryptedData } from "@/actions/check-user-encrypted-data";
-import { clearDbUserCache } from "@/hooks/useDbUser";
+import { updatePublicKey } from "@/actions/auth/update-public-key";
+import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
+import { getUserWithBackup } from "@/actions/auth/get-user-with-backup";
+import { hasEncryptedData } from "@/actions/documents/check-user-encrypted-data";
+import { clearDbUserCache } from "@/hooks/auth/useDbUser";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
-import { saveKeyShare } from "@/actions/save-key-share";
+import { saveKeyShare } from "@/actions/auth/save-key-share";
 import {
   generateShares,
   reconstructSecret,
@@ -31,7 +31,7 @@ import {
   encryptPrivateKey,
   decryptPrivateKey,
 } from "@/services/encryption/key-backup";
-import { saveEncryptedPrivateKey } from "@/actions/save-encrypted-private-key";
+import { saveEncryptedPrivateKey } from "@/actions/auth/save-encrypted-private-key";
 
 const SYNCED_KEY = "hp_keys_synced";
 

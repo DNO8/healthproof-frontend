@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { setupDeployerAsCertifier } from "@/actions/setup-deployer-certifier";
+import { setupDeployerAsCertifier } from "@/actions/admin/setup-deployer-certifier";
 
 /**
  * One-time setup endpoint: registers the deployer as CERTIFIER on-chain.

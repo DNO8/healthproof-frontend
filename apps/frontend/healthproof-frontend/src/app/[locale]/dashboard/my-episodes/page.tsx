@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
-import { listEpisodesByPatient } from "@/actions/list-episodes-by-patient";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
+import { listEpisodesByPatient } from "@/actions/clinical-episodes/list-episodes-by-patient";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { truncateAddress } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { OnChainEpisode } from "@/lib/medical-constants";

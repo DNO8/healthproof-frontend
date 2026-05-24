@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useWallets } from "@privy-io/react-auth";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { QRCodeSVG } from "qrcode.react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
@@ -14,16 +14,16 @@ import { buildPermissionPayload } from "@/features/permissions";
 import {
   listDocumentSecretsForWallet,
   type DocumentSecretRow,
-} from "@/actions/get-document-secret";
-import { getDbUser } from "@/actions/get-user";
-import { grantPermissionOnChain } from "@/actions/grant-permission-onchain";
-import { getUserPublicKey } from "@/actions/get-user-public-key";
+} from "@/actions/documents/get-document-secret";
+import { getDbUser } from "@/actions/auth/get-user";
+import { grantPermissionOnChain } from "@/actions/permissions/grant-permission-onchain";
+import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
 import { rewrapKeyForRecipient } from "@/services/encryption/rewrap";
 import { exportPublicKey } from "@/services/encryption/ecdh";
 import { getKeyPair } from "@/services/encryption/keystore";
 import { UserSelect } from "@/components/forms/UserSelect";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
-import { savePermissionKey } from "@/actions/save-permission-key";
+import { savePermissionKey } from "@/actions/permissions/save-permission-key";
 import { signMetaTransaction } from "@/lib/metatx/forwarder";
 import PermissionManagerArtifact from "@/lib/abis/PermissionManager.json";
 

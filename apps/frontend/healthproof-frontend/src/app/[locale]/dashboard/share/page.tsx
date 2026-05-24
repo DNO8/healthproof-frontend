@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { QRCodeSVG } from "qrcode.react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
@@ -14,15 +14,16 @@ import { buildPermissionPayload } from "@/features/permissions";
 import {
   listDocumentSecretsForWallet,
   type DocumentSecretRow,
-} from "@/actions/get-document-secret";
-import { grantPermissionOnChain } from "@/actions/grant-permission-onchain";
-import { getUserPublicKey } from "@/actions/get-user-public-key";
+} from "@/actions/documents/get-document-secret";
+import { grantPermissionOnChain } from "@/actions/permissions/grant-permission-onchain";
+import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
 import { rewrapKeyForRecipient } from "@/services/encryption/rewrap";
 import { exportPublicKey } from "@/services/encryption/ecdh";
 import { getKeyPair } from "@/services/encryption/keystore";
 import { UserSelect } from "@/components/forms/UserSelect";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
-import { savePermissionKey } from "@/actions/save-permission-key";
+import { Stethoscope, FlaskConical, Building2 } from "lucide-react";
+import { savePermissionKey } from "@/actions/permissions/save-permission-key";
 import { signMetaTransaction } from "@/lib/metatx/forwarder";
 import PermissionManagerArtifact from "@/lib/abis/PermissionManager.json";
 
@@ -37,11 +38,11 @@ async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<
 const GRANTED_ROLES: {
   key: GrantedToRole;
   labelKey: string;
-  icon: string;
+  Icon: React.ComponentType<{ className?: string }>;
 }[] = [
-  { key: "doctor", labelKey: "doctor", icon: "🩺" },
-  { key: "lab", labelKey: "laboratory", icon: "🔬" },
-  { key: "institution", labelKey: "medicalCenter", icon: "🏥" },
+  { key: "doctor", labelKey: "doctor", Icon: Stethoscope },
+  { key: "lab", labelKey: "laboratory", Icon: FlaskConical },
+  { key: "institution", labelKey: "medicalCenter", Icon: Building2 },
 ];
 
 export default function SharePage() {
@@ -247,7 +248,7 @@ export default function SharePage() {
                   onClick={() => setSelectedResult(r)}
                   type="button"
                 >
-                  <span className="font-mono text-xs text-slate-500">{r.document_id.slice(0, 20)}…</span>
+                  <span className="font-semibold text-slate-700">{r.file_name ?? r.document_id.slice(0, 20) + "…"}</span>
                   <span className="ml-2 text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString()}</span>
                 </button>
               ))}
@@ -270,7 +271,7 @@ export default function SharePage() {
                 onClick={() => setGrantedTo(role.key)}
                 type="button"
               >
-                <span className="mr-1">{role.icon}</span>
+                <role.Icon className="mr-1 h-4 w-4" />
                 {t(role.labelKey)}
               </button>
             ))}

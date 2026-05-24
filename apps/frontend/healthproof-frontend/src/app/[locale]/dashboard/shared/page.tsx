@@ -5,13 +5,15 @@ import { useSearchParams } from "next/navigation";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { usePrivy } from "@privy-io/react-auth";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
-import { listSharedDocuments } from "@/actions/list-shared-documents";
-import { getUserPublicKey } from "@/actions/get-user-public-key";
-import { checkAccessOnChain } from "@/actions/check-access-onchain";
-import { useDocumentDecrypt } from "@/hooks/useDocumentDecrypt";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { listSharedDocuments } from "@/actions/documents/list-shared-documents";
+import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
+import { checkAccessOnChain } from "@/actions/permissions/check-access-onchain";
+import { useDocumentDecrypt } from "@/hooks/documents/useDocumentDecrypt";
 import { FilePreview } from "@/components/documents/FilePreview";
-import type { SharedDocument } from "@/actions/list-shared-documents";
+import { EmptyState, SkeletonList } from "@/components/ui";
+import { FileText } from "lucide-react";
+import type { SharedDocument } from "@/actions/documents/list-shared-documents";
 
 function formatAddress(addr: string): string {
   if (!addr || addr.length < 10) return addr;
@@ -136,11 +138,12 @@ export default function SharedDocumentsPage() {
       <h1 className="mb-6 text-2xl font-bold text-slate-800">{t("title")}</h1>
 
       {loading ? (
-        <p className="py-8 text-center text-sm text-slate-400">{t("loading")}</p>
+        <SkeletonList count={3} />
       ) : docs.length === 0 ? (
-        <div className="neu-shell border border-white/70 p-8 text-center">
-          <p className="text-sm text-slate-400">{t("empty")}</p>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title={t("empty")}
+        />
       ) : (
         <div className="space-y-4">
           {docs.map((doc) => {
@@ -155,7 +158,12 @@ export default function SharedDocumentsPage() {
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">{t("documentTitle")}</p>
+                    <p className="text-sm font-semibold text-slate-800">
+                      {doc.file_name ?? t("documentTitle")}
+                    </p>
+                    <p className="text-[10px] font-mono text-slate-400 mt-0.5">
+                      {formatAddress(doc.document_id)}
+                    </p>
                     <p className="text-[10px] text-slate-400 mt-0.5">
                       {t("sharedOn")}: {new Date(doc.created_at).toLocaleDateString()}
                     </p>

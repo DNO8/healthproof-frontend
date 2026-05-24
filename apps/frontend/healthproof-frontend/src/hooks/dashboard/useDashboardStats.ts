@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { getDashboardStats, type DashboardStats } from "@/actions/dashboard-stats";
+import { getDashboardStats, type DashboardStats } from "@/actions/dashboard/dashboard-stats";
 import type { UserRole } from "@/types/domain.types";
 
 const CACHE_KEY = "hp_dashboard_stats";

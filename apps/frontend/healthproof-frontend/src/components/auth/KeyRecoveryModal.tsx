@@ -6,7 +6,7 @@ import { sileo } from "sileo";
 import { usePrivy } from "@privy-io/react-auth";
 import { Modal } from "@/components/ui/Modal";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
-import { getUserWithBackup } from "@/actions/get-user-with-backup";
+import { getUserWithBackup } from "@/actions/auth/get-user-with-backup";
 import {
   decryptPrivateKey,
   createRecoveryPassword,

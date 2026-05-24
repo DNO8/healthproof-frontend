@@ -5,10 +5,10 @@ import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import type { EncryptedQRData } from "@/types/domain.types";
 import { isExpired } from "@/features/permissions";
-import { savePermissionKey } from "@/actions/save-permission-key";
-import { checkAccessOnChain } from "@/actions/check-access-onchain";
+import { savePermissionKey } from "@/actions/permissions/save-permission-key";
+import { checkAccessOnChain } from "@/actions/permissions/check-access-onchain";
 import { Modal } from "@/components/ui/Modal";
-import { useDocumentDecrypt } from "@/hooks/useDocumentDecrypt";
+import { useDocumentDecrypt } from "@/hooks/documents/useDocumentDecrypt";
 import { FilePreview, getExtensionFromMime } from "@/components/documents/FilePreview";
 
 type ScanQRModalProps = {

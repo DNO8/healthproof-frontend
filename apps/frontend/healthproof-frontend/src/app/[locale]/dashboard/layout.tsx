@@ -3,9 +3,9 @@
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
-import { useOnChainRole } from "@/hooks/useOnChainRole";
-import { useDbUser } from "@/hooks/useDbUser";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
+import { useDbUser } from "@/hooks/auth/useDbUser";
 import type { UserRole } from "@/types/domain.types";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";

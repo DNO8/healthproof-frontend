@@ -1,7 +1,7 @@
 "use client";
 
 import { useWallets } from "@privy-io/react-auth";
-import { useDbUser } from "@/hooks/useDbUser";
+import { useDbUser } from "@/hooks/auth/useDbUser";
 
 /**
  * Returns the best available wallet address for the current user.

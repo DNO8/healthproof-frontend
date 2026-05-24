@@ -40,7 +40,6 @@ export type RoleConfig = {
   key: UserRole;
   label: string;
   description: string;
-  icon: string;
 };
 
 export const ROLES: RoleConfig[] = [
@@ -49,19 +48,16 @@ export const ROLES: RoleConfig[] = [
     label: "Patient",
     description:
       "Sovereignty over your medical history. Delegate access via QR.",
-    icon: "🩺",
   },
   {
     key: "doctor",
     label: "Doctor",
     description: "Validate results and manage medical orders.",
-    icon: "🏥",
   },
   {
     key: "lab",
     label: "Laboratory",
     description: "Issue verifiable clinical evidence and test results.",
-    icon: "🔬",
   },
 ];
 

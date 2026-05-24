@@ -6,7 +6,7 @@ import { sileo } from "sileo";
 import { usePrivy } from "@privy-io/react-auth";
 import { useTranslations } from "next-intl";
 import type { UserRole } from "@/types/domain.types";
-import { clearDbUserCache } from "@/hooks/useDbUser";
+import { clearDbUserCache } from "@/hooks/auth/useDbUser";
 import { LINKS_BY_ROLE } from "@/lib/navigation";
 
 interface DashboardSidebarProps {

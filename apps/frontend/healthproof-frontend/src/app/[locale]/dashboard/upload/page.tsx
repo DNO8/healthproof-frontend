@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { createWalletClient, custom, keccak256, toHex } from "viem";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
@@ -13,13 +13,14 @@ import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
 import { uploadHybridEncryptedFile } from "@/services/storage/upload";
 import { getKeyPair } from "@/services/encryption/keystore";
 import { exportPublicKey } from "@/services/encryption/ecdh";
-import { getUserPublicKey } from "@/actions/get-user-public-key";
-import { getDbUser } from "@/actions/get-user";
-import { saveDocumentSecret } from "@/actions/save-document-secret";
-import { registerDocumentOnChain } from "@/actions/register-document-onchain";
-import { updateOrderStatusOnChain } from "@/actions/medical-orders-onchain";
+import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
+import { getDbUser } from "@/actions/auth/get-user";
+import { saveDocumentSecret } from "@/actions/documents/save-document-secret";
+import { registerDocumentOnChain } from "@/actions/documents/register-document-onchain";
+import { updateOrderStatusOnChain } from "@/actions/medical-orders/medical-orders-onchain";
 import { UserSelect } from "@/components/forms/UserSelect";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
+import { Upload } from "lucide-react";
 
 export default function UploadPage() {
   const t = useTranslations("dashboard.upload");
@@ -80,6 +81,7 @@ export default function UploadPage() {
 
       await saveDocumentSecret({
         document_id: uploadResult.ipfs.cid,
+        file_name: file.name,
         uploader_wallet: labWallet,
         patient_wallet: patientId.trim(),
         iv: uploadResult.iv,
@@ -189,7 +191,7 @@ export default function UploadPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              <span className="text-3xl">📁</span>
+              <Upload className="h-8 w-8 text-sky-600 mx-auto" />
               <p className="text-sm text-slate-600">{t("dropOrClick")}</p>
               <p className="text-xs text-slate-400">{t("fileTypes")}</p>
             </div>

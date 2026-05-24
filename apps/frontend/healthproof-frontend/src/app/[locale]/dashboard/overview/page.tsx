@@ -3,14 +3,17 @@
 import { useTranslations } from "next-intl";
 import type { UserRole } from "@/types/domain.types";
 import { ROLES } from "@/types/domain.types";
-import { useDbUser } from "@/hooks/useDbUser";
-import { useOnChainRole } from "@/hooks/useOnChainRole";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
-import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useDbUser } from "@/hooks/auth/useDbUser";
+import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { useDashboardStats } from "@/hooks/dashboard/useDashboardStats";
 import { WelcomeToast } from "../WelcomeToast";
 import { ProfileBanner } from "../ProfileBanner";
 import { DashboardActions } from "../DashboardActions";
 import { usePrivy } from "@privy-io/react-auth";
+import { ROLE_ICONS } from "@/lib/icons";
+import { useRouter } from "next/navigation";
+import { ArrowRight } from "lucide-react";
 
 type MetricKey =
   | "myDocuments"
@@ -37,9 +40,22 @@ const ROLE_DESC_KEYS: Partial<Record<UserRole, "patient" | "laboratory" | "docto
   admin: "doctor",
 };
 
+const METRIC_ROUTES: Record<MetricKey, string> = {
+  myDocuments: "/dashboard/documents",
+  activePermissions: "/dashboard/permissions",
+  verifications: "/dashboard/scan",
+  testsPerformed: "/dashboard/lab-orders",
+  resultsUploaded: "/dashboard/upload",
+  pendingOrders: "/dashboard/lab-orders",
+  ordersIssued: "/dashboard/orders",
+  verifiedResults: "/dashboard/shared",
+  activePatients: "/dashboard/episodes",
+};
+
 export default function OverviewPage() {
   const t = useTranslations("dashboard");
   const tRoles = useTranslations("roles");
+  const router = useRouter();
   const { user } = usePrivy();
   const { dbUser } = useDbUser();
   const walletAddress = useWalletAddress();
@@ -77,7 +93,10 @@ export default function OverviewPage() {
       {/* Header */}
       <div className="neu-shell border border-white/70 p-8 sm:p-10">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">{roleConfig?.icon}</span>
+          {(() => {
+            const Icon = ROLE_ICONS[effectiveRole];
+            return Icon ? <Icon className="h-6 w-6 text-sky-600" /> : null;
+          })()}
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">
               {roleLabel} Dashboard
@@ -103,10 +122,18 @@ export default function OverviewPage() {
         {/* Metrics */}
         <div className="mt-8 grid gap-5 sm:grid-cols-3">
           {metricKeys.map((key) => (
-            <div className="neu-surface rounded-2xl p-6" key={key}>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                {t(`metrics.${key}`)}
-              </p>
+            <button
+              className="neu-surface hover:neu-pressed cursor-pointer rounded-2xl p-6 text-left transition-all duration-200"
+              key={key}
+              onClick={() => router.push(METRIC_ROUTES[key])}
+              type="button"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                  {t(`metrics.${key}`)}
+                </p>
+                <ArrowRight className="h-4 w-4 text-slate-300 transition-colors group-hover:text-sky-500" />
+              </div>
               <p className="mt-2 text-2xl font-bold text-slate-800">
                 {statsLoading ? (
                   <span className="inline-block h-6 w-10 animate-pulse rounded-md bg-slate-200" />
@@ -114,7 +141,7 @@ export default function OverviewPage() {
                   stats[key] ?? 0
                 )}
               </p>
-            </div>
+            </button>
           ))}
         </div>
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
-import { registerModuleOnChain, upgradeModuleOnChain, getModuleOnChain, getKernelInfoOnChain } from "@/actions/kernel-admin-onchain";
+import { registerModuleOnChain, upgradeModuleOnChain, getModuleOnChain, getKernelInfoOnChain } from "@/actions/admin/kernel-admin-onchain";
 
 export default function KernelPage() {
   const t = useTranslations("dashboard.kernel");

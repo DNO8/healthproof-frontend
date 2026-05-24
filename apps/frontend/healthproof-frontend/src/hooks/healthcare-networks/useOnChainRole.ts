@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { getRoleOnChain } from "@/actions/register-entity-onchain";
+import { getRoleOnChain } from "@/actions/healthcare-networks/register-entity-onchain";
 import { CONTRACT_TO_ROLE, type UserRole } from "@/types/domain.types";
 
 const CACHE_KEY = "hp_onchain_role";

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
-import { pauseProtocol, resumeProtocol, isProtocolPaused } from "@/actions/admin-onchain";
+import { pauseProtocol, resumeProtocol, isProtocolPaused } from "@/actions/admin/admin-onchain";
 
 export default function ProtocolPage() {
   const t = useTranslations("dashboard.protocol");

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { checkRpcHealth } from "@/actions/check-rpc-health";
+import { checkRpcHealth } from "@/actions/admin/check-rpc-health";
 
 interface RpcHealthState {
   checked: boolean;

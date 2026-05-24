@@ -10,7 +10,7 @@ import {
   usePathname as useIntlPathname,
 } from "@/i18n/navigation";
 import { useUiStore } from "@/state/ui.store";
-import { clearDbUserCache } from "@/hooks/useDbUser";
+import { clearDbUserCache } from "@/hooks/auth/useDbUser";
 
 export function Nav() {
   const t = useTranslations("nav");

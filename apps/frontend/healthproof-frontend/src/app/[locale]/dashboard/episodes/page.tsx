@@ -10,13 +10,16 @@ import {
   openEpisodeOnChain,
   closeEpisodeOnChain,
   getEpisodeOnChain,
-} from "@/actions/clinical-episodes-onchain";
-import { listEpisodesByDoctor } from "@/actions/list-episodes-by-doctor";
+} from "@/actions/clinical-episodes/clinical-episodes-onchain";
+import { listEpisodesByDoctor } from "@/actions/clinical-episodes/list-episodes-by-doctor";
 import { signGatewayMetaTx } from "@/lib/metatx/forwarder";
 import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import type { OnChainEpisode } from "@/lib/medical-constants";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { UserSelect } from "@/components/forms/UserSelect";
+import { EmptyState, SkeletonList } from "@/components/ui";
+import { FolderOpen, Copy } from "lucide-react";
+import { truncateAddress } from "@/lib/utils";
 
 const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -283,13 +286,29 @@ export default function EpisodesPage() {
             <p className="font-semibold">{t("openSuccess")}</p>
           </div>
           <div className="space-y-2 text-xs text-slate-600">
-            <div>
+            <div className="flex items-center gap-2">
               <span className="font-medium">{t("episodeIdLabel")}:</span>{" "}
-              <code className="break-all rounded bg-slate-100 px-1 py-0.5 text-[11px]">{result.episodeId}</code>
+              <code className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-mono">{truncateAddress(result.episodeId)}</code>
+              <button
+                className="text-slate-400 hover:text-sky-600 transition"
+                onClick={() => navigator.clipboard.writeText(result.episodeId)}
+                type="button"
+                title={t("copy")}
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </button>
             </div>
-            <div>
+            <div className="flex items-center gap-2">
               <span className="font-medium">TX:</span>{" "}
-              <code className="break-all rounded bg-slate-100 px-1 py-0.5 text-[11px]">{result.txHash}</code>
+              <code className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-mono">{truncateAddress(result.txHash)}</code>
+              <button
+                className="text-slate-400 hover:text-sky-600 transition"
+                onClick={() => navigator.clipboard.writeText(result.txHash)}
+                type="button"
+                title={t("copy")}
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
           <button
@@ -308,9 +327,9 @@ export default function EpisodesPage() {
           <div className="neu-shell border border-white/70 p-6 sm:p-8">
             <h2 className="text-sm font-semibold text-slate-700 mb-4">{t("myEpisodes")}</h2>
             {loadingEpisodes ? (
-              <p className="py-8 text-center text-sm text-slate-400">{t("loading")}</p>
+              <SkeletonList count={3} />
             ) : episodes.length === 0 ? (
-              <p className="py-8 text-center text-sm text-slate-400">{t("empty")}</p>
+              <EmptyState icon={FolderOpen} title={t("empty")} />
             ) : (
               <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
                 {episodes.map((ep) => (

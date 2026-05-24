@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { sileo } from "sileo";
 import { useLocale, useTranslations } from "next-intl";
 import { ROLES, type UserRole } from "@/types/domain.types";
+import { ROLE_ICONS } from "@/lib/icons";
 
 export default function AuthPage() {
   const t = useTranslations("auth");
@@ -189,7 +190,10 @@ export default function AuthPage() {
                           onClick={() => setSelectedRole(role.key)}
                           type="button"
                         >
-                          <span className="text-2xl">{role.icon}</span>
+                          {(() => {
+                            const Icon = ROLE_ICONS[role.key];
+                            return Icon ? <Icon className="h-6 w-6 text-sky-600" /> : null;
+                          })()}
                           <span className="text-[11px] font-semibold leading-tight">
                             {roleLabels[role.key]?.label}
                           </span>

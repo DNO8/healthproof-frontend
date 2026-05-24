@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import {
   listUsersByOnChainRole,
   type FilteredUserOption,
-} from "@/actions/list-users-by-onchain-role";
+} from "@/actions/healthcare-networks/list-users-by-onchain-role";
 import type { UserRole } from "@/types/domain.types";
 
 export type UserSelectProps = {

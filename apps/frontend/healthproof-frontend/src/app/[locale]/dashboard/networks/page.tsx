@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
-import { createNetworkOnChain, registerInstitutionOnChain, verifyInstitutionOnChain } from "@/actions/healthcare-networks-onchain";
+import { createNetworkOnChain, registerInstitutionOnChain, verifyInstitutionOnChain } from "@/actions/healthcare-networks/healthcare-networks-onchain";
 
 export default function NetworksPage() {
   const t = useTranslations("dashboard.networks");

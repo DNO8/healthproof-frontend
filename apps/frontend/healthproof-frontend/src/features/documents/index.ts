@@ -2,10 +2,10 @@
 
 export {
   registerDocumentOnChain as registerDocument,
-} from "@/actions/register-document-onchain";
+} from "@/actions/documents/register-document-onchain";
 
 export {
   listDocumentSecretsForWallet as listDocuments,
   getDocumentSecret as getDocument,
   type DocumentSecretRow,
-} from "@/actions/get-document-secret";
+} from "@/actions/documents/get-document-secret";

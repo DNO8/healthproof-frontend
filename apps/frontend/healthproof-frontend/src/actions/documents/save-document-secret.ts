@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function saveDocumentSecret(data: {
   document_id: string;
+  file_name?: string;
   uploader_wallet: string;
   patient_wallet: string;
   iv: string;
@@ -14,6 +15,7 @@ export async function saveDocumentSecret(data: {
 
   const { error } = await supabase.from("document_secrets").insert({
     document_id: data.document_id,
+    file_name: data.file_name ?? null,
     uploader_wallet: data.uploader_wallet.toLowerCase(),
     patient_wallet: data.patient_wallet.toLowerCase(),
     iv: data.iv,

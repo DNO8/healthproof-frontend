@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export interface DocumentSecretRow {
   id: string;
   document_id: string;
+  file_name: string | null;
   uploader_wallet: string;
   patient_wallet: string;
   iv: string;
@@ -21,7 +22,7 @@ export async function getDocumentSecret(
   const { data, error } = await supabase
     .from("document_secrets")
     .select(
-      "id, document_id, uploader_wallet, patient_wallet, iv, encrypted_keys, uploader_public_key, created_at",
+      "id, document_id, file_name, uploader_wallet, patient_wallet, iv, encrypted_keys, uploader_public_key, created_at",
     )
     .eq("document_id", documentId)
     .single();
@@ -42,7 +43,7 @@ export async function listDocumentSecretsForWallet(
   const { data, error } = await supabase
     .from("document_secrets")
     .select(
-      "id, document_id, uploader_wallet, patient_wallet, iv, encrypted_keys, uploader_public_key, created_at",
+      "id, document_id, file_name, uploader_wallet, patient_wallet, iv, encrypted_keys, uploader_public_key, created_at",
     )
     .or(`patient_wallet.eq.${w},uploader_wallet.eq.${w}`)
     .order("created_at", { ascending: false });

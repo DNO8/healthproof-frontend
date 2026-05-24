@@ -6,8 +6,8 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useTranslations } from "next-intl";
 import type { EncryptedQRData } from "@/types/domain.types";
 import { isExpired } from "@/features/permissions";
-import { savePermissionKey } from "@/actions/save-permission-key";
-import { checkAccessOnChain } from "@/actions/check-access-onchain";
+import { savePermissionKey } from "@/actions/permissions/save-permission-key";
+import { checkAccessOnChain } from "@/actions/permissions/check-access-onchain";
 import { QRScanner } from "@/components/scanner/QRScanner";
 import { sileo } from "sileo";
 

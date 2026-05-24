@@ -1,6 +1,6 @@
 "use client";
 
-import { useRpcHealth } from "@/hooks/useRpcHealth";
+import { useRpcHealth } from "@/hooks/admin/useRpcHealth";
 
 export function RpcHealthBanner() {
   const { checked, healthy } = useRpcHealth();

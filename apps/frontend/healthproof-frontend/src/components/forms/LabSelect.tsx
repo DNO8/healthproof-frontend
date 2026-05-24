@@ -6,7 +6,7 @@ import {
   listLabsWithNetwork,
   getDoctorNetworkId,
   type LabWithNetwork,
-} from "@/actions/list-labs-with-network";
+} from "@/actions/healthcare-networks/list-labs-with-network";
 
 export type LabSelectProps = {
   value: string;

@@ -11,9 +11,9 @@ import {
   usePathname as useIntlPathname,
 } from "@/i18n/navigation";
 import { useUiStore } from "@/state/ui.store";
-import { useWalletAddress } from "@/hooks/useWalletAddress";
-import { useOnChainRole } from "@/hooks/useOnChainRole";
-import { useDbUser, clearDbUserCache } from "@/hooks/useDbUser";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
+import { useDbUser, clearDbUserCache } from "@/hooks/auth/useDbUser";
 import { LINKS_BY_ROLE } from "@/lib/navigation";
 import type { UserRole } from "@/types/domain.types";
 
