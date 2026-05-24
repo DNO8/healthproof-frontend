@@ -236,6 +236,26 @@ npm run deploy:healthproof:hygieia
 
 ---
 
+## Seguridad del Nodo
+
+La IP del nodo EC2 (`3.141.110.34`) ha sido expuesta en commits anteriores del monorepo. Es **obligatorio** ejecutar el hardening completo antes de considerar la infraestructura segura.
+
+Ver [`HARDENING.md`](HARDENING.md) para la guía detallada que cubre:
+
+- **AWS Security Groups**: Restringir SSH y RPC a IPs específicas
+- **SSH Hardening**: Cambio de puerto, deshabilitar root/password, banner de advertencia
+- **UFW Firewall**: Bloquear todo excepto P2P, Nginx y SSH
+- **Avalanche Config**: Deshabilitar `api-admin`, `api-keystore`, binding a `127.0.0.1`
+- **Nginx Reverse Proxy**: Rate limiting (10 req/s), filtrado de methods, headers de seguridad
+- **Fail2ban**: Protección SSH y bloqueo por abuso de RPC
+- **Auto-updates**: `unattended-upgrades` para parches de seguridad
+- **Elastic IP nueva**: Opción para desvincular la IP expuesta
+- **AWS ALB + Subnet Privada**: Arquitectura de producción recomendada
+
+> **⚠️ ADVERTENCIA**: No publiques este monorepo completo como público sin haber ejecutado el hardening. Considera crear un repo público limpio solo con `apps/frontend/healthproof-frontend`.
+
+---
+
 ## Referencias
 
 - [Avalanche Docs](https://docs.avax.network/)
