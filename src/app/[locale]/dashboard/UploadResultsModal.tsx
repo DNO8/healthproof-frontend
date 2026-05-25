@@ -12,6 +12,7 @@ import { getDbUser } from "@/actions/auth/get-user";
 import { registerDocumentOnChain } from "@/actions/documents/register-document-onchain";
 import { UserSelect } from "@/components/forms/UserSelect";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
+import { isPdfFile } from "@/lib/validate-file";
 
 type UploadResultsModalProps = {
   onClose: () => void;
@@ -75,7 +76,12 @@ export function UploadResultsModal({
     dragCounter.current = 0;
     setDragging(false);
     const dropped = e.dataTransfer.files?.[0];
-    if (dropped) setFile(dropped);
+    if (!dropped) return;
+    if (!isPdfFile(dropped)) {
+      sileo.error({ title: t("uploadFailed"), description: t("invalidFileType") });
+      return;
+    }
+    setFile(dropped);
   }
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -92,6 +98,10 @@ export function UploadResultsModal({
       return;
     }
 
+    if (!isPdfFile(file)) {
+      sileo.error({ title: t("uploadFailed"), description: t("invalidFileType") });
+      return;
+    }
     if (file.size > MAX_FILE_SIZE) {
       sileo.error({
         title: t("uploadFailed"),
@@ -267,9 +277,16 @@ export function UploadResultsModal({
                 )}
               </button>
               <input
-                accept="*/*"
+                accept=".pdf,application/pdf"
                 className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  if (f && !isPdfFile(f)) {
+                    sileo.error({ title: t("uploadFailed"), description: t("invalidFileType") });
+                    return;
+                  }
+                  setFile(f);
+                }}
                 ref={fileRef}
                 type="file"
               />

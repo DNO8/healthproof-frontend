@@ -12,6 +12,7 @@ import {
   importPublicKey,
   type WrappedKey,
 } from "@/services/encryption/ecdh";
+import { isPdfFile } from "@/lib/validate-file";
 
 export interface UploadResult {
   fileHash: string;
@@ -44,6 +45,9 @@ export async function uploadEncryptedFile(
   file: File,
   encryptionKey: CryptoKey,
 ): Promise<UploadResult> {
+  if (!isPdfFile(file)) {
+    throw new Error("Only PDF files are allowed.");
+  }
   const fileHash = await hashFile(file);
   const { encrypted, iv } = await encryptFile(file, encryptionKey);
 
@@ -61,6 +65,9 @@ export async function uploadHybridEncryptedFile(
   myPrivateKey: CryptoKey,
   recipients: Recipient[],
 ): Promise<HybridUploadResult> {
+  if (!isPdfFile(file)) {
+    throw new Error("Only PDF files are allowed.");
+  }
   // 1. Generate random AES-256 session key
   const sessionKey = await generateEncryptionKey();
 
