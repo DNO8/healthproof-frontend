@@ -382,6 +382,9 @@
       "updated": "Profile updated",
       "updatedDesc": "Your profile has been saved successfully."
     },
+    "nav": {
+      "profile": "Profile"
+    },
     "sidebar": {
       "overview": "Overview",
       "documents": "Documents",
