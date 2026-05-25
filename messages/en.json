@@ -491,6 +491,7 @@
     },
     "invitations": {
       "title": "Invitations",
+      "description": "Patients can invite you to become their guardian or grant you access to their medical documents. Accepting creates an on-chain permission.",
       "pendingTitle": "Pending Invitations",
       "historyTitle": "History",
       "noPending": "No pending invitations.",

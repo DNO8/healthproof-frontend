@@ -8,7 +8,7 @@
  * Shares: hex strings, each prefixed with x-coordinate in header byte.
  */
 
-import { split, combine } from "secrets.js-grempe";
+import * as secrets from "secrets.js-grempe";
 
 const BITS = 8; // GF(2^8), max secret length ~512 bytes
 
@@ -40,7 +40,7 @@ export function generateShares(
   // secrets.js-grempe uses bits param for internal char size.
   // We convert raw bytes to hex because the lib operates on hex strings
   // and the header byte carries the x-coordinate.
-  const shares = split(secretHex, { shares: total, threshold, bits: BITS });
+  const shares = secrets.share(secretHex, total, threshold, BITS);
   return shares;
 }
 
@@ -53,7 +53,7 @@ export function reconstructSecret(shares: string[]): Uint8Array {
   if (shares.length < 2) {
     throw new Error("At least 2 shares are required for reconstruction");
   }
-  const reconstructedHex = combine(shares, { bits: BITS });
+  const reconstructedHex = secrets.combine(shares);
   return hexToBytes(reconstructedHex);
 }
 
