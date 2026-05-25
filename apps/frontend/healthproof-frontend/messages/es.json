@@ -491,6 +491,7 @@
     },
     "invitations": {
       "title": "Invitaciones",
+      "description": "Los pacientes pueden invitarte a ser su tutor o concederte acceso a sus documentos médicos. Al aceptar, se crea un permiso on-chain.",
       "pendingTitle": "Invitaciones Pendientes",
       "historyTitle": "Historial",
       "noPending": "No hay invitaciones pendientes.",

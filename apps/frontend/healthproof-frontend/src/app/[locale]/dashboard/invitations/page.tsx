@@ -69,8 +69,9 @@ export default function InvitationsPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-800">{t("title") ?? "Invitations"}</h1>
+        <p className="mt-1 text-sm text-slate-500">{t("description")}</p>
       </div>
 
       <div className="space-y-6">
