@@ -8,6 +8,43 @@ import { useTranslations } from "next-intl";
 import type { UserRole } from "@/types/domain.types";
 import { clearDbUserCache } from "@/hooks/auth/useDbUser";
 import { LINKS_BY_ROLE } from "@/lib/navigation";
+import type { LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  ClipboardList,
+  FileText,
+  Shield,
+  User,
+  Mail,
+  Share2,
+  FolderOpen,
+  ScanLine,
+  Upload,
+  Globe,
+  Building2,
+  Settings,
+  Lock,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  LayoutDashboard,
+  ClipboardList,
+  FileText,
+  Shield,
+  User,
+  Mail,
+  Share2,
+  FolderOpen,
+  ScanLine,
+  Upload,
+  Globe,
+  Building2,
+  Settings,
+  Lock,
+};
 
 interface DashboardSidebarProps {
   role: UserRole | null;
@@ -84,13 +121,18 @@ export function DashboardSidebar({ role, walletAddress }: DashboardSidebarProps)
         type="button"
         title={collapsed ? "Expand" : "Collapse"}
       >
-        <span className="text-xs text-slate-500">{collapsed ? "→" : "←"}</span>
+        {collapsed ? (
+          <ChevronRight className="h-4 w-4 text-slate-500" />
+        ) : (
+          <ChevronLeft className="h-4 w-4 text-slate-500" />
+        )}
       </button>
 
       {/* Links */}
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
         {links.map((link) => {
           const active = isActive(link.href);
+          const Icon = ICON_MAP[link.icon];
           return (
             <button
               key={link.id}
@@ -103,7 +145,7 @@ export function DashboardSidebar({ role, walletAddress }: DashboardSidebarProps)
               type="button"
               title={t(link.labelKey)}
             >
-              <span className="text-lg shrink-0">{link.icon}</span>
+              {Icon && <Icon className="h-5 w-5 shrink-0" />}
               {!collapsed && (
                 <span className="text-sm font-medium truncate">{t(link.labelKey)}</span>
               )}
@@ -119,7 +161,7 @@ export function DashboardSidebar({ role, walletAddress }: DashboardSidebarProps)
           onClick={handleLogout}
           type="button"
         >
-          <span className="text-lg shrink-0">🚪</span>
+          <LogOut className="h-5 w-5 shrink-0" />
           {!collapsed && (
             <span className="text-sm font-medium">{t("logout")}</span>
           )}

@@ -12,8 +12,43 @@ import { ProfileBanner } from "../ProfileBanner";
 import { DashboardActions } from "../DashboardActions";
 import { usePrivy } from "@privy-io/react-auth";
 import { ROLE_ICONS } from "@/lib/icons";
+import { LINKS_BY_ROLE } from "@/lib/navigation";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  ClipboardList,
+  FileText,
+  Shield,
+  User,
+  Mail,
+  Share2,
+  FolderOpen,
+  ScanLine,
+  Upload,
+  Globe,
+  Building2,
+  Settings,
+  Lock,
+} from "lucide-react";
+
+const NAV_ICON_MAP: Record<string, LucideIcon> = {
+  LayoutDashboard,
+  ClipboardList,
+  FileText,
+  Shield,
+  User,
+  Mail,
+  Share2,
+  FolderOpen,
+  ScanLine,
+  Upload,
+  Globe,
+  Building2,
+  Settings,
+  Lock,
+};
 
 type MetricKey =
   | "myDocuments"
@@ -54,6 +89,7 @@ const METRIC_ROUTES: Record<MetricKey, string> = {
 
 export default function OverviewPage() {
   const t = useTranslations("dashboard");
+  const tSidebar = useTranslations("dashboard.sidebar");
   const tRoles = useTranslations("roles");
   const router = useRouter();
   const { user } = usePrivy();
@@ -149,6 +185,35 @@ export default function OverviewPage() {
           <p className="text-sm text-slate-600">
             {t(`descriptions.${descKey}`)}
           </p>
+        </div>
+      </div>
+
+      {/* Quick Navigation — replaces desktop sidebar */}
+      <div className="mt-8">
+        <h2 className="mb-5 text-lg font-bold text-slate-800">
+          {t("quickNavTitle") ?? "Navegación"}
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {(LINKS_BY_ROLE[effectiveRole] ?? LINKS_BY_ROLE.patient)
+            .filter((link) => link.id !== "overview")
+            .map((link) => {
+              const Icon = NAV_ICON_MAP[link.icon];
+              return (
+                <button
+                  key={link.id}
+                  className="neu-surface hover:neu-pressed flex cursor-pointer items-center gap-3 rounded-2xl p-5 text-left transition-all duration-200"
+                  onClick={() => router.push(link.href)}
+                  type="button"
+                >
+                  {Icon && (
+                    <Icon className="h-5 w-5 shrink-0 text-sky-600" />
+                  )}
+                  <span className="text-sm font-semibold text-slate-800">
+                    {tSidebar(link.labelKey)}
+                  </span>
+                </button>
+              );
+            })}
         </div>
       </div>
 

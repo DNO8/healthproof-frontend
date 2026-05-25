@@ -292,6 +292,7 @@
       "doctor": "Emite órdenes médicas, verifica resultados de laboratorio y gestiona los flujos clínicos de tus pacientes.",
       "medicalCenter": "Emite órdenes médicas, verifica resultados de laboratorio y gestiona los flujos clínicos de tu institución."
     },
+    "quickNavTitle": "Navegación Rápida",
     "actions": {
       "title": "Acciones",
       "myOrders": "Mis Órdenes",

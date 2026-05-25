@@ -292,6 +292,7 @@
       "doctor": "Issue medical orders, verify laboratory results, and manage your patients' clinical workflows.",
       "medicalCenter": "Issue medical orders, verify laboratory results, and manage your institution's clinical workflows."
     },
+    "quickNavTitle": "Quick Navigation",
     "actions": {
       "title": "Actions",
       "myOrders": "My Orders",
