@@ -41,6 +41,7 @@ export function DashboardSidebar({ role, walletAddress }: DashboardSidebarProps)
     clearDbUserCache();
     sessionStorage.removeItem("hp_upserted");
     sessionStorage.removeItem("hp_wallet_synced");
+    sessionStorage.removeItem("hp_keys_synced");
     sessionStorage.removeItem("hp_welcome_shown");
     sessionStorage.removeItem("hp_logging_out");
     sileo.success({ title: t("signedOut"), description: t("signedOutDesc") });
