@@ -16,6 +16,40 @@ import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
 import { useDbUser, clearDbUserCache } from "@/hooks/auth/useDbUser";
 import { LINKS_BY_ROLE } from "@/lib/navigation";
 import type { UserRole } from "@/types/domain.types";
+import type { LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  ClipboardList,
+  FileText,
+  Shield,
+  User,
+  Mail,
+  Share2,
+  FolderOpen,
+  ScanLine,
+  Upload,
+  Globe,
+  Building2,
+  Settings,
+  Lock,
+} from "lucide-react";
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  LayoutDashboard,
+  ClipboardList,
+  FileText,
+  Shield,
+  User,
+  Mail,
+  Share2,
+  FolderOpen,
+  ScanLine,
+  Upload,
+  Globe,
+  Building2,
+  Settings,
+  Lock,
+};
 
 export function MobileSheet() {
   const t = useTranslations("nav");
@@ -114,20 +148,28 @@ export function MobileSheet() {
               <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                 {tSidebar("overview")}
               </p>
-              {sidebarLinks.map((link) => (
-                <button
-                  key={link.id}
-                  className={linkClass(pathname === link.href || pathname.startsWith(`${link.href}/`))}
-                  onClick={() => {
-                    router.push(link.href);
-                    setSheetOpen(false);
-                  }}
-                  type="button"
-                >
-                  <span className="mr-2">{link.icon}</span>
-                  {tSidebar(link.labelKey)}
-                </button>
-              ))}
+              {sidebarLinks.map((link) => {
+                const Icon = ICON_MAP[link.icon];
+                const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
+                return (
+                  <button
+                    key={link.id}
+                    className={linkClass(active)}
+                    onClick={() => {
+                      router.push(link.href);
+                      setSheetOpen(false);
+                    }}
+                    type="button"
+                  >
+                    {Icon && (
+                      <span className="mr-2 inline-flex align-middle">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                    )}
+                    {tSidebar(link.labelKey)}
+                  </button>
+                );
+              })}
               <div className="my-3 border-t border-slate-200/60" />
             </>
           )}

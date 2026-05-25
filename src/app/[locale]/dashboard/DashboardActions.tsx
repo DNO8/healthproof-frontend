@@ -30,8 +30,6 @@ const ROLE_ACTIONS: Partial<Record<UserRole, ActionDef[]>> = {
   ],
   doctor: [
     { id: "scan-qr", titleKey: "scanQr", descKey: "scanQrDescMc", iconKey: "scan-qr", disabled: false },
-    { id: "create-order", titleKey: "createOrder", descKey: "createOrderDesc", iconKey: "create-order", disabled: false },
-    { id: "manage-episodes", titleKey: "manageEpisodes", descKey: "manageEpisodesDesc", iconKey: "manage-episodes", disabled: false },
     { id: "emergency-access", titleKey: "emergencyAccess", descKey: "emergencyAccessDesc", iconKey: "emergency-access", disabled: false, tagKey: "breakGlassTag" },
   ],
   admin: [

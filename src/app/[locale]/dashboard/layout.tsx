@@ -7,7 +7,6 @@ import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
 import { useDbUser } from "@/hooks/auth/useDbUser";
 import type { UserRole } from "@/types/domain.types";
-import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export default function DashboardLayout({
@@ -49,9 +48,8 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen">
-      <DashboardSidebar role={effectiveRole} walletAddress={walletAddress} />
-      <main className="flex-1 md:ml-64 min-h-screen p-4 sm:p-6">
+    <div className="min-h-screen">
+      <main className="min-h-screen p-4 sm:p-6">
         <Breadcrumbs />
         {children}
       </main>
