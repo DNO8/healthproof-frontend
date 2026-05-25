@@ -20,13 +20,10 @@ type ActionDef = {
 const ROLE_ACTIONS: Partial<Record<UserRole, ActionDef[]>> = {
   patient: [
     { id: "share-results", titleKey: "shareResults", descKey: "shareResultsDesc", iconKey: "share-results", disabled: false },
-    { id: "my-documents", titleKey: "myDocuments", descKey: "myDocumentsDesc", iconKey: "my-documents", disabled: false },
     { id: "my-orders", titleKey: "myOrders", descKey: "myOrdersDesc", iconKey: "my-orders", disabled: false },
   ],
   lab: [
-    { id: "upload-results", titleKey: "uploadResults", descKey: "uploadResultsDesc", iconKey: "upload-results", disabled: false },
     { id: "scan-qr", titleKey: "scanQr", descKey: "scanQrDescLab", iconKey: "scan-qr", disabled: false },
-    { id: "pending-orders", titleKey: "pendingOrders", descKey: "pendingOrdersDesc", iconKey: "pending-orders", disabled: false },
   ],
   doctor: [
     { id: "scan-qr", titleKey: "scanQr", descKey: "scanQrDescMc", iconKey: "scan-qr", disabled: false },

@@ -21,6 +21,7 @@ import { updateOrderStatusOnChain } from "@/actions/medical-orders/medical-order
 import { UserSelect } from "@/components/forms/UserSelect";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
 import { Upload } from "lucide-react";
+import { isPdfFile } from "@/lib/validate-file";
 
 export default function UploadPage() {
   const t = useTranslations("dashboard.upload");
@@ -42,8 +43,13 @@ export default function UploadPage() {
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     const dropped = e.dataTransfer.files?.[0];
-    if (dropped) setFile(dropped);
-  }, []);
+    if (!dropped) return;
+    if (!isPdfFile(dropped)) {
+      sileo.error({ title: tModal("uploadFailed"), description: tModal("invalidFileType") });
+      return;
+    }
+    setFile(dropped);
+  }, [tModal]);
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -51,6 +57,10 @@ export default function UploadPage() {
     if (!file || !walletAddress || !patientId.trim()) return;
     if (keyConflict) {
       sileo.error({ title: tModal("keyConflictTitle"), description: tModal("keyConflictDesc") });
+      return;
+    }
+    if (!isPdfFile(file)) {
+      sileo.error({ title: tModal("uploadFailed"), description: tModal("invalidFileType") });
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
@@ -181,8 +191,17 @@ export default function UploadPage() {
           <input
             ref={inputRef}
             type="file"
+            accept=".pdf,application/pdf"
             className="hidden"
-            onChange={(e) => { if (e.target.files?.[0]) setFile(e.target.files[0]); }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (!f) { setFile(null); return; }
+              if (!isPdfFile(f)) {
+                sileo.error({ title: tModal("uploadFailed"), description: tModal("invalidFileType") });
+                return;
+              }
+              setFile(f);
+            }}
           />
           {file ? (
             <div className="space-y-1">
