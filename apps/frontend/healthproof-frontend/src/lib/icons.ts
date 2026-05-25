@@ -18,6 +18,7 @@ import {
   X,
   ArrowRight,
   Building2,
+  AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -40,6 +41,7 @@ export const ACTION_ICONS: Record<string, LucideIcon> = {
   "create-order": ClipboardList,
   "manage-episodes": FolderOpen,
   "admin-panel": Settings,
+  "emergency-access": AlertTriangle,
 };
 
 export const EMPTY_STATE_ICONS: Record<string, LucideIcon> = {

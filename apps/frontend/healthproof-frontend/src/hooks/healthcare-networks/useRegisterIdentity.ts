@@ -16,7 +16,7 @@ const INTENDED_KEY = "hp_intended_role";        // persistent: survives across s
 const REGISTERED_KEY = "hp_onchain_registered"; // sessionStorage: set after success
 const ATTEMPTS_KEY = "hp_reg_attempts";         // sessionStorage: retry counter
 const MAX_ATTEMPTS = 10;
-const VALID_ROLES: UserRole[] = ["patient", "doctor", "lab"];
+const VALID_ROLES: UserRole[] = ["patient", "doctor"];
 
 
 function resolveWalletAddress(

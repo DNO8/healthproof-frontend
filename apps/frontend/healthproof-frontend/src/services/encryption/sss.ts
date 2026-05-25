@@ -1,0 +1,80 @@
+"use client";
+
+/**
+ * Shamir's Secret Sharing (2,3) via secrets.js-grempe.
+ * Cryptographically secure: uses crypto.getRandomValues for entropy.
+ *
+ * Usable secret size: up to 512 bytes (librería usa 8-bit chars internamente).
+ * Shares: hex strings, each prefixed with x-coordinate in header byte.
+ */
+
+import { split, combine } from "secrets.js-grempe";
+
+const BITS = 8; // GF(2^8), max secret length ~512 bytes
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+/**
+ * Split a secret into N shares where any K can reconstruct.
+ * @param secret - Raw bytes to split
+ * @param threshold - K (min shares needed)
+ * @param total - N (total shares)
+ * @returns Array of shares as hex strings (each includes x-coordinate in header)
+ */
+export function generateShares(
+  secret: Uint8Array,
+  threshold: number,
+  total: number,
+): string[] {
+  const secretHex = bytesToHex(secret);
+  // secrets.js-grempe uses bits param for internal char size.
+  // We convert raw bytes to hex because the lib operates on hex strings
+  // and the header byte carries the x-coordinate.
+  const shares = split(secretHex, { shares: total, threshold, bits: BITS });
+  return shares;
+}
+
+/**
+ * Reconstruct the secret from at least K shares.
+ * @param shares - Array of share hex strings
+ * @returns The reconstructed raw bytes
+ */
+export function reconstructSecret(shares: string[]): Uint8Array {
+  if (shares.length < 2) {
+    throw new Error("At least 2 shares are required for reconstruction");
+  }
+  const reconstructedHex = combine(shares, { bits: BITS });
+  return hexToBytes(reconstructedHex);
+}
+
+/**
+ * Validate that a reconstructed secret matches an expected hash.
+ * @param shares - Shares used for reconstruction
+ * @param expectedHash - Hex-encoded SHA-256 hash
+ * @returns true if reconstruction yields matching hash
+ */
+export async function validateReconstruction(
+  shares: string[],
+  expectedHash: string,
+): Promise<boolean> {
+  try {
+    const reconstructed = reconstructSecret(shares);
+    const hash = await crypto.subtle.digest("SHA-256", reconstructed.buffer as ArrayBuffer);
+    const hashHex = Array.from(new Uint8Array(hash))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    return hashHex === expectedHash;
+  } catch {
+    return false;
+  }
+}

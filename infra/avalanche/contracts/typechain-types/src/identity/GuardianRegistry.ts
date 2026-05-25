@@ -29,6 +29,7 @@ export interface GuardianRegistryInterface extends Interface {
       | "UPGRADE_INTERFACE_VERSION"
       | "grantGuardianship"
       | "guardians"
+      | "hasActiveGuardian"
       | "identityRegistry"
       | "initialize"
       | "isGuardian"
@@ -62,6 +63,10 @@ export interface GuardianRegistryInterface extends Interface {
   encodeFunctionData(
     functionFragment: "guardians",
     values: [AddressLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "hasActiveGuardian",
+    values: [AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "identityRegistry",
@@ -114,6 +119,10 @@ export interface GuardianRegistryInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "guardians", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "hasActiveGuardian",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "identityRegistry",
     data: BytesLike
@@ -304,6 +313,12 @@ export interface GuardianRegistry extends BaseContract {
     "view"
   >;
 
+  hasActiveGuardian: TypedContractMethod<
+    [patient: AddressLike],
+    [boolean],
+    "view"
+  >;
+
   identityRegistry: TypedContractMethod<[], [string], "view">;
 
   initialize: TypedContractMethod<
@@ -386,6 +401,9 @@ export interface GuardianRegistry extends BaseContract {
     ],
     "view"
   >;
+  getFunction(
+    nameOrSignature: "hasActiveGuardian"
+  ): TypedContractMethod<[patient: AddressLike], [boolean], "view">;
   getFunction(
     nameOrSignature: "identityRegistry"
   ): TypedContractMethod<[], [string], "view">;

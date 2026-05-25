@@ -46,3 +46,17 @@ model AccessGrant {
   @@index([documentId])
   @@index([verifier, expiresAt])
 }
+
+model EmergencyKeyEscrow {
+  id            String   @id @default(uuid())
+  requestId     String   @unique // bytes32 hex
+  patientWallet String
+  guardianWallet String
+  encryptedKey  String   // AES-GCM session key encrypted for guardian (base64)
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+
+  @@index([patientWallet])
+  @@index([guardianWallet])
+  @@index([requestId])
+}

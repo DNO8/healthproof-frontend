@@ -60,7 +60,7 @@ export default function UploadPage() {
     setUploading(true);
     try {
       const labKeys = await getKeyPair(labId);
-      if (!labKeys) throw new Error(tModal("noLabKeys"));
+      if (!labKeys?.publicKey || !labKeys?.privateKey) throw new Error(tModal("noLabKeys"));
 
       const patientPubKeyJwk = await getUserPublicKey(patientId.trim());
       if (!patientPubKeyJwk) throw new Error(tModal("noPatientKey"));

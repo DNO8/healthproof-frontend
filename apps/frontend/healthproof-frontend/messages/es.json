@@ -327,6 +327,9 @@
       "manageEpisodesDesc": "Abrir, consultar y cerrar episodios clínicos de pacientes.",
       "adminPanel": "Panel de Admin",
       "adminPanelDesc": "Gestionar configuración del protocolo, entidades y administración del sistema.",
+      "emergencyAccess": "Acceso de Emergencia",
+      "emergencyAccessDesc": "Solicitar acceso de emergencia rompecristales a expedientes de pacientes.",
+      "breakGlassTag": "Rompecristales",
       "tags": {
         "backendRequired": "Requiere backend",
         "contractsRequired": "Requiere contratos",
@@ -334,6 +337,22 @@
       },
       "comingSoon": "Próximamente",
       "comingSoonDesc": "El escáner QR estará disponible cuando el backend esté listo."
+    },
+    "emergency": {
+      "title": "Acceso de Emergencia Rompecristales",
+      "description": "Solicita acceso de emergencia a los registros de un paciente cuando los permisos estándar no están disponibles. Todas las solicitudes se registran on-chain para auditoría.",
+      "patientWallet": "Dirección Wallet del Paciente",
+      "documentId": "ID del Documento o CID",
+      "reason": "Razón de Emergencia",
+      "reasonPlaceholder": "Describe la emergencia médica que requiere acceso...",
+      "activationPath": "Vía de Activación",
+      "pathGuardian": "Tutor (72h)",
+      "pathDualDoctor": "Doble Doctor (4h)",
+      "pathPatient": "Paciente (Ilimitado)",
+      "pathWarning": "La vía del tutor requiere un tutor activo. La vía de doble doctor requiere un segundo médico verificado como testigo. La vía del paciente requiere que el paciente esté consciente y pueda aprobar.",
+      "submitting": "Enviando Solicitud...",
+      "submitRequest": "Solicitar Acceso de Emergencia",
+      "requestSuccess": "Solicitud de emergencia enviada. Tx: {txHash}. ID de Solicitud: {requestId}"
     },
     "walletProvisioning": "Configurando tu wallet segura…",
     "profileBanner": {

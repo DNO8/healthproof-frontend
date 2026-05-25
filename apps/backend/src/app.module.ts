@@ -6,6 +6,7 @@ import { BlockchainModule } from './blockchain/blockchain.module';
 import { StorageModule } from './storage/storage.module';
 import { DocumentModule } from './document/document.module';
 import { IssuerModule } from './issuer/issuer.module';
+import { EmergencyModule } from './emergency/emergency.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { IssuerModule } from './issuer/issuer.module';
     StorageModule,
     DocumentModule,
     IssuerModule,
+    EmergencyModule,
   ],
 })
 export class AppModule {}

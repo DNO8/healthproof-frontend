@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "../identity/IdentityRegistry.sol";
 import "../identity/GuardianRegistry.sol";
+import "./EmergencyAccessManager.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -17,6 +18,11 @@ contract PermissionManager is
 
     IdentityRegistry public identityRegistry;
     GuardianRegistry public guardianRegistry;
+    EmergencyAccessManager public emergencyManager;
+
+    function setEmergencyAccessManager(address emergencyAddress) external onlyOwner {
+        emergencyManager = EmergencyAccessManager(emergencyAddress);
+    }
 
     function initialize(
         address identityAddress,
@@ -24,7 +30,6 @@ contract PermissionManager is
         address forwarder
     ) public initializer {
         __Ownable_init(msg.sender);
-        __UUPSUpgradeable_init();
         __ERC2771Context_init(forwarder);
         identityRegistry = IdentityRegistry(identityAddress);
         guardianRegistry = GuardianRegistry(guardianAddress);
@@ -217,6 +222,13 @@ contract PermissionManager is
                 return true;
 
             unchecked { ++i; }
+        }
+
+        // Emergency access fallback (break-the-glass)
+        if (address(emergencyManager) != address(0)) {
+            if (emergencyManager.isEmergencyActive(patient, requester, documentId)) {
+                return true;
+            }
         }
 
         return false;

@@ -1,6 +1,7 @@
 import { createPublicClient, http } from "viem";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import GuardianRegistryAbi from "@/lib/abis/GuardianRegistry.json";
+import GuardianRegistryArtifact from "@/lib/abis/GuardianRegistry.json";
+const GuardianRegistryAbi = GuardianRegistryArtifact.abi;
 import PermissionManagerArtifact from "@/lib/abis/PermissionManager.json";
 const PermissionManagerAbi = PermissionManagerArtifact.abi;
 import IdentityRegistryAbi from "@/lib/abis/IdentityRegistry.json";

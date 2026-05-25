@@ -3,7 +3,8 @@
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import GuardianRegistryAbi from "@/lib/abis/GuardianRegistry.json";
+import GuardianRegistryArtifact from "@/lib/abis/GuardianRegistry.json";
+const GuardianRegistryAbi = GuardianRegistryArtifact.abi;
 import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
 import { isVerifiedAdmin } from "@/lib/auth/permissions";

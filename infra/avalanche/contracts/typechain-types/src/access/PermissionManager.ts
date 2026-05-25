@@ -51,6 +51,7 @@ export interface PermissionManagerInterface extends Interface {
   getFunction(
     nameOrSignature:
       | "UPGRADE_INTERFACE_VERSION"
+      | "emergencyManager"
       | "getPermissions"
       | "grantPermission"
       | "guardianRegistry"
@@ -62,6 +63,7 @@ export interface PermissionManagerInterface extends Interface {
       | "proxiableUUID"
       | "renounceOwnership"
       | "revokePermission"
+      | "setEmergencyAccessManager"
       | "transferOwnership"
       | "trustedForwarder"
       | "upgradeToAndCall"
@@ -78,6 +80,10 @@ export interface PermissionManagerInterface extends Interface {
 
   encodeFunctionData(
     functionFragment: "UPGRADE_INTERFACE_VERSION",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "emergencyManager",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -122,6 +128,10 @@ export interface PermissionManagerInterface extends Interface {
     values: [AddressLike, AddressLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "setEmergencyAccessManager",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "transferOwnership",
     values: [AddressLike]
   ): string;
@@ -136,6 +146,10 @@ export interface PermissionManagerInterface extends Interface {
 
   decodeFunctionResult(
     functionFragment: "UPGRADE_INTERFACE_VERSION",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "emergencyManager",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -171,6 +185,10 @@ export interface PermissionManagerInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "revokePermission",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setEmergencyAccessManager",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -300,6 +318,8 @@ export interface PermissionManager extends BaseContract {
 
   UPGRADE_INTERFACE_VERSION: TypedContractMethod<[], [string], "view">;
 
+  emergencyManager: TypedContractMethod<[], [string], "view">;
+
   getPermissions: TypedContractMethod<
     [patient: AddressLike, offset: BigNumberish, limit: BigNumberish],
     [
@@ -367,6 +387,12 @@ export interface PermissionManager extends BaseContract {
     "nonpayable"
   >;
 
+  setEmergencyAccessManager: TypedContractMethod<
+    [emergencyAddress: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
   transferOwnership: TypedContractMethod<
     [newOwner: AddressLike],
     [void],
@@ -387,6 +413,9 @@ export interface PermissionManager extends BaseContract {
 
   getFunction(
     nameOrSignature: "UPGRADE_INTERFACE_VERSION"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "emergencyManager"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "getPermissions"
@@ -462,6 +491,9 @@ export interface PermissionManager extends BaseContract {
     [void],
     "nonpayable"
   >;
+  getFunction(
+    nameOrSignature: "setEmergencyAccessManager"
+  ): TypedContractMethod<[emergencyAddress: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "transferOwnership"
   ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;

@@ -327,6 +327,9 @@
       "manageEpisodesDesc": "Open, lookup, and close clinical episodes for patients.",
       "adminPanel": "Admin Panel",
       "adminPanelDesc": "Manage protocol settings, entities, and system administration.",
+      "emergencyAccess": "Emergency Access",
+      "emergencyAccessDesc": "Request break-the-glass emergency access to patient records.",
+      "breakGlassTag": "Break-the-Glass",
       "tags": {
         "backendRequired": "Backend required",
         "contractsRequired": "Contracts required",
@@ -334,6 +337,22 @@
       },
       "comingSoon": "Coming soon",
       "comingSoonDesc": "QR scanner will be available when the backend is ready."
+    },
+    "emergency": {
+      "title": "Break-the-Glass Emergency Access",
+      "description": "Request emergency access to a patient's records when standard permissions are unavailable. All requests are logged on-chain for audit.",
+      "patientWallet": "Patient Wallet Address",
+      "documentId": "Document ID or CID",
+      "reason": "Emergency Reason",
+      "reasonPlaceholder": "Describe the medical emergency requiring access...",
+      "activationPath": "Activation Path",
+      "pathGuardian": "Guardian (72h)",
+      "pathDualDoctor": "Dual Doctor (4h)",
+      "pathPatient": "Patient (Unlimited)",
+      "pathWarning": "Guardian path requires an active guardian. Dual-doctor path requires a second verified physician witness. Patient path requires the patient to be conscious and able to approve.",
+      "submitting": "Submitting Request...",
+      "submitRequest": "Request Emergency Access",
+      "requestSuccess": "Emergency request submitted. Tx: {txHash}. Request ID: {requestId}"
     },
     "walletProvisioning": "Setting up your secure wallet…",
     "profileBanner": {

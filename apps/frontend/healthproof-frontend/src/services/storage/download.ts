@@ -48,32 +48,44 @@ export async function downloadAndDecrypt(opts: {
   senderPublicKeyJwk: string;
   myUserId: string;
 }): Promise<DecryptedResult> {
+  console.log("[downloadAndDecrypt] starting for CID:", opts.cid);
+
   // 1. Get my private key from IndexedDB
   const myKeys = await getKeyPair(opts.myUserId);
-  if (!myKeys) {
+  console.log("[downloadAndDecrypt] myKeys found:", !!myKeys, "privateKey:", !!myKeys?.privateKey);
+  if (!myKeys?.privateKey) {
     throw new Error("Encryption keys not found in this browser.");
   }
 
   // 2. Import sender's public key
   const senderPubKey = await importPublicKey(opts.senderPublicKeyJwk);
+  console.log("[downloadAndDecrypt] senderPubKey imported");
 
   // 3. Unwrap the AES session key
+  console.log("[downloadAndDecrypt] unwrapping session key...");
   const sessionKey = await unwrapSessionKey(
     opts.wrappedKey,
     myKeys.privateKey,
     senderPubKey,
   );
+  console.log("[downloadAndDecrypt] sessionKey unwrapped");
 
   // 4. Download encrypted blob from IPFS
+  console.log("[downloadAndDecrypt] fetching from IPFS...");
   const encryptedBlob = await fetchFromGateway(opts.cid);
+  console.log("[downloadAndDecrypt] fetched encrypted blob, size:", encryptedBlob.byteLength);
 
   // 5. Decrypt with AES-GCM
   const iv = decodeIv(opts.iv);
+  console.log("[downloadAndDecrypt] decoded IV, length:", iv.length);
+  console.log("[downloadAndDecrypt] decrypting file data...");
   const decrypted = await decryptData(encryptedBlob, sessionKey, iv);
+  console.log("[downloadAndDecrypt] file decrypted, size:", decrypted.byteLength);
 
   // 6. Create Blob and object URL
   const blob = new Blob([decrypted]);
   const url = URL.createObjectURL(blob);
+  console.log("[downloadAndDecrypt] done, blob URL created");
 
   return { data: decrypted, blob, url };
 }

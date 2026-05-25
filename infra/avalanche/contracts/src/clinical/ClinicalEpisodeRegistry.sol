@@ -19,7 +19,6 @@ contract ClinicalEpisodeRegistry is
 
     function initialize(address identityAddress, address forwarder) public initializer {
         __Ownable_init(msg.sender);
-        __UUPSUpgradeable_init();
         __ERC2771Context_init(forwarder);
         identityRegistry = IdentityRegistry(identityAddress);
     }

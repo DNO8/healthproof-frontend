@@ -11,7 +11,11 @@ contract AuditTrail {
         PERMISSION_GRANTED,
         PERMISSION_REVOKED,
         GUARDIAN_ACTION,
-        MEDICAL_QUERY
+        MEDICAL_QUERY,
+        EMERGENCY_REQUESTED,
+        EMERGENCY_WITNESSED,
+        EMERGENCY_APPROVED,
+        EMERGENCY_REVOKED
     }
 
     event AuditEvent(

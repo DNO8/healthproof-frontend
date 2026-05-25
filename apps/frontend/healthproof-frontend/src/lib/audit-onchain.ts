@@ -3,7 +3,8 @@
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import AuditTrailAbi from "@/lib/abis/AuditTrail.json";
+import AuditTrailArtifact from "@/lib/abis/AuditTrail.json";
+const AuditTrailAbi = AuditTrailArtifact.abi;
 import { getDeployerPrivateKey } from "@/lib/auth/with-auth";
 import { AuditAction } from "@/lib/medical-constants";
 

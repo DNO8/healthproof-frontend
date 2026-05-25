@@ -11,6 +11,7 @@ import { FilePreview, getExtensionFromMime } from "@/components/documents/FilePr
 import { EmptyState, SkeletonList } from "@/components/ui";
 import { FileText } from "lucide-react";
 import type { DocumentSecretRow } from "@/actions/documents/get-document-secret";
+import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
 
 function formatAddress(addr: string): string {
   if (!addr || addr.length < 10) return addr;
@@ -97,9 +98,28 @@ export default function DocumentsPage() {
       if (!silent) setViewError(t("missingWallet") ?? "Wallet or user not available.");
       return null;
     }
-    const wrappedKey =
-      doc.encrypted_keys[walletAddress.toLowerCase()] ??
-      doc.encrypted_keys[userId];
+
+    // Debug: log available keys and search criteria
+    console.log("[performDecrypt] doc.encrypted_keys:", Object.keys(doc.encrypted_keys));
+    console.log("[performDecrypt] walletAddress:", walletAddress?.toLowerCase());
+    console.log("[performDecrypt] userId:", userId);
+
+    // Try multiple possible key formats
+    const possibleKeys = [
+      walletAddress.toLowerCase(),
+      walletAddress,
+      userId,
+      userId.toLowerCase(),
+    ];
+    let wrappedKey = null;
+    for (const key of possibleKeys) {
+      if (doc.encrypted_keys[key]) {
+        wrappedKey = doc.encrypted_keys[key];
+        console.log("[performDecrypt] found wrappedKey for key:", key);
+        break;
+      }
+    }
+
     if (!wrappedKey) {
       if (!silent) {
         setViewError(t("noKeyDesc") ?? "You don't have a decryption key for this document.");
@@ -107,20 +127,41 @@ export default function DocumentsPage() {
       }
       return null;
     }
-    if (!doc.uploader_public_key) {
+
+    // Fallback: if uploader_public_key is missing, fetch it from the uploader's user record
+    let senderPublicKeyJwk = doc.uploader_public_key;
+    if (!senderPublicKeyJwk && doc.uploader_wallet) {
+      console.log("[performDecrypt] uploader_public_key missing, fetching from DB...");
+      senderPublicKeyJwk = await getUserPublicKey(doc.uploader_wallet);
+      console.log("[performDecrypt] fetched uploader_public_key:", senderPublicKeyJwk ? "found" : "not found");
+    }
+
+    if (!senderPublicKeyJwk) {
       if (!silent) {
         setViewError(t("noUploaderKey") ?? "Uploader public key is missing.");
         sileo.error({ title: t("noKey"), description: t("noUploaderKey") });
       }
       return null;
     }
-    return await decrypt({
-      cid: doc.document_id,
-      iv: doc.iv,
-      wrappedKey,
-      senderPublicKeyJwk: doc.uploader_public_key,
-      myUserId: userId,
-    });
+
+    try {
+      const result = await decrypt({
+        cid: doc.document_id,
+        iv: doc.iv,
+        wrappedKey,
+        senderPublicKeyJwk,
+        myUserId: userId,
+      });
+      console.log("[performDecrypt] decrypt result:", result ? "success" : "null");
+      return result;
+    } catch (e) {
+      console.error("[performDecrypt] decrypt error:", e);
+      if (!silent) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setViewError(msg);
+      }
+      return null;
+    }
   }
 
   const isDecrypting = decryptLoading || !!downloadingId;

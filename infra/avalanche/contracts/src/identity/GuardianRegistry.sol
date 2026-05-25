@@ -18,7 +18,6 @@ contract GuardianRegistry is
 
     function initialize(address identityAddress, address forwarder) public initializer {
         __Ownable_init(msg.sender);
-        __UUPSUpgradeable_init();
         __ERC2771Context_init(forwarder);
         identityRegistry = IdentityRegistry(identityAddress);
     }
@@ -134,6 +133,19 @@ contract GuardianRegistry is
             }
         }
 
+        return false;
+    }
+
+    function hasActiveGuardian(address patient) external view returns (bool) {
+        Guardianship[] memory list = guardians[patient];
+        for (uint i = 0; i < list.length; i++) {
+            if (
+                list[i].active &&
+                (list[i].validUntil == 0 || block.timestamp <= list[i].validUntil)
+            ) {
+                return true;
+            }
+        }
         return false;
     }
 

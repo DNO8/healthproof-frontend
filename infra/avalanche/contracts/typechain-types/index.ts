@@ -44,6 +44,8 @@ export type { ShortStrings } from "./@openzeppelin/contracts/utils/ShortStrings"
 export { ShortStrings__factory } from "./factories/@openzeppelin/contracts/utils/ShortStrings__factory";
 export type { Strings } from "./@openzeppelin/contracts/utils/Strings";
 export { Strings__factory } from "./factories/@openzeppelin/contracts/utils/Strings__factory";
+export type { EmergencyAccessManager } from "./src/access/EmergencyAccessManager";
+export { EmergencyAccessManager__factory } from "./factories/src/access/EmergencyAccessManager__factory";
 export type { PermissionManager } from "./src/access/PermissionManager";
 export { PermissionManager__factory } from "./factories/src/access/PermissionManager__factory";
 export type { AuditTrail } from "./src/audit/AuditTrail";

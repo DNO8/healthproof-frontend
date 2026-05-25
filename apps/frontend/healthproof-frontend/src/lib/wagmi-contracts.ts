@@ -1,14 +1,18 @@
 import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "./contracts";
 
 import IdentityRegistryAbi from "./abis/IdentityRegistry.json";
-import GuardianRegistryAbi from "./abis/GuardianRegistry.json";
+import GuardianRegistryArtifact from "./abis/GuardianRegistry.json";
+const GuardianRegistryAbi = GuardianRegistryArtifact.abi;
 import PermissionManagerArtifact from "./abis/PermissionManager.json";
 const PermissionManagerAbi = PermissionManagerArtifact.abi;
 import ClinicalEpisodeRegistryAbi from "./abis/ClinicalEpisodeRegistry.json";
 import MedicalOrderRegistryAbi from "./abis/MedicalOrderRegistry.json";
 import MedicalDocumentRegistryAbi from "./abis/MedicalDocumentRegistry.json";
 import HealthcareNetworkRegistryAbi from "./abis/HealthcareNetworkRegistry.json";
-import AuditTrailAbi from "./abis/AuditTrail.json";
+import AuditTrailArtifact from "./abis/AuditTrail.json";
+const AuditTrailAbi = AuditTrailArtifact.abi;
+import EmergencyAccessManagerArtifact from "./abis/EmergencyAccessManager.json";
+const EmergencyAccessManagerAbi = EmergencyAccessManagerArtifact.abi;
 import HealthProofGatewayAbi from "./abis/HealthProofGateway.json";
 import HealthProofKernelAbi from "./abis/HealthProofKernel.json";
 import HealthProofProtocolAbi from "./abis/HealthProofProtocol.json";
@@ -69,6 +73,10 @@ export const auditTrailConfig = cfg(
   CONTRACT_ADDRESSES.AuditTrail,
   AuditTrailAbi,
 );
+
+export const emergencyAccessManagerConfig = CONTRACT_ADDRESSES.EmergencyAccessManager
+  ? cfg(CONTRACT_ADDRESSES.EmergencyAccessManager, EmergencyAccessManagerAbi)
+  : undefined;
 
 export const healthProofGatewayConfig = cfg(
   CONTRACT_ADDRESSES.HealthProofGateway,
