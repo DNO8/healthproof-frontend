@@ -111,4 +111,39 @@ export enum AuditAction {
   PERMISSION_REVOKED = 3,
   ORDER_CREATED = 4,
   EPISODE_OPENED = 5,
+  EMERGENCY_REQUESTED = 6,
+  EMERGENCY_WITNESSED = 7,
+  EMERGENCY_APPROVED = 8,
+  EMERGENCY_REVOKED = 9,
+}
+
+// ─── Emergency Access (matches EmergencyAccessManager) ───
+
+export enum EmergencyPath {
+  GUARDIAN = 0,
+  DUAL_DOCTOR = 1,
+  PATIENT_SELF = 2,
+}
+
+export enum EmergencyStatus {
+  PENDING = 0,
+  APPROVED = 1,
+  EXPIRED = 2,
+  REJECTED = 3,
+  REVOKED = 4,
+}
+
+export interface OnChainEmergencyRequest {
+  requestId: string;
+  patient: string;
+  requestingDoctor: string;
+  witnessDoctor: string;
+  approvedBy: string;
+  resourceId: string;
+  path: number;
+  status: number;
+  requestedAt: number;
+  activatedAt: number;
+  expiresAt: number;
+  reasonHash: string;
 }

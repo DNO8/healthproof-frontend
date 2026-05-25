@@ -36,8 +36,12 @@ export default function AuthPage() {
   const roleLabels: Partial<Record<UserRole, { label: string; desc: string }>> = {
     patient: { label: tRoles("patient"), desc: tRoles("patientDesc") },
     doctor: { label: tRoles("doctor"), desc: tRoles("doctorDesc") },
-    lab: { label: tRoles("laboratory"), desc: tRoles("laboratoryDesc") },
   };
+
+  const loginRoles = ROLES.filter((r) => r.key === "patient" || r.key === "doctor");
+  const allowedRoles: UserRole[] = ["patient", "doctor"];
+  const isAllowedRole = (r: UserRole | null): r is UserRole =>
+    r !== null && allowedRoles.includes(r);
 
   async function handleSendCode() {
     const trimmed = email.trim();
@@ -59,7 +63,7 @@ export default function AuthPage() {
 
     setIsPending(true);
     try {
-      if (selectedRole) {
+      if (isAllowedRole(selectedRole)) {
         localStorage.setItem("hp_selected_role", selectedRole);
         localStorage.setItem("hp_intended_role", selectedRole);
       }
@@ -176,8 +180,8 @@ export default function AuthPage() {
                   <p className="mb-2 text-xs font-medium text-slate-700">
                     {t("selectRole")}
                   </p>
-                  <div className="grid grid-cols-3 gap-3">
-                    {ROLES.map((role) => {
+                  <div className="grid grid-cols-2 gap-3">
+                    {loginRoles.map((role) => {
                       const isSelected = selectedRole === role.key;
                       return (
                         <button
@@ -247,7 +251,7 @@ export default function AuthPage() {
                 className="neu-surface w-full rounded-2xl border border-white/60 px-8 py-3 text-sm font-medium text-slate-600 transition hover:text-slate-800 active:translate-y-px disabled:opacity-60"
                 disabled={mode === "signup" && !selectedRole}
                 onClick={() => {
-                  if (mode === "signup" && selectedRole) {
+                  if (mode === "signup" && isAllowedRole(selectedRole)) {
                     localStorage.setItem("hp_selected_role", selectedRole);
                     localStorage.setItem("hp_intended_role", selectedRole);
                   } else {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { UserRole } from "@/types/domain.types";
 import { AdminPanel } from "./AdminPanel";
+import { EmergencyAccessModal } from "./EmergencyAccessModal";
 import { ACTION_ICONS } from "@/lib/icons";
 
 type ActionDef = {
@@ -31,6 +32,7 @@ const ROLE_ACTIONS: Partial<Record<UserRole, ActionDef[]>> = {
     { id: "scan-qr", titleKey: "scanQr", descKey: "scanQrDescMc", iconKey: "scan-qr", disabled: false },
     { id: "create-order", titleKey: "createOrder", descKey: "createOrderDesc", iconKey: "create-order", disabled: false },
     { id: "manage-episodes", titleKey: "manageEpisodes", descKey: "manageEpisodesDesc", iconKey: "manage-episodes", disabled: false },
+    { id: "emergency-access", titleKey: "emergencyAccess", descKey: "emergencyAccessDesc", iconKey: "emergency-access", disabled: false, tagKey: "breakGlassTag" },
   ],
   admin: [
     { id: "admin-panel", titleKey: "adminPanel", descKey: "adminPanelDesc", iconKey: "admin-panel", disabled: false },
@@ -62,10 +64,15 @@ export function DashboardActions({
   const router = useRouter();
   const actions = ROLE_ACTIONS[role] ?? [];
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isEmergencyOpen, setIsEmergencyOpen] = useState(false);
 
   function handleActionClick(actionId: string) {
     if (actionId === "admin-panel") {
       setIsAdminOpen(true);
+      return;
+    }
+    if (actionId === "emergency-access") {
+      setIsEmergencyOpen(true);
       return;
     }
     const path = NAVIGATION_MAP[actionId];
@@ -111,6 +118,10 @@ export function DashboardActions({
 
       {isAdminOpen && (
         <AdminPanel onClose={() => setIsAdminOpen(false)} />
+      )}
+
+      {isEmergencyOpen && (
+        <EmergencyAccessModal onClose={() => setIsEmergencyOpen(false)} />
       )}
     </>
   );

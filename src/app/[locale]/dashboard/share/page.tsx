@@ -135,7 +135,7 @@ export default function SharePage() {
       });
 
       const myKeys = await getKeyPair(userId);
-      if (!myKeys) {
+      if (!myKeys?.publicKey) {
         throw new Error(t("noPatientKeys"));
       }
       const myPublicKeyJwk = await exportPublicKey(myKeys.publicKey);

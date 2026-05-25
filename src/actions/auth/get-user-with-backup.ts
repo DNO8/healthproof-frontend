@@ -12,6 +12,14 @@ export interface UserWithBackup {
   encrypted_private_key: string | null;
   key_share: string | null;
   key_version: number | null;
+  // New SSS(2,3) + KMS fields
+  server_share_ciphertext: string | null;
+  server_share_dek_ciphertext: string | null;
+  server_share_kms_key_id: string | null;
+  recovery_code_hash: string | null;
+  recovery_code_used_at: string | null;
+  master_secret_hash: string | null;
+  scheme_version: number | null;
 }
 
 /**
@@ -27,7 +35,7 @@ export async function getUserWithBackup(
   const { data, error } = await supabase
     .from("users")
     .select(
-      "id, email, wallet_address, full_name, created_at, public_key, encrypted_private_key, key_share, key_version",
+      "id, email, wallet_address, full_name, created_at, public_key, encrypted_private_key, key_share, key_version, server_share_ciphertext, server_share_dek_ciphertext, server_share_kms_key_id, recovery_code_hash, recovery_code_used_at, master_secret_hash, scheme_version",
     )
     .eq("id", idOrWallet)
     .single();
@@ -44,6 +52,13 @@ export async function getUserWithBackup(
         (data.encrypted_private_key as string | null) ?? null,
       key_share: (data.key_share as string | null) ?? null,
       key_version: (data.key_version as number | null) ?? null,
+      server_share_ciphertext: (data.server_share_ciphertext as string | null) ?? null,
+      server_share_dek_ciphertext: (data.server_share_dek_ciphertext as string | null) ?? null,
+      server_share_kms_key_id: (data.server_share_kms_key_id as string | null) ?? null,
+      recovery_code_hash: (data.recovery_code_hash as string | null) ?? null,
+      recovery_code_used_at: (data.recovery_code_used_at as string | null) ?? null,
+      master_secret_hash: (data.master_secret_hash as string | null) ?? null,
+      scheme_version: (data.scheme_version as number | null) ?? null,
     };
   }
 
@@ -51,7 +66,7 @@ export async function getUserWithBackup(
   const { data: byWallet, error: walletErr } = await supabase
     .from("users")
     .select(
-      "id, email, wallet_address, full_name, created_at, public_key, encrypted_private_key, key_share, key_version",
+      "id, email, wallet_address, full_name, created_at, public_key, encrypted_private_key, key_share, key_version, server_share_ciphertext, server_share_dek_ciphertext, server_share_kms_key_id, recovery_code_hash, recovery_code_used_at, master_secret_hash, scheme_version",
     )
     .eq("wallet_address", idOrWallet)
     .single();
@@ -71,5 +86,12 @@ export async function getUserWithBackup(
       (byWallet.encrypted_private_key as string | null) ?? null,
     key_share: (byWallet.key_share as string | null) ?? null,
     key_version: (byWallet.key_version as number | null) ?? null,
+    server_share_ciphertext: (byWallet.server_share_ciphertext as string | null) ?? null,
+    server_share_dek_ciphertext: (byWallet.server_share_dek_ciphertext as string | null) ?? null,
+    server_share_kms_key_id: (byWallet.server_share_kms_key_id as string | null) ?? null,
+    recovery_code_hash: (byWallet.recovery_code_hash as string | null) ?? null,
+    recovery_code_used_at: (byWallet.recovery_code_used_at as string | null) ?? null,
+    master_secret_hash: (byWallet.master_secret_hash as string | null) ?? null,
+    scheme_version: (byWallet.scheme_version as number | null) ?? null,
   };
 }

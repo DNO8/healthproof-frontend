@@ -17,11 +17,14 @@
     "@supabase/supabase-js": "^2.98.0",
     "@tanstack/react-query": "^5.90.21",
     "@vercel/analytics": "^2.0.1",
-    "axios": "^1.13.6",
+    "@aws-sdk/client-kms": "^3.1053.0",
+    "@scure/bip39": "^2.2.0",
+    "axios": "^1.16.0",
     "gsap": "^3.14.2",
+    "secrets.js-grempe": "^2.0.0",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.16.0",
-    "next": "16.2.5",
+    "next": "16.2.6",
     "next-intl": "^4.8.3",
     "pinata": "^2.5.5",
     "qrcode.react": "^4.2.0",
@@ -42,6 +45,7 @@
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.0.0"
   }
 }

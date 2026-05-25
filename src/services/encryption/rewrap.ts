@@ -17,7 +17,7 @@ export async function rewrapKeyForRecipient(opts: {
 }): Promise<WrappedKey> {
   // 1. Get my private key from IndexedDB
   const myKeys = await getKeyPair(opts.myUserId);
-  if (!myKeys) {
+  if (!myKeys?.privateKey) {
     throw new Error("Encryption keys not found in this browser.");
   }
 

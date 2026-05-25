@@ -166,7 +166,7 @@ export function ShareResultsModal({
 
       // 4. Get my public key to include in QR
       const myKeys = await getKeyPair(patientId);
-      if (!myKeys) {
+      if (!myKeys?.publicKey) {
         throw new Error(t("noPatientKeys"));
       }
       const myPublicKeyJwk = await exportPublicKey(myKeys.publicKey);

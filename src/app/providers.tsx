@@ -12,6 +12,8 @@ import { useRegisterIdentity } from "@/hooks/healthcare-networks/useRegisterIden
 import { useSwitchToHygieia } from "@/hooks/admin/useSwitchToHygieia";
 import { KeyConflictBanner } from "@/components/feedback/KeyConflictBanner";
 import { RpcHealthBanner } from "@/components/feedback/RpcHealthBanner";
+import { RecoveryCodeModal } from "@/components/auth/RecoveryCodeModal";
+import { RecoveryInputModal } from "@/components/auth/RecoveryInputModal";
 import { wagmiConfig } from "@/lib/wagmi";
 
 const queryClient = new QueryClient();
@@ -26,13 +28,25 @@ function PrivyTokenSync({ children }: { children: React.ReactNode }) {
   useUpsertUser();
   useSyncWallet();
   useSwitchToHygieia();
-  useSyncKeys();
+  const { recoveryState, recoverWithCode, dismissRecoveryCode } = useSyncKeys();
   useRegisterIdentity();
 
   return (
     <>
       <RpcHealthBanner />
       <KeyConflictBanner />
+      {recoveryState.step === "show_recovery_code" && recoveryState.recoveryCode && (
+        <RecoveryCodeModal
+          recoveryCode={recoveryState.recoveryCode}
+          onDismiss={dismissRecoveryCode}
+        />
+      )}
+      {recoveryState.step === "needs_input" && (
+        <RecoveryInputModal
+          onRecover={recoverWithCode}
+          onDismiss={dismissRecoveryCode}
+        />
+      )}
       {children}
     </>
   );

@@ -34,8 +34,16 @@ CREATE TABLE public.users (
   created_at timestamp without time zone DEFAULT now(),
   public_key text,
   encrypted_private_key text,  -- legacy backup (PBKDF2+AES-GCM), migrate to key_share
-  key_share text,              -- Shamir share 1 (encrypted with server secret)
+  key_share text,              -- legacy Shamir share 1 (encrypted with server secret)
   key_version integer DEFAULT 1, -- increments on key rotation
+  -- New SSS(2,3) + KMS fields
+  server_share_ciphertext text,        -- share2 encrypted with AES-GCM + DEK
+  server_share_dek_ciphertext text,    -- DEK encrypted by AWS KMS CMK
+  server_share_kms_key_id text,        -- AWS KMS CMK ARN/ID
+  recovery_code_hash text,             -- SHA-256(normalized recovery code)
+  recovery_code_used_at timestamp without time zone,
+  master_secret_hash text,             -- SHA-256(master_secret) for integrity
+  scheme_version integer DEFAULT 1,    -- 1=legacy, 2=SSS(2,3)+KMS
   CONSTRAINT users_pkey PRIMARY KEY (id)
 );
 
@@ -73,4 +81,26 @@ CREATE TABLE public.audit_events (
   tx_hash character varying NOT NULL,
   timestamp timestamp without time zone NOT NULL,
   UNIQUE(tx_hash, resource_id, action_type)
+);
+
+-- Recovery magic links: single-use, time-limited tokens for recovery code delivery
+CREATE TABLE public.recovery_magic_links (
+  id uuid NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id text NOT NULL REFERENCES public.users(id),
+  token_hash character varying NOT NULL,          -- SHA-256(token)
+  jti character varying NOT NULL UNIQUE,          -- unique token id
+  expires_at timestamp without time zone NOT NULL,
+  consumed_at timestamp without time zone,
+  created_at timestamp without time zone DEFAULT now()
+);
+
+-- Recovery audit log
+CREATE TABLE public.recovery_audit (
+  id uuid NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id text NOT NULL REFERENCES public.users(id),
+  action character varying NOT NULL,              -- 'fetch_share', 'issue_magic_link', 'consume_magic_link', 'recovery_success', 'recovery_fail'
+  ip_address character varying,
+  user_agent character varying,
+  metadata jsonb DEFAULT '{}',
+  created_at timestamp without time zone DEFAULT now()
 );

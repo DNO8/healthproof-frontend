@@ -115,7 +115,7 @@ export function UploadResultsModal({
     try {
       // Get lab's key pair from IndexedDB
       const labKeys = await getKeyPair(labId);
-      if (!labKeys) {
+      if (!labKeys?.publicKey || !labKeys?.privateKey) {
         throw new Error(t("noLabKeys"));
       }
 
