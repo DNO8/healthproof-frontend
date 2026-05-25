@@ -12,6 +12,8 @@ import { EmptyState, SkeletonList } from "@/components/ui";
 import { FileText } from "lucide-react";
 import type { DocumentSecretRow } from "@/actions/documents/get-document-secret";
 import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
+import { getKeyPair } from "@/services/encryption/keystore";
+import { exportPublicKey } from "@/services/encryption/ecdh";
 
 function formatAddress(addr: string): string {
   if (!addr || addr.length < 10) return addr;
@@ -142,6 +144,28 @@ export default function DocumentsPage() {
         sileo.error({ title: t("noKey"), description: t("noUploaderKey") });
       }
       return null;
+    }
+
+    // Diagnostic: verify local keys match the registered public key in DB
+    try {
+      const myKeys = await getKeyPair(userId);
+      if (myKeys?.publicKey) {
+        const localPubJwk = await exportPublicKey(myKeys.publicKey);
+        const dbPubJwk = await getUserPublicKey(userId) ?? await getUserPublicKey(walletAddress);
+        console.log("[performDecrypt] localPubJwk:", localPubJwk.slice(0, 80) + "...");
+        console.log("[performDecrypt] dbPubJwk:   ", dbPubJwk ? dbPubJwk.slice(0, 80) + "..." : "null");
+        if (dbPubJwk && localPubJwk !== dbPubJwk) {
+          console.error("[performDecrypt] KEY MISMATCH: local keys do not match DB public_key");
+          if (!silent) {
+            const msg = t("keyMismatch") ?? "Your local encryption keys do not match your account. You may need to recover your keys using your recovery codes.";
+            setViewError(msg);
+            sileo.error({ title: t("decryptError"), description: msg });
+          }
+          return null;
+        }
+      }
+    } catch (diagErr) {
+      console.warn("[performDecrypt] key diagnostic error:", diagErr);
     }
 
     try {

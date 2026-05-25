@@ -14,6 +14,7 @@ import { KeyConflictBanner } from "@/components/feedback/KeyConflictBanner";
 import { RpcHealthBanner } from "@/components/feedback/RpcHealthBanner";
 import { RecoveryCodeModal } from "@/components/auth/RecoveryCodeModal";
 import { RecoveryInputModal } from "@/components/auth/RecoveryInputModal";
+import { RegenerateKeysModal } from "@/components/auth/RegenerateKeysModal";
 import { wagmiConfig } from "@/lib/wagmi";
 
 const queryClient = new QueryClient();
@@ -28,7 +29,7 @@ function PrivyTokenSync({ children }: { children: React.ReactNode }) {
   useUpsertUser();
   useSyncWallet();
   useSwitchToHygieia();
-  const { recoveryState, recoverWithCode, dismissRecoveryCode } = useSyncKeys();
+  const { recoveryState, recoverWithCode, dismissRecoveryCode, regenerateKeys } = useSyncKeys();
   useRegisterIdentity();
 
   return (
@@ -44,6 +45,12 @@ function PrivyTokenSync({ children }: { children: React.ReactNode }) {
       {recoveryState.step === "needs_input" && (
         <RecoveryInputModal
           onRecover={recoverWithCode}
+          onDismiss={dismissRecoveryCode}
+        />
+      )}
+      {recoveryState.needsRegeneration && (
+        <RegenerateKeysModal
+          onRegenerate={regenerateKeys}
           onDismiss={dismissRecoveryCode}
         />
       )}

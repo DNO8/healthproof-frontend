@@ -12,12 +12,6 @@ async function saveServerShareHandler(
     throw new Error("Unauthorized: userId mismatch");
   }
 
-  // If KMS is not configured, skip server share gracefully
-  if (!process.env.AWS_KMS_KEY_ID) {
-    console.warn("[saveServerShare] AWS_KMS_KEY_ID not configured; skipping server share backup");
-    return { success: true, skipped: true };
-  }
-
   const shareBytes = new Uint8Array(
     data.share2.split("").map((c) => c.charCodeAt(0))
   );

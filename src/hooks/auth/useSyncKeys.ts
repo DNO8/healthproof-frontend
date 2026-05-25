@@ -43,6 +43,7 @@ const SYNCED_KEY = "hp_keys_synced";
 
 export interface RecoveryState {
   needsRecoveryCode: boolean;
+  needsRegeneration: boolean;
   recoveryCode: string | null;
   step: "idle" | "show_recovery_code" | "needs_input" | "recovering";
 }
@@ -54,6 +55,7 @@ export function useSyncKeys() {
   const clearConflict = useKeyConflictStore((s) => s.clearConflict);
   const [recoveryState, setRecoveryState] = useState<RecoveryState>({
     needsRecoveryCode: false,
+    needsRegeneration: false,
     recoveryCode: null,
     step: "idle",
   });
@@ -83,12 +85,8 @@ export function useSyncKeys() {
       schemeVersion: 2,
     });
 
-    // Send share2 to server (KMS envelope encryption) — optional
-    try {
-      await saveServerShare({ userId: uid, share2 });
-    } catch (e) {
-      console.warn("[useSyncKeys] Server share backup failed (KMS likely not configured):", e);
-    }
+    // Send share2 to server (KMS envelope encryption)
+    await saveServerShare({ userId: uid, share2 });
 
     // Save hashes to DB
     await saveRecoveryHash({ userId: uid, recoveryCodeHash: recoveryHash });
@@ -104,6 +102,7 @@ export function useSyncKeys() {
     // Show recovery code once during onboarding
     setRecoveryState({
       needsRecoveryCode: true,
+      needsRegeneration: false,
       recoveryCode,
       step: "show_recovery_code",
     });
@@ -240,8 +239,19 @@ export function useSyncKeys() {
             const share2 = await fetchServerShare();
             if (!share2) {
               console.error("[useSyncKeys] Server share2 unavailable");
+              // If server never had a share (KMS was off during onboarding), offer regeneration
+              if (!userWithBackup?.server_share_ciphertext) {
+                setRecoveryState({
+                  needsRecoveryCode: false,
+                  needsRegeneration: true,
+                  recoveryCode: null,
+                  step: "idle",
+                });
+                return;
+              }
               setRecoveryState({
                 needsRecoveryCode: true,
+                needsRegeneration: false,
                 recoveryCode: null,
                 step: "needs_input",
               });
@@ -257,6 +267,7 @@ export function useSyncKeys() {
             if (!result) {
               setRecoveryState({
                 needsRecoveryCode: true,
+                needsRegeneration: false,
                 recoveryCode: null,
                 step: "needs_input",
               });
@@ -273,9 +284,19 @@ export function useSyncKeys() {
             return;
           }
 
-          // No local share1 → need recovery code
+          // No local share1 → need recovery code or regeneration
+          if (!userWithBackup?.server_share_ciphertext) {
+            setRecoveryState({
+              needsRecoveryCode: false,
+              needsRegeneration: true,
+              recoveryCode: null,
+              step: "idle",
+            });
+            return;
+          }
           setRecoveryState({
             needsRecoveryCode: true,
+            needsRegeneration: false,
             recoveryCode: null,
             step: "needs_input",
           });
@@ -337,11 +358,7 @@ export function useSyncKeys() {
               schemeVersion: 2,
             });
 
-            try {
-              await saveServerShare({ userId, share2 });
-            } catch (e) {
-              console.warn("[useSyncKeys] Legacy migration: server share backup failed (KMS not configured):", e);
-            }
+            await saveServerShare({ userId, share2 });
             await saveRecoveryHash({ userId, recoveryCodeHash: recoveryHash });
             await saveMasterSecretHash({ userId, masterSecretHash: masterHash });
             await updatePublicKey({ id: userId, public_key: JSON.stringify(legacyPubJwk) });
@@ -418,6 +435,7 @@ export function useSyncKeys() {
       clearConflict();
       setRecoveryState({
         needsRecoveryCode: false,
+        needsRegeneration: false,
         recoveryCode: null,
         step: "idle",
       });
@@ -429,14 +447,59 @@ export function useSyncKeys() {
     }
   };
 
+  // ── Regenerate keys for users who lost everything ──
+  const regenerateKeys = async (): Promise<boolean> => {
+    if (!userId) return false;
+    try {
+      console.warn("[useSyncKeys] Regenerating keys for", userId);
+      const { masterSecret, publicKeyJwk, keyPair } = await generateMasterSecret();
+      const shares = generateShares(masterSecret, 2, 3);
+      const [share1, share2, share3] = shares;
+
+      const masterHash = await hashMasterSecret(masterSecret);
+      const recoveryCode = encodeRecoveryCode(
+        new Uint8Array(share3.split("").map((c) => c.charCodeAt(0)))
+      );
+      const recoveryHash = await hashRecoveryCode(recoveryCode);
+
+      await saveKeyPair(userId, keyPair, {
+        share1,
+        masterSecretHash: masterHash,
+        schemeVersion: 2,
+      });
+
+      await saveServerShare({ userId, share2 });
+      await saveRecoveryHash({ userId, recoveryCodeHash: recoveryHash });
+      await saveMasterSecretHash({ userId, masterSecretHash: masterHash });
+      await updatePublicKey({ id: userId, public_key: publicKeyJwk });
+
+      sessionStorage.setItem(SYNCED_KEY, userId);
+      clearConflict();
+      clearDbUserCache();
+
+      // Show the new recovery code
+      setRecoveryState({
+        needsRecoveryCode: true,
+        needsRegeneration: false,
+        recoveryCode,
+        step: "show_recovery_code",
+      });
+      return true;
+    } catch (e) {
+      console.error("[useSyncKeys] regenerateKeys failed:", e);
+      return false;
+    }
+  };
+
   // ── Dismiss recovery code modal ──
   const dismissRecoveryCode = () => {
     setRecoveryState({
       needsRecoveryCode: false,
+      needsRegeneration: false,
       recoveryCode: null,
       step: "idle",
     });
   };
 
-  return { recoveryState, recoverWithCode, dismissRecoveryCode };
+  return { recoveryState, recoverWithCode, dismissRecoveryCode, regenerateKeys };
 }

@@ -382,6 +382,9 @@
       "updated": "Perfil actualizado",
       "updatedDesc": "Tu perfil se ha guardado exitosamente."
     },
+    "nav": {
+      "profile": "Perfil"
+    },
     "sidebar": {
       "overview": "Resumen",
       "documents": "Documentos",

@@ -82,13 +82,6 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!process.env.AWS_KMS_KEY_ID) {
-      return NextResponse.json(
-        { error: "KMS not configured" },
-        { status: 503 }
-      );
-    }
-
     // Decrypt via KMS
     const shareBytes = await decryptShareForServer({
       encryptedShare: data.server_share_ciphertext,
