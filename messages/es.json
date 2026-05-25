@@ -341,6 +341,12 @@
     "emergency": {
       "title": "Acceso de Emergencia Rompecristales",
       "description": "Solicita acceso de emergencia a los registros de un paciente cuando los permisos estándar no están disponibles. Todas las solicitudes se registran on-chain para auditoría.",
+      "selectPatient": "Seleccionar Paciente",
+      "selectDocument": "Seleccionar Documento",
+      "loadingPatients": "Cargando pacientes...",
+      "loadingDocuments": "Cargando documentos...",
+      "noPatients": "No hay pacientes registrados",
+      "noDocuments": "El paciente no tiene documentos",
       "patientWallet": "Dirección Wallet del Paciente",
       "documentId": "ID del Documento o CID",
       "reason": "Razón de Emergencia",
