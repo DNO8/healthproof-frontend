@@ -83,9 +83,9 @@ export default function LabOrdersPage() {
 
   const filteredOrders = orders.filter((o) => {
     if (activeFilter === "all") return true;
-    if (activeFilter === "pending") return o.status === 0;
+    if (activeFilter === "pending") return o.status === 0 || o.status === 1;
     if (activeFilter === "assigned") return o.status === 1;
-    if (activeFilter === "completed") return o.status === 2;
+    if (activeFilter === "completed") return o.status >= 2;
     return true;
   });
 

@@ -341,6 +341,12 @@
     "emergency": {
       "title": "Break-the-Glass Emergency Access",
       "description": "Request emergency access to a patient's records when standard permissions are unavailable. All requests are logged on-chain for audit.",
+      "selectPatient": "Select Patient",
+      "selectDocument": "Select Document",
+      "loadingPatients": "Loading patients...",
+      "loadingDocuments": "Loading documents...",
+      "noPatients": "No registered patients",
+      "noDocuments": "This patient has no documents",
       "patientWallet": "Patient Wallet Address",
       "documentId": "Document ID or CID",
       "reason": "Emergency Reason",

@@ -69,9 +69,11 @@ async function countDistinctPatients(): Promise<number> {
 async function countPendingOrdersForLab(wallet: string): Promise<number> {
   try {
     const client = getPublicClient();
+    const MedicalOrderRegistryAbi = await import("@/lib/abis/MedicalOrderRegistry.json").then((m) => m.default ?? m);
+
     const [orderIds] = (await client.readContract({
       address: CONTRACT_ADDRESSES.MedicalOrderRegistry as `0x${string}`,
-      abi: await import("@/lib/abis/MedicalOrderRegistry.json").then((m) => m.default),
+      abi: MedicalOrderRegistryAbi,
       functionName: "getOrdersByLab",
       args: [wallet as `0x${string}`, BigInt(0), BigInt(100)],
     })) as [`0x${string}`[], bigint];
@@ -81,10 +83,21 @@ async function countPendingOrdersForLab(wallet: string): Promise<number> {
       try {
         const order = (await client.readContract({
           address: CONTRACT_ADDRESSES.MedicalOrderRegistry as `0x${string}`,
-          abi: await import("@/lib/abis/MedicalOrderRegistry.json").then((m) => m.default),
-          functionName: "orders",
+          abi: MedicalOrderRegistryAbi,
+          functionName: "getOrder",
           args: [orderId],
-        })) as { status: number; createdAt: bigint };
+        })) as {
+          patient: string;
+          doctor: string;
+          institution: string;
+          episodeId: `0x${string}`;
+          orderType: `0x${string}`;
+          examType: `0x${string}`;
+          assignedLab: string;
+          status: number;
+          createdAt: bigint;
+        };
+        // Count CREATED (0) and LAB_ASSIGNED (1) as pending
         if (Number(order.createdAt) !== 0 && order.status < 2) {
           pending++;
         }
