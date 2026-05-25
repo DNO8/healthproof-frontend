@@ -35,6 +35,7 @@ export function useDocumentDecrypt() {
         return file;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
+        console.error("[useDocumentDecrypt] error:", msg, err);
         setError(msg);
         return null;
       } finally {
