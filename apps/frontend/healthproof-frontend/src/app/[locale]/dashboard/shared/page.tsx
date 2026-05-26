@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { usePrivy } from "@privy-io/react-auth";
@@ -22,6 +22,7 @@ function formatAddress(addr: string): string {
 
 export default function SharedDocumentsPage() {
   const t = useTranslations("sharedDocuments");
+  const router = useRouter();
   const walletAddress = useWalletAddress();
   const { user } = usePrivy();
   const userId = user?.id ?? "";
@@ -32,6 +33,8 @@ export default function SharedDocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedDoc, setSelectedDoc] = useState<SharedDocument | null>(null);
   const [patientKeys, setPatientKeys] = useState<Record<string, string | null>>({});
+  const [hasAttemptedAutoDecrypt, setHasAttemptedAutoDecrypt] = useState(false);
+  const qrPatientKey = searchParams.get("pk");
 
   const { decrypt, decryptedFile, loading: decryptLoading, error: decryptError, clear } = useDocumentDecrypt();
 
@@ -71,15 +74,18 @@ export default function SharedDocumentsPage() {
 
   // Auto-select document from QR scan redirect
   useEffect(() => {
-    if (!highlightDocId || docs.length === 0 || !patientKeys) return;
+    if (!highlightDocId || docs.length === 0 || hasAttemptedAutoDecrypt) return;
     const doc = docs.find((d) => d.document_id === highlightDocId);
     if (doc && doc.document_id !== selectedDoc?.document_id) {
       setSelectedDoc(doc);
       clear();
       performDecrypt(doc);
     }
+    setHasAttemptedAutoDecrypt(true);
+    // Clean URL so refresh doesn't retry with stale params
+    router.replace("/dashboard/shared");
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [highlightDocId, docs, patientKeys]);
+  }, [highlightDocId, docs, qrPatientKey]);
 
   async function performDecrypt(doc: SharedDocument, silent = false) {
     if (!walletAddress || !userId) return null;
@@ -104,7 +110,18 @@ export default function SharedDocumentsPage() {
       return null;
     }
 
-    const senderKey = patientKeys[doc.patient_wallet];
+    // Resolve patient public key: QR param → pre-fetched map → on-demand fetch
+    let senderKey = qrPatientKey ?? patientKeys[doc.patient_wallet] ?? null;
+    if (!senderKey) {
+      try {
+        senderKey = await getUserPublicKey(doc.patient_wallet);
+        if (senderKey) {
+          setPatientKeys((prev) => ({ ...prev, [doc.patient_wallet]: senderKey }));
+        }
+      } catch {
+        senderKey = null;
+      }
+    }
     if (!senderKey) {
       if (!silent) sileo.error({ title: t("noKey"), description: t("noPatientKey") });
       return null;
@@ -116,19 +133,31 @@ export default function SharedDocumentsPage() {
       if (!silent) sileo.error({ title: t("noKey"), description: t("invalidKey") });
       return null;
     }
-    return await decrypt({
+    const result = await decrypt({
       cid: doc.document_id,
       iv: doc.iv,
       wrappedKey,
       senderPublicKeyJwk: senderKey,
       myUserId: userId,
     });
+    if (!result && !silent) {
+      sileo.error({ title: t("decryptFailed"), description: t("decryptFailedDesc") });
+    }
+    return result;
   }
 
   async function handleView(doc: SharedDocument) {
     setSelectedDoc(doc);
     clear();
     await performDecrypt(doc);
+  }
+
+  function handleDownload() {
+    if (!decryptedFile) return;
+    const a = document.createElement("a");
+    a.href = decryptedFile.url;
+    a.download = selectedDoc?.file_name ?? `document-${selectedDoc?.document_id.slice(0, 8) ?? "file"}`;
+    a.click();
   }
 
   const isDecrypting = decryptLoading;
@@ -189,8 +218,15 @@ export default function SharedDocumentsPage() {
                 </div>
 
                 {isSelected && decryptedFile && (
-                  <div className="mt-3 pt-3 border-t border-slate-200/60">
+                  <div className="mt-3 pt-3 border-t border-slate-200/60 space-y-3">
                     <FilePreview file={decryptedFile} />
+                    <button
+                      className="w-full rounded-lg bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
+                      onClick={handleDownload}
+                      type="button"
+                    >
+                      {t("download")}
+                    </button>
                   </div>
                 )}
                 {isSelected && decryptError && (
