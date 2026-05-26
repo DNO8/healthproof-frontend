@@ -10,12 +10,18 @@ import { savePermissionKey } from "@/actions/permissions/save-permission-key";
 import { checkAccessOnChain } from "@/actions/permissions/check-access-onchain";
 import { QRScanner } from "@/components/scanner/QRScanner";
 import { sileo } from "sileo";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+
+function isValidWallet(addr: unknown): boolean {
+  return typeof addr === "string" && addr.startsWith("0x") && addr.length === 42;
+}
 
 export default function ScanPage() {
   const t = useTranslations("dashboard.scan");
   const router = useRouter();
   const { user } = usePrivy();
   const myUserId = user?.id ?? "";
+  const walletAddress = useWalletAddress();
 
   const [qrInput, setQrInput] = useState("");
   const [scanning, setScanning] = useState(false);
@@ -28,11 +34,24 @@ export default function ScanPage() {
     try {
       const data = JSON.parse(payload.trim()) as EncryptedQRData;
       const crypto = data.crypto;
-      if (!crypto?.document_id || !crypto.cid || !crypto.encrypted_key) {
+      if (!crypto?.document_id || !crypto.cid || !crypto.encrypted_key || !crypto.patient_public_key) {
+        throw new Error(t("invalidQR"));
+      }
+      if (!data.payload?.patient_wallet || !data.payload?.grantee_wallet) {
+        throw new Error(t("invalidQR"));
+      }
+      if (!isValidWallet(data.payload.patient_wallet) || !isValidWallet(data.payload.grantee_wallet)) {
         throw new Error(t("invalidQR"));
       }
       if (isExpired(data)) {
         throw new Error(t("expiredQR"));
+      }
+      // Warn if current wallet doesn't match QR grantee (cross-device wallet mismatch)
+      if (walletAddress && walletAddress.toLowerCase() !== data.payload.grantee_wallet.toLowerCase()) {
+        console.warn("[ScanPage] Wallet mismatch:", {
+          current: walletAddress,
+          qrGrantee: data.payload.grantee_wallet,
+        });
       }
       const access = await checkAccessOnChain({
         patientWallet: data.payload.patient_wallet,
@@ -42,16 +61,24 @@ export default function ScanPage() {
       if (!access.success || !access.data) {
         throw new Error(t("noAccess"));
       }
-      await savePermissionKey({
+      const saveResult = await savePermissionKey({
         document_id: crypto.document_id,
         patient_wallet: data.payload.patient_wallet,
         grantee_wallet: data.payload.grantee_wallet,
         encrypted_key: JSON.stringify(crypto.encrypted_key),
       });
+      if ("error" in saveResult && saveResult.error) {
+        console.warn("[ScanPage] savePermissionKey:", saveResult.error);
+      }
       sileo.success({ title: t("accessGranted"), description: t("redirecting") });
-      router.push(`/dashboard/shared?doc=${encodeURIComponent(crypto.document_id)}`);
+      const params = new URLSearchParams();
+      params.set("doc", crypto.document_id);
+      params.set("pk", crypto.patient_public_key);
+      router.push(`/dashboard/shared?${params.toString()}`);
     } catch (e) {
-      setError(String(e).slice(0, 200));
+      const msg = String(e).slice(0, 200);
+      setError(msg);
+      sileo.error({ title: t("scanErrorTitle"), description: msg });
     } finally {
       setScanning(false);
     }
