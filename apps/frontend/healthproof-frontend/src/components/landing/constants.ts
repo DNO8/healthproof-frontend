@@ -44,6 +44,24 @@ export const POST_BLOCKCHAIN_ASSETS = [
   "/images/icons/post-blockchain/ficha-digital.png",
 ];
 
+// Demo mocks for the interactive hero
+export const DEMO_PATIENTS = [
+  { id: "P001", name: "Ana García", wallet: "0xA1b...3c4d" },
+  { id: "P002", name: "Carlos Ruiz", wallet: "0xB2c...4d5e" },
+  { id: "P003", name: "María López", wallet: "0xC3d...5e6f" },
+];
+
+export const DEMO_LABS = [
+  { id: "L001", name: "Lab Central", wallet: "0xD4e...6f7a" },
+  { id: "L002", name: "BioScan Labs", wallet: "0xE5f...7a8b" },
+  { id: "L003", name: "MediTest", wallet: "0xF6a...8b9c" },
+];
+
+export const DEMO_EXAM_TYPE = "Complete Blood Count";
+export const DEMO_ORDER_ID = "ORD-7462";
+export const DEMO_FILE_NAME = "result_cbc.pdf";
+export const DEMO_HASH = "0x7a3f...9e2d";
+
 export const HERO_CIRCLE_DECORS: DecorShape[] = [
   { className: "left-6 top-10", color: "#0EA5B7", size: 10 },
   { className: "left-10 top-16", color: "#38BDF8", size: 8 },

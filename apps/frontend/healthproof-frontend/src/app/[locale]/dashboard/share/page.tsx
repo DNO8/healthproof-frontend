@@ -308,13 +308,39 @@ export default function SharePage() {
               <QRCodeSVG value={qrData} size={200} />
             </div>
             <p className="text-xs text-slate-500">{t("qrExpiresIn", { minutes: QR_EXPIRY_MINUTES })}</p>
-            <button
-              className="neu-surface hover:neu-pressed rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 transition-all"
-              onClick={() => setQrData(null)}
-              type="button"
-            >
-              {t("generateNew")}
-            </button>
+
+            {/* Payload preview */}
+            <details className="w-full">
+              <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-700 text-center">
+                {t("viewPayload")}
+              </summary>
+              <pre className="neu-pressed mt-2 max-h-40 overflow-auto rounded-xl p-3 text-[10px] text-slate-600">
+                {qrData}
+              </pre>
+            </details>
+
+            <div className="flex w-full gap-2">
+              <button
+                className="neu-surface hover:neu-pressed flex-1 rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 transition-all"
+                onClick={() => {
+                  navigator.clipboard.writeText(qrData);
+                  sileo.success({
+                    title: t("copied"),
+                    description: t("copiedDesc"),
+                  });
+                }}
+                type="button"
+              >
+                {t("copyPayload")}
+              </button>
+              <button
+                className="neu-surface hover:neu-pressed flex-1 rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 transition-all"
+                onClick={() => setQrData(null)}
+                type="button"
+              >
+                {t("generateNew")}
+              </button>
+            </div>
           </div>
         )}
       </div>
