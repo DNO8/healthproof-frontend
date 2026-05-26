@@ -1,8 +1,9 @@
 import gsap from "gsap";
+import { Check, MousePointerClick } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useEffect, useRef, useState } from "react";
 import {
   ACTORS,
   HERO_CIRCLE_DECORS,
@@ -10,27 +11,44 @@ import {
   POST_BLOCKCHAIN_ASSETS,
   PRE_BLOCKCHAIN_ASSETS,
 } from "@/components/landing/constants";
+import {
+  type DemoActor,
+  type DemoSteps,
+  HeroDemoModal,
+} from "@/components/landing/HeroDemoModal";
 import { Button, DecorativeCircle, DecorativeCross } from "@/components/ui";
 import { useHeroPathAnimation } from "@/hooks/ui/useHeroPathAnimation";
 
 const ICON_COUNT = 12;
 
+function getPathStates(steps: DemoSteps): Record<string, boolean> {
+  return {
+    "path-mc-lab": steps.lab,
+    "path-lab-pat": steps.patient,
+    "path-pat-mc": steps.doctor,
+  };
+}
+
 export function HeroCarouselSection() {
-  const [verified, setVerified] = useState(false);
   const t = useTranslations("hero");
   const tActors = useTranslations("actors");
+  const tDemo = useTranslations("heroDemo");
   const router = useRouter();
   const sectionRef = useRef<HTMLElement | null>(null);
   const iconRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const imgRefs = useRef<Array<HTMLImageElement | null>>([]);
   const headline1Ref = useRef<HTMLSpanElement | null>(null);
   const headline2Ref = useRef<HTMLSpanElement | null>(null);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setVerified((prev) => !prev);
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
+  const [steps, setSteps] = useState<DemoSteps>({
+    doctor: false,
+    patient: false,
+    lab: false,
+  });
+  const [activeActor, setActiveActor] = useState<DemoActor | null>(null);
+
+  const allDone = steps.doctor && steps.patient && steps.lab;
+  const pathStates = getPathStates(steps);
 
   useEffect(() => {
     const h1 = headline1Ref.current;
@@ -52,11 +70,33 @@ export function HeroCarouselSection() {
     };
   }, []);
 
-  const activeAssets = verified
-    ? POST_BLOCKCHAIN_ASSETS
-    : PRE_BLOCKCHAIN_ASSETS;
+  useHeroPathAnimation(
+    sectionRef,
+    iconRefs,
+    imgRefs,
+    pathStates,
+    PRE_BLOCKCHAIN_ASSETS,
+    POST_BLOCKCHAIN_ASSETS,
+  );
 
-  useHeroPathAnimation(sectionRef, iconRefs, verified);
+  const handleComplete = (actor: DemoActor) => {
+    setSteps((prev) => ({ ...prev, [actor]: true }));
+    setActiveActor(null);
+  };
+
+  const actorCardClass =
+    "group absolute cursor-pointer rounded-3xl border border-transparent bg-transparent p-2 transition hover:bg-white/30";
+
+  const openActor = (actor: DemoActor) => {
+    setActiveActor(actor);
+  };
+
+  const handleActorKeyDown = (e: React.KeyboardEvent, actor: DemoActor) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openActor(actor);
+    }
+  };
 
   return (
     <section
@@ -119,10 +159,10 @@ export function HeroCarouselSection() {
               d="M 200 220 C 350 80, 650 80, 800 220"
               fill="none"
               id="path-mc-lab"
-              opacity="0.35"
+              opacity={pathStates["path-mc-lab"] ? "0.65" : "0.35"}
               stroke="url(#pathGrad)"
               strokeDasharray="8 6"
-              strokeWidth="2"
+              strokeWidth={pathStates["path-mc-lab"] ? "3" : "2"}
             />
             {/* Laboratory → Patient (right arc) */}
             <path
@@ -130,10 +170,10 @@ export function HeroCarouselSection() {
               d="M 800 220 C 780 360, 620 460, 500 440"
               fill="none"
               id="path-lab-pat"
-              opacity="0.35"
+              opacity={pathStates["path-lab-pat"] ? "0.65" : "0.35"}
               stroke="url(#pathGrad)"
               strokeDasharray="8 6"
-              strokeWidth="2"
+              strokeWidth={pathStates["path-lab-pat"] ? "3" : "2"}
             />
             {/* Patient → Medical Center (left arc) */}
             <path
@@ -141,10 +181,10 @@ export function HeroCarouselSection() {
               d="M 500 440 C 380 460, 220 360, 200 220"
               fill="none"
               id="path-pat-mc"
-              opacity="0.35"
+              opacity={pathStates["path-pat-mc"] ? "0.65" : "0.35"}
               stroke="url(#pathGrad)"
               strokeDasharray="8 6"
-              strokeWidth="2"
+              strokeWidth={pathStates["path-pat-mc"] ? "3" : "2"}
             />
             <defs>
               <linearGradient id="pathGrad" x1="0%" x2="100%" y1="0%" y2="0%">
@@ -156,7 +196,13 @@ export function HeroCarouselSection() {
           </svg>
 
           {/* Actor: Medical Center (left) */}
-          <div className="absolute left-[6%] top-[22%] z-10 flex flex-col items-center sm:left-[10%] sm:top-[18%]">
+          <div
+            className={`${actorCardClass} left-[6%] top-[22%] z-10 flex flex-col items-center sm:left-[10%] sm:top-[18%]`}
+            onClick={() => openActor("doctor")}
+            onKeyDown={(e) => handleActorKeyDown(e, "doctor")}
+            role="button"
+            tabIndex={0}
+          >
             <div className="relative h-[80px] w-[100px] sm:h-[140px] sm:w-[180px] lg:h-[170px] lg:w-[210px]">
               <Image
                 alt={tActors("medicalCenter")}
@@ -166,6 +212,16 @@ export function HeroCarouselSection() {
                 sizes="(max-width: 640px) 100px, (max-width: 1024px) 180px, 210px"
                 src={ACTORS[0].image}
               />
+              {steps.doctor && (
+                <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400 text-white shadow-md">
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+              )}
+              {!steps.doctor && (
+                <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-sky-400 text-white shadow-md opacity-0 transition-opacity group-hover:opacity-100">
+                  <MousePointerClick className="h-3.5 w-3.5" />
+                </span>
+              )}
             </div>
             <h3 className="mt-1 text-xs font-semibold text-slate-700 sm:text-sm">
               {tActors("medicalCenter")}
@@ -173,7 +229,13 @@ export function HeroCarouselSection() {
           </div>
 
           {/* Actor: Laboratory (right) */}
-          <div className="absolute right-[6%] top-[22%] z-10 flex flex-col items-center sm:right-[10%] sm:top-[18%]">
+          <div
+            className={`${actorCardClass} right-[6%] top-[22%] z-10 flex flex-col items-center sm:right-[10%] sm:top-[18%]`}
+            onClick={() => openActor("lab")}
+            onKeyDown={(e) => handleActorKeyDown(e, "lab")}
+            role="button"
+            tabIndex={0}
+          >
             <div className="relative h-[80px] w-[100px] sm:h-[140px] sm:w-[180px] lg:h-[170px] lg:w-[210px]">
               <Image
                 alt={tActors("laboratory")}
@@ -182,6 +244,16 @@ export function HeroCarouselSection() {
                 sizes="(max-width: 640px) 100px, (max-width: 1024px) 180px, 210px"
                 src={ACTORS[1].image}
               />
+              {steps.lab && (
+                <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400 text-white shadow-md">
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+              )}
+              {!steps.lab && (
+                <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-sky-400 text-white shadow-md opacity-0 transition-opacity group-hover:opacity-100">
+                  <MousePointerClick className="h-3.5 w-3.5" />
+                </span>
+              )}
             </div>
             <h3 className="mt-1 text-xs font-semibold text-slate-700 sm:text-sm">
               {tActors("laboratory")}
@@ -189,7 +261,13 @@ export function HeroCarouselSection() {
           </div>
 
           {/* Actor: Patient (bottom center) */}
-          <div className="absolute bottom-[16px] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center sm:bottom-[100px]">
+          <div
+            className={`${actorCardClass} bottom-[16px] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center sm:bottom-[100px]`}
+            onClick={() => openActor("patient")}
+            onKeyDown={(e) => handleActorKeyDown(e, "patient")}
+            role="button"
+            tabIndex={0}
+          >
             <div className="relative h-[90px] w-[60px] sm:h-[150px] sm:w-[100px] lg:h-[180px] lg:w-[120px]">
               <Image
                 alt={tActors("patient")}
@@ -199,6 +277,16 @@ export function HeroCarouselSection() {
                 sizes="(max-width: 640px) 60px, (max-width: 1024px) 100px, 120px"
                 src={ACTORS[2].image}
               />
+              {steps.patient && (
+                <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400 text-white shadow-md">
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+              )}
+              {!steps.patient && (
+                <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-sky-400 text-white shadow-md opacity-0 transition-opacity group-hover:opacity-100">
+                  <MousePointerClick className="h-3.5 w-3.5" />
+                </span>
+              )}
             </div>
             <h3 className="mt-1 text-xs font-semibold text-slate-700 sm:text-sm">
               {tActors("patient")}
@@ -208,93 +296,110 @@ export function HeroCarouselSection() {
           {/* Animated icons traveling along paths */}
           <div className="pointer-events-none absolute inset-0 z-20">
             {Array.from({ length: ICON_COUNT }, (_, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: icon list is static and order never changes
               <div
                 className="absolute left-0 top-0 opacity-0"
-                key={`icon-${verified ? "post" : "pre"}-${i}`}
+                key={`icon-${i}`}
                 ref={(node) => {
                   iconRefs.current[i] = node;
                 }}
               >
-                <Image
+                <img
                   alt="asset"
                   className="object-contain drop-shadow-[0_6px_12px_rgba(104,120,156,0.25)]"
-                  height={verified ? 38 : 30}
-                  src={activeAssets[i % activeAssets.length]}
-                  width={verified ? 38 : 30}
+                  height={30}
+                  ref={(node) => {
+                    imgRefs.current[i] = node;
+                  }}
+                  src={PRE_BLOCKCHAIN_ASSETS[i % PRE_BLOCKCHAIN_ASSETS.length]}
+                  width={30}
                 />
               </div>
             ))}
           </div>
 
-          {/* CTA — inside box on sm+, hidden on mobile */}
-          <div className="absolute inset-x-0 bottom-[-30px] p-8 z-50 hidden flex-col items-center gap-2 sm:flex">
-            <p
-              className="max-w-xl px-4 text-center text-sm text-slate-500"
-              key={verified ? "verified-caption" : "base-caption"}
-              style={{ animation: "fadeIn 0.6s ease" }}
-            >
-              {verified ? (
-                t("captionVerified")
-              ) : (
-                <>
-                  {t("captionBase")}{" "}
-                  <strong className="text-slate-700">
-                    {t("captionBaseBold")}
-                  </strong>
-                  .
-                </>
-              )}
+          {/* Final CTA overlay when all done — desktop only */}
+          {allDone && (
+            <div className="absolute inset-0 z-40 hidden flex-col items-center justify-center gap-3 sm:flex">
+              <p className="text-center text-base font-semibold text-slate-800 drop-shadow-sm">
+                {tDemo("demoComplete")}
+              </p>
+              <Button
+                className="min-w-[240px] animate-[fadeIn_0.6s_ease]"
+                onClick={() => router.push("/auth")}
+                size="lg"
+                variant="primary"
+              >
+                {tDemo("tryItNow")}
+              </Button>
+            </div>
+          )}
+
+          {/* Skip demo CTA — inside box on sm+, hidden on mobile */}
+          {!allDone && (
+            <div className="absolute inset-x-0 bottom-[-30px] p-8 z-50 hidden flex-col items-center gap-2 sm:flex">
+              <p className="max-w-xl px-4 text-center text-sm text-slate-500">
+                {t("captionBase")}{" "}
+                <strong className="text-slate-700">{t("captionBaseBold")}</strong>
+                .
+              </p>
+              <Button
+                className="min-w-[250px]"
+                onClick={() => router.push("/auth")}
+                size="lg"
+                variant="primary"
+              >
+                {t("buttonCta")}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* CTA — below box on mobile only */}
+        {!allDone && (
+          <div className="mt-12 flex flex-col items-center gap-2 sm:hidden">
+            <p className="max-w-[280px] px-4 text-center text-xs text-slate-500">
+              {t("captionBase")}{" "}
+              <strong className="text-slate-700">{t("captionBaseBold")}</strong>.
             </p>
             <Button
-              className="min-w-[250px] transition-all duration-500"
+              className="min-w-[200px]"
               onClick={() => router.push("/auth")}
               size="lg"
               variant="primary"
             >
-              <span
-                key="cta"
-                style={{ animation: "fadeIn 0.5s ease" }}
-              >
-                {t("buttonCta")}
-              </span>
+              {t("buttonCta")}
             </Button>
           </div>
-        </div>
+        )}
 
-        {/* CTA — below box on mobile only */}
-        <div className="mt-12 flex flex-col items-center gap-2 sm:hidden">
-          <p
-            className="max-w-[280px] px-4 text-center text-xs text-slate-500"
-            key={verified ? "verified-caption-m" : "base-caption-m"}
-            style={{ animation: "fadeIn 0.6s ease" }}
-          >
-            {verified ? (
-              t("captionVerified")
-            ) : (
-              <>
-                {t("captionBase")}{" "}
-                <strong className="text-slate-700">
-                  {t("captionBaseBold")}
-                </strong>
-                .
-              </>
-            )}
-          </p>
-          <Button
-            className="min-w-[200px] transition-all duration-500"
-            onClick={() => router.push("/auth")}
-            size="lg"
-            variant="primary"
-          >
-            <span
-              key="cta-m"
-              style={{ animation: "fadeIn 0.5s ease" }}
+        {/* Final CTA — below box on mobile when demo complete */}
+        {allDone && (
+          <div className="mt-8 flex flex-col items-center gap-2 sm:hidden">
+            <p className="text-center text-base font-semibold text-slate-800">
+              {tDemo("demoComplete")}
+            </p>
+            <Button
+              className="min-w-[220px] animate-[fadeIn_0.6s_ease]"
+              onClick={() => router.push("/auth")}
+              size="lg"
+              variant="primary"
             >
-              {t("buttonCta")}
-            </span>
-          </Button>
-        </div>
+              {tDemo("tryItNow")}
+            </Button>
+          </div>
+        )}
       </div>
+
+      {/* Demo Modal */}
+      {activeActor && (
+        <HeroDemoModal
+          actor={activeActor}
+          onClose={() => setActiveActor(null)}
+          onComplete={() => handleComplete(activeActor)}
+          steps={steps}
+        />
+      )}
     </section>
   );
 }

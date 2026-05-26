@@ -1,7 +1,7 @@
 import gsap from "gsap";
 import { type RefObject, useLayoutEffect } from "react";
 
-const PATH_IDS = ["path-mc-lab", "path-lab-pat", "path-pat-mc"];
+const PATH_IDS = ["path-mc-lab", "path-lab-pat", "path-pat-mc"] as const;
 const SVG_W = 1000;
 const SVG_H = 600;
 const SAMPLES_PER_SEGMENT = 80;
@@ -16,12 +16,10 @@ function samplePath(pathEl: SVGPathElement, count: number) {
   return points;
 }
 
-function buildFullLoop(pathEls: SVGPathElement[]) {
-  const loop: Array<{ xPct: number; yPct: number }> = [];
-  for (const el of pathEls) {
-    loop.push(...samplePath(el, SAMPLES_PER_SEGMENT));
-  }
-  return loop;
+function buildClosedLoop(pathEl: SVGPathElement, count: number) {
+  const forward = samplePath(pathEl, count);
+  const backward = [...forward].reverse();
+  return [...forward, ...backward];
 }
 
 function lerp(points: Array<{ xPct: number; yPct: number }>, t: number) {
@@ -39,7 +37,10 @@ function lerp(points: Array<{ xPct: number; yPct: number }>, t: number) {
 export function useHeroPathAnimation(
   sectionRef: RefObject<HTMLElement | null>,
   iconRefs: RefObject<Array<HTMLDivElement | null>>,
-  verified: boolean,
+  imgRefs: RefObject<Array<HTMLImageElement | null>>,
+  pathStates: Record<string, boolean>,
+  preAssets: string[],
+  postAssets: string[],
 ) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: refs are stable
   useLayoutEffect(() => {
@@ -55,13 +56,19 @@ export function useHeroPathAnimation(
 
     if (pathEls.length === 0) return;
 
-    const loop = buildFullLoop(pathEls);
+    const pathLoops = pathEls.map((el) => buildClosedLoop(el, SAMPLES_PER_SEGMENT));
+    const iconsPerPath = Math.ceil(icons.length / PATH_IDS.length);
 
     const ctx = gsap.context(() => {
       const loopDuration = 10;
 
       icons.forEach((icon, index) => {
-        const progress = { value: index / icons.length };
+        const pathIndex = Math.min(
+          Math.floor(index / iconsPerPath),
+          PATH_IDS.length - 1,
+        );
+        const pathLoop = pathLoops[pathIndex];
+        const progress = { value: (index % iconsPerPath) / (iconsPerPath || 1) };
 
         gsap.set(icon, {
           autoAlpha: 0.85,
@@ -71,7 +78,7 @@ export function useHeroPathAnimation(
 
         const update = () => {
           const t = progress.value % 1;
-          const { x, y } = lerp(loop, t);
+          const { x, y } = lerp(pathLoop, t);
           gsap.set(icon, { left: `${x}%`, top: `${y}%` });
         };
 
@@ -88,5 +95,30 @@ export function useHeroPathAnimation(
     }, section);
 
     return () => ctx.revert();
-  }, [verified]);
+  }, []);
+
+  // Update image assets when path states change without restarting motion
+  // biome-ignore lint/correctness/useExhaustiveDependencies: imgRefs is a stable ref
+  useLayoutEffect(() => {
+    const imgs = imgRefs.current.filter(Boolean) as HTMLImageElement[];
+    if (imgs.length === 0) return;
+
+    const iconsPerPath = Math.ceil(imgs.length / PATH_IDS.length);
+
+    imgs.forEach((img, i) => {
+      const pathIndex = Math.min(
+        Math.floor(i / iconsPerPath),
+        PATH_IDS.length - 1,
+      );
+      const pathId = PATH_IDS[pathIndex];
+      const isVerified = pathStates[pathId] ?? false;
+      const assets = isVerified ? postAssets : preAssets;
+      const src = assets[i % assets.length];
+      if (img.getAttribute("src") !== src) {
+        img.setAttribute("src", src);
+        img.setAttribute("width", isVerified ? "38" : "30");
+        img.setAttribute("height", isVerified ? "38" : "30");
+      }
+    });
+  }, [pathStates, preAssets, postAssets]);
 }
