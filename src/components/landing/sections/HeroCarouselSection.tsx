@@ -1,5 +1,5 @@
 import gsap from "gsap";
-import { Check, MousePointerClick } from "lucide-react";
+import { Check, Lock, MousePointerClick } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -16,6 +16,7 @@ import {
   type DemoSteps,
   HeroDemoModal,
 } from "@/components/landing/HeroDemoModal";
+import { DemoSummary } from "@/components/landing/demo/DemoSummary";
 import { Button, DecorativeCircle, DecorativeCross } from "@/components/ui";
 import { useHeroPathAnimation } from "@/hooks/ui/useHeroPathAnimation";
 
@@ -46,9 +47,16 @@ export function HeroCarouselSection() {
     lab: false,
   });
   const [activeActor, setActiveActor] = useState<DemoActor | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
 
   const allDone = steps.doctor && steps.patient && steps.lab;
   const pathStates = getPathStates(steps);
+
+  const unlocked: Record<DemoActor, boolean> = {
+    doctor: true,
+    patient: steps.doctor,
+    lab: steps.doctor && steps.patient,
+  };
 
   useEffect(() => {
     const h1 = headline1Ref.current;
@@ -85,9 +93,10 @@ export function HeroCarouselSection() {
   };
 
   const actorCardClass =
-    "group absolute cursor-pointer rounded-3xl border border-transparent bg-transparent p-2 transition hover:bg-white/30";
+    "group absolute rounded-3xl border border-transparent bg-transparent p-2 transition hover:bg-white/30";
 
   const openActor = (actor: DemoActor) => {
+    if (!unlocked[actor]) return;
     setActiveActor(actor);
   };
 
@@ -197,7 +206,7 @@ export function HeroCarouselSection() {
 
           {/* Actor: Medical Center (left) */}
           <div
-            className={`${actorCardClass} left-[6%] top-[22%] z-10 flex flex-col items-center sm:left-[10%] sm:top-[18%]`}
+            className={`${actorCardClass} ${unlocked.doctor ? "cursor-pointer" : "cursor-not-allowed opacity-60"} left-[6%] top-[22%] z-10 flex flex-col items-center sm:left-[10%] sm:top-[18%]`}
             onClick={() => openActor("doctor")}
             onKeyDown={(e) => handleActorKeyDown(e, "doctor")}
             role="button"
@@ -217,9 +226,14 @@ export function HeroCarouselSection() {
                   <Check className="h-3.5 w-3.5" />
                 </span>
               )}
-              {!steps.doctor && (
+              {!steps.doctor && unlocked.doctor && (
                 <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-sky-400 text-white shadow-md opacity-0 transition-opacity group-hover:opacity-100">
                   <MousePointerClick className="h-3.5 w-3.5" />
+                </span>
+              )}
+              {!steps.doctor && !unlocked.doctor && (
+                <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-slate-400 text-white shadow-md">
+                  <Lock className="h-3 w-3" />
                 </span>
               )}
             </div>
@@ -230,7 +244,7 @@ export function HeroCarouselSection() {
 
           {/* Actor: Laboratory (right) */}
           <div
-            className={`${actorCardClass} right-[6%] top-[22%] z-10 flex flex-col items-center sm:right-[10%] sm:top-[18%]`}
+            className={`${actorCardClass} ${unlocked.lab ? "cursor-pointer" : "cursor-not-allowed opacity-60"} right-[6%] top-[22%] z-10 flex flex-col items-center sm:right-[10%] sm:top-[18%]`}
             onClick={() => openActor("lab")}
             onKeyDown={(e) => handleActorKeyDown(e, "lab")}
             role="button"
@@ -249,9 +263,14 @@ export function HeroCarouselSection() {
                   <Check className="h-3.5 w-3.5" />
                 </span>
               )}
-              {!steps.lab && (
+              {!steps.lab && unlocked.lab && (
                 <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-sky-400 text-white shadow-md opacity-0 transition-opacity group-hover:opacity-100">
                   <MousePointerClick className="h-3.5 w-3.5" />
+                </span>
+              )}
+              {!steps.lab && !unlocked.lab && (
+                <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-slate-400 text-white shadow-md">
+                  <Lock className="h-3 w-3" />
                 </span>
               )}
             </div>
@@ -262,7 +281,7 @@ export function HeroCarouselSection() {
 
           {/* Actor: Patient (bottom center) */}
           <div
-            className={`${actorCardClass} bottom-[16px] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center sm:bottom-[100px]`}
+            className={`${actorCardClass} ${unlocked.patient ? "cursor-pointer" : "cursor-not-allowed opacity-60"} bottom-[16px] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center sm:bottom-[100px]`}
             onClick={() => openActor("patient")}
             onKeyDown={(e) => handleActorKeyDown(e, "patient")}
             role="button"
@@ -282,9 +301,14 @@ export function HeroCarouselSection() {
                   <Check className="h-3.5 w-3.5" />
                 </span>
               )}
-              {!steps.patient && (
+              {!steps.patient && unlocked.patient && (
                 <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-sky-400 text-white shadow-md opacity-0 transition-opacity group-hover:opacity-100">
                   <MousePointerClick className="h-3.5 w-3.5" />
+                </span>
+              )}
+              {!steps.patient && !unlocked.patient && (
+                <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-slate-400 text-white shadow-md">
+                  <Lock className="h-3 w-3" />
                 </span>
               )}
             </div>
@@ -324,13 +348,16 @@ export function HeroCarouselSection() {
               <p className="text-center text-base font-semibold text-slate-800 drop-shadow-sm">
                 {tDemo("demoComplete")}
               </p>
+              <p className="max-w-md px-4 text-center text-sm text-slate-600">
+                {tDemo("demoCompleteSub")}
+              </p>
               <Button
                 className="min-w-[240px] animate-[fadeIn_0.6s_ease]"
-                onClick={() => router.push("/auth")}
+                onClick={() => setShowSummary(true)}
                 size="lg"
                 variant="primary"
               >
-                {tDemo("tryItNow")}
+                {tDemo("viewSummary")}
               </Button>
             </div>
           )}
@@ -379,13 +406,16 @@ export function HeroCarouselSection() {
             <p className="text-center text-base font-semibold text-slate-800">
               {tDemo("demoComplete")}
             </p>
+            <p className="max-w-xs px-4 text-center text-xs text-slate-600">
+              {tDemo("demoCompleteSub")}
+            </p>
             <Button
               className="min-w-[220px] animate-[fadeIn_0.6s_ease]"
-              onClick={() => router.push("/auth")}
+              onClick={() => setShowSummary(true)}
               size="lg"
               variant="primary"
             >
-              {tDemo("tryItNow")}
+              {tDemo("viewSummary")}
             </Button>
           </div>
         )}
@@ -397,9 +427,13 @@ export function HeroCarouselSection() {
           actor={activeActor}
           onClose={() => setActiveActor(null)}
           onComplete={() => handleComplete(activeActor)}
+          onSummary={() => setShowSummary(true)}
           steps={steps}
         />
       )}
+
+      {/* Summary Modal */}
+      {showSummary && <DemoSummary onClose={() => setShowSummary(false)} />}
     </section>
   );
 }

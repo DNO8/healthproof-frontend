@@ -5,13 +5,13 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui";
 import {
+  BlockchainConfirmation,
+  EncryptionDemo,
   DEMO_EXAM_TYPE,
-  DEMO_FILE_NAME,
-  DEMO_HASH,
   DEMO_LABS,
   DEMO_ORDER_ID,
   DEMO_PATIENTS,
-} from "./constants";
+} from "./demo";
 
 export type DemoActor = "doctor" | "patient" | "lab";
 
@@ -26,6 +26,7 @@ type HeroDemoModalProps = {
   steps: DemoSteps;
   onComplete: () => void;
   onClose: () => void;
+  onSummary?: () => void;
 };
 
 const ACTOR_ICONS: Record<DemoActor, React.ReactNode> = {
@@ -39,27 +40,36 @@ export function HeroDemoModal({
   steps,
   onComplete,
   onClose,
+  onSummary,
 }: HeroDemoModalProps) {
   const t = useTranslations("heroDemo");
   const [step, setStep] = useState(0);
   const [selectedPatient, setSelectedPatient] = useState(0);
   const [selectedLab, setSelectedLab] = useState(0);
-  const [uploading, setUploading] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
   const isDone = steps[actor];
   const totalSteps = 3;
 
   const handleNext = () => {
+    if (step === totalSteps - 1 && !confirmed) return;
     if (step < totalSteps - 1) {
       setStep(step + 1);
+      setConfirmed(false);
     } else {
       if (!isDone) onComplete();
+      if (steps.doctor && steps.patient && steps.lab) {
+        onSummary?.();
+      }
       onClose();
     }
   };
 
   const handleBack = () => {
-    if (step > 0) setStep(step - 1);
+    if (step > 0) {
+      setStep(step - 1);
+      setConfirmed(false);
+    }
   };
 
   const titleKey: Record<DemoActor, string> = {
@@ -122,6 +132,8 @@ export function HeroDemoModal({
               step={step}
               selectedPatient={selectedPatient}
               onSelectPatient={setSelectedPatient}
+              confirmed={confirmed}
+              onConfirmed={() => setConfirmed(true)}
               t={t}
             />
           )}
@@ -130,14 +142,16 @@ export function HeroDemoModal({
               step={step}
               selectedLab={selectedLab}
               onSelectLab={setSelectedLab}
+              confirmed={confirmed}
+              onConfirmed={() => setConfirmed(true)}
               t={t}
             />
           )}
           {actor === "lab" && (
             <LabFlow
               step={step}
-              uploading={uploading}
-              setUploading={setUploading}
+              confirmed={confirmed}
+              onConfirmed={() => setConfirmed(true)}
               t={t}
             />
           )}
@@ -149,11 +163,10 @@ export function HeroDemoModal({
             variant="ghost"
             size="sm"
             onClick={step === 0 ? onClose : handleBack}
-            disabled={uploading}
           >
             {step === 0 ? t("close") : t("back")}
           </Button>
-          <Button size="sm" onClick={handleNext} disabled={uploading}>
+          <Button size="sm" onClick={handleNext} disabled={step === totalSteps - 1 && !confirmed}>
             {step === totalSteps - 1 ? t("done") : t("next")}
           </Button>
         </div>
@@ -168,11 +181,15 @@ function DoctorFlow({
   step,
   selectedPatient,
   onSelectPatient,
+  confirmed,
+  onConfirmed,
   t,
 }: {
   step: number;
   selectedPatient: number;
   onSelectPatient: (i: number) => void;
+  confirmed: boolean;
+  onConfirmed: () => void;
   t: (key: string) => string;
 }) {
   if (step === 0) {
@@ -232,23 +249,10 @@ function DoctorFlow({
   }
 
   return (
-    <div className="space-y-3 text-center">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
-        <Check className="h-7 w-7 text-emerald-500" />
-      </div>
-      <h3 className="font-semibold text-slate-800">{t("doctorStep3Title")}</h3>
-      <p className="text-sm text-slate-500">{t("doctorStep3Desc")}</p>
-      <div className="rounded-2xl border border-(--hp-border) bg-(--hp-layer) p-4 text-left">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-          Order ID
-        </p>
-        <p className="text-sm font-mono text-slate-700">{DEMO_ORDER_ID}</p>
-        <p className="mt-2 text-xs font-medium uppercase tracking-wide text-slate-400">
-          Hash
-        </p>
-        <p className="text-sm font-mono text-slate-700">{DEMO_HASH}</p>
-      </div>
-    </div>
+    <BlockchainConfirmation
+      action="doctor"
+      onComplete={onConfirmed}
+    />
   );
 }
 
@@ -256,11 +260,15 @@ function PatientFlow({
   step,
   selectedLab,
   onSelectLab,
+  confirmed,
+  onConfirmed,
   t,
 }: {
   step: number;
   selectedLab: number;
   onSelectLab: (i: number) => void;
+  confirmed: boolean;
+  onConfirmed: () => void;
   t: (key: string) => string;
 }) {
   if (step === 0) {
@@ -321,39 +329,24 @@ function PatientFlow({
   }
 
   return (
-    <div className="space-y-3 text-center">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
-        <Check className="h-7 w-7 text-emerald-500" />
-      </div>
-      <h3 className="font-semibold text-slate-800">{t("patientStep3Title")}</h3>
-      <p className="text-sm text-slate-500">{t("patientStep3Desc")}</p>
-      <div className="rounded-2xl border border-(--hp-border) bg-(--hp-layer) p-4 text-left">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-          Lab
-        </p>
-        <p className="text-sm text-slate-700">{DEMO_LABS[selectedLab].name}</p>
-        <p className="mt-2 text-xs font-medium uppercase tracking-wide text-slate-400">
-          Status
-        </p>
-        <p className="text-sm font-medium text-emerald-600">Active</p>
-      </div>
-    </div>
+    <BlockchainConfirmation
+      action="patient"
+      onComplete={onConfirmed}
+    />
   );
 }
 
 function LabFlow({
   step,
-  uploading,
-  setUploading,
+  confirmed,
+  onConfirmed,
   t,
 }: {
   step: number;
-  uploading: boolean;
-  setUploading: (v: boolean) => void;
+  confirmed: boolean;
+  onConfirmed: () => void;
   t: (key: string) => string;
 }) {
-  const [uploaded, setUploaded] = useState(false);
-
   if (step === 0) {
     return (
       <div className="space-y-3">
@@ -382,59 +375,15 @@ function LabFlow({
       <div className="space-y-3">
         <h3 className="font-semibold text-slate-800">{t("labStep2Title")}</h3>
         <p className="text-sm text-slate-500">{t("labStep2Desc")}</p>
-        <div
-          className={`flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed p-6 text-center transition ${
-            uploaded
-              ? "border-emerald-300 bg-emerald-50"
-              : "border-(--hp-border) bg-(--hp-layer)"
-          }`}
-        >
-          <FileText
-            className={`h-8 w-8 ${uploaded ? "text-emerald-500" : "text-slate-400"}`}
-          />
-          <p className="text-sm font-medium text-slate-700">{DEMO_FILE_NAME}</p>
-          {!uploaded ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              loading={uploading}
-              onClick={() => {
-                setUploading(true);
-                setTimeout(() => {
-                  setUploading(false);
-                  setUploaded(true);
-                }, 1200);
-              }}
-            >
-              Encrypt & Upload
-            </Button>
-          ) : (
-            <span className="text-sm font-medium text-emerald-600">
-              Uploaded
-            </span>
-          )}
-        </div>
+        <EncryptionDemo />
       </div>
     );
   }
 
   return (
-    <div className="space-y-3 text-center">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
-        <Check className="h-7 w-7 text-emerald-500" />
-      </div>
-      <h3 className="font-semibold text-slate-800">{t("labStep3Title")}</h3>
-      <p className="text-sm text-slate-500">{t("labStep3Desc")}</p>
-      <div className="rounded-2xl border border-(--hp-border) bg-(--hp-layer) p-4 text-left">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-          File
-        </p>
-        <p className="text-sm text-slate-700">{DEMO_FILE_NAME}</p>
-        <p className="mt-2 text-xs font-medium uppercase tracking-wide text-slate-400">
-          Hash
-        </p>
-        <p className="text-sm font-mono text-slate-700">{DEMO_HASH}</p>
-      </div>
-    </div>
+    <BlockchainConfirmation
+      action="lab"
+      onComplete={onConfirmed}
+    />
   );
 }
