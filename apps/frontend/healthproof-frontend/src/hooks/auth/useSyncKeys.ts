@@ -201,17 +201,9 @@ export function useSyncKeys() {
             return;
           }
 
-          // DB key differs → check for data conflicts
+          // DB key differs → always show conflict; never auto-regenerate
           if (dbPk && dbPk !== localPk) {
-            if (wallet) {
-              const hasData = await hasEncryptedData(wallet);
-              if (hasData) {
-                setConflict("key_mismatch");
-                return;
-              }
-            }
-            // No data conflict → overwrite DB with local (re-onboard effectively)
-            await onboardNewUser(userId);
+            setConflict("key_mismatch");
             return;
           }
 
@@ -381,7 +373,30 @@ export function useSyncKeys() {
           }
         }
 
-        // ── Case F: No keys anywhere, no data → generate new ──
+        // ── Case F: No keys anywhere ──
+        // If user already exists in DB (has scheme or public key), they must
+        // recover or explicitly choose to regenerate. NEVER auto-create new keys
+        // for an existing account — that would overwrite their encryption data.
+        if (schemeVersion || dbPk) {
+          if (schemeVersion === 2 && userWithBackup?.server_share_ciphertext) {
+            setRecoveryState({
+              needsRecoveryCode: true,
+              needsRegeneration: false,
+              recoveryCode: null,
+              step: "needs_input",
+            });
+          } else {
+            setRecoveryState({
+              needsRecoveryCode: false,
+              needsRegeneration: true,
+              recoveryCode: null,
+              step: "idle",
+            });
+          }
+          return;
+        }
+
+        // Only for brand-new users with no DB record whatsoever
         await onboardNewUser(userId);
       } catch (err) {
         console.error("[useSyncKeys] Error syncing keys:", err);

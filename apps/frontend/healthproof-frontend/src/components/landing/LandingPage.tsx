@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ScrollReveal, SectionDivider } from "@/components/ui";
 import {
@@ -18,16 +17,12 @@ import {
 } from "./sections";
 
 export function LandingPage() {
-  const [verified, setVerified] = useState(false);
   const t = useTranslations("sectionDividers");
 
   return (
     <main className="relative overflow-hidden bg-(--hp-bg)">
       {/* §1 Hero */}
-      <HeroCarouselSection
-        onVerify={() => setVerified(true)}
-        verified={verified}
-      />
+      <HeroCarouselSection />
 
       <section className="mx-auto w-full max-w-7xl space-y-12 px-4 pb-20 pt-12 sm:px-8 lg:px-12">
         {/* §2 The Solution */}

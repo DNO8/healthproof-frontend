@@ -132,34 +132,36 @@ export function KeyRecoveryModal({
 
   return (
     <Modal open={isOpen} onClose={onClose} title={t("title")} size="md">
-      <p className="text-sm text-slate-600">{t("description")}</p>
+      <div className="max-h-[65vh] overflow-y-auto pr-1">
+        <p className="text-sm text-slate-600">{t("description")}</p>
 
-      <div className="mt-4 rounded-xl bg-sky-50 p-3">
-        <p className="text-xs text-sky-700">{t("info")}</p>
+        <div className="mt-4 rounded-xl bg-sky-50 p-3">
+          <p className="text-xs text-sky-700">{t("info")}</p>
+        </div>
+
+        <div className="mt-4">
+          <label htmlFor="recovery-password" className="mb-1.5 block text-xs font-medium text-slate-700">
+            {t("passwordLabel")}
+          </label>
+          <input
+            id="recovery-password"
+            className="neu-inset w-full rounded-xl px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-200"
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleRecover()}
+            placeholder={t("passwordPlaceholder")}
+            type="password"
+            value={password}
+          />
+        </div>
+
+        {attempts > 0 && (
+          <p className="mt-2 text-xs text-amber-600" role="alert">
+            {t("attemptsLeft", { count: 3 - attempts })}
+          </p>
+        )}
       </div>
 
-      <div className="mt-4">
-        <label htmlFor="recovery-password" className="mb-1.5 block text-xs font-medium text-slate-700">
-          {t("passwordLabel")}
-        </label>
-        <input
-          id="recovery-password"
-          className="neu-inset w-full rounded-xl px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-200"
-          onChange={(e) => setPassword(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleRecover()}
-          placeholder={t("passwordPlaceholder")}
-          type="password"
-          value={password}
-        />
-      </div>
-
-      {attempts > 0 && (
-        <p className="mt-2 text-xs text-amber-600" role="alert">
-          {t("attemptsLeft", { count: 3 - attempts })}
-        </p>
-      )}
-
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
         <button
           className="flex-1 rounded-2xl border border-white/60 bg-(--hp-primary) px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-(--hp-shadow-raised) transition hover:bg-(--hp-primary-soft) disabled:opacity-50"
           disabled={loading || attempts >= 3}

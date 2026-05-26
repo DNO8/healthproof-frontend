@@ -3,7 +3,7 @@
 import { usePrivy, PrivyProvider } from "@privy-io/react-auth";
 import { WagmiProvider } from "@privy-io/wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { setTokenGetter } from "@/services/api/interceptors";
 import { useUpsertUser } from "@/hooks/auth/useUpsertUser";
 import { useSyncWallet } from "@/hooks/auth/useSyncWallet";
@@ -32,6 +32,11 @@ function PrivyTokenSync({ children }: { children: React.ReactNode }) {
   const { recoveryState, recoverWithCode, dismissRecoveryCode, regenerateKeys } = useSyncKeys();
   useRegisterIdentity();
 
+  const [forceRecoveryInput, setForceRecoveryInput] = useState(false);
+
+  const showRecoveryInput = recoveryState.step === "needs_input" || forceRecoveryInput;
+  const showRegenerate = recoveryState.needsRegeneration && !forceRecoveryInput;
+
   return (
     <>
       <RpcHealthBanner />
@@ -42,16 +47,20 @@ function PrivyTokenSync({ children }: { children: React.ReactNode }) {
           onDismiss={dismissRecoveryCode}
         />
       )}
-      {recoveryState.step === "needs_input" && (
+      {showRecoveryInput && (
         <RecoveryInputModal
           onRecover={recoverWithCode}
-          onDismiss={dismissRecoveryCode}
+          onDismiss={() => {
+            setForceRecoveryInput(false);
+            dismissRecoveryCode();
+          }}
         />
       )}
-      {recoveryState.needsRegeneration && (
+      {showRegenerate && (
         <RegenerateKeysModal
           onRegenerate={regenerateKeys}
           onDismiss={dismissRecoveryCode}
+          onSwitchToRecovery={() => setForceRecoveryInput(true)}
         />
       )}
       {children}

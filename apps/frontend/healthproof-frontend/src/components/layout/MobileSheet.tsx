@@ -92,8 +92,13 @@ export function MobileSheet() {
     sessionStorage.setItem("hp_logging_out", "true");
     await logout();
     clearDbUserCache();
-    sessionStorage.clear();
-    localStorage.clear();
+    // Only remove app-specific keys — NEVER clear all storage
+    sessionStorage.removeItem("hp_upserted");
+    sessionStorage.removeItem("hp_wallet_synced");
+    sessionStorage.removeItem("hp_keys_synced");
+    sessionStorage.removeItem("hp_welcome_shown");
+    sessionStorage.removeItem("hp_logging_out");
+    localStorage.removeItem("hp_intended_role");
     sileo.success({ title: t("signedOut"), description: t("signedOutDescription") });
     window.location.href = "/";
   }
