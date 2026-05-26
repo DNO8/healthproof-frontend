@@ -24,7 +24,8 @@
     "captionBase": "Built for the new era of",
     "captionBaseBold": "health data interoperability and ICD-11 digital standards",
     "buttonVerified": "Verification Active",
-    "buttonBase": "Verify on Chain"
+    "buttonBase": "Verify on Chain",
+    "buttonCta": "Try it now"
   },
   "actors": {
     "medicalCenter": "Medical Center",

@@ -24,7 +24,8 @@
     "captionBase": "Construido para la nueva era de",
     "captionBaseBold": "interoperabilidad de datos de salud y estándares digitales ICD-11",
     "buttonVerified": "Verificación Activa",
-    "buttonBase": "Verificar en Cadena"
+    "buttonBase": "Verificar en Cadena",
+    "buttonCta": "Pruébalo ahora"
   },
   "actors": {
     "medicalCenter": "Centro Médico",

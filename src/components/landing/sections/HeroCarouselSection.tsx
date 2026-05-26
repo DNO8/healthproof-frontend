@@ -1,6 +1,7 @@
 import gsap from "gsap";
 import Image from "next/image";
-import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   ACTORS,
@@ -12,23 +13,24 @@ import {
 import { Button, DecorativeCircle, DecorativeCross } from "@/components/ui";
 import { useHeroPathAnimation } from "@/hooks/ui/useHeroPathAnimation";
 
-type HeroCarouselSectionProps = {
-  verified: boolean;
-  onVerify: () => void;
-};
-
 const ICON_COUNT = 12;
 
-export function HeroCarouselSection({
-  verified,
-  onVerify,
-}: HeroCarouselSectionProps) {
+export function HeroCarouselSection() {
+  const [verified, setVerified] = useState(false);
   const t = useTranslations("hero");
   const tActors = useTranslations("actors");
+  const router = useRouter();
   const sectionRef = useRef<HTMLElement | null>(null);
   const iconRefs = useRef<Array<HTMLDivElement | null>>([]);
   const headline1Ref = useRef<HTMLSpanElement | null>(null);
   const headline2Ref = useRef<HTMLSpanElement | null>(null);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVerified((prev) => !prev);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const h1 = headline1Ref.current;
@@ -245,15 +247,15 @@ export function HeroCarouselSection({
             </p>
             <Button
               className="min-w-[250px] transition-all duration-500"
-              onClick={() => !verified && onVerify()}
+              onClick={() => router.push("/auth")}
               size="lg"
-              variant={verified ? "success" : "primary"}
+              variant="primary"
             >
               <span
-                key={verified ? "active" : "discover"}
+                key="cta"
                 style={{ animation: "fadeIn 0.5s ease" }}
               >
-                {verified ? t("buttonVerified") : t("buttonBase")}
+                {t("buttonCta")}
               </span>
             </Button>
           </div>
@@ -280,15 +282,15 @@ export function HeroCarouselSection({
           </p>
           <Button
             className="min-w-[200px] transition-all duration-500"
-            onClick={() => !verified && onVerify()}
+            onClick={() => router.push("/auth")}
             size="lg"
-            variant={verified ? "success" : "primary"}
+            variant="primary"
           >
             <span
-              key={verified ? "active-m" : "discover-m"}
+              key="cta-m"
               style={{ animation: "fadeIn 0.5s ease" }}
             >
-              {verified ? t("buttonVerified") : t("buttonBase")}
+              {t("buttonCta")}
             </span>
           </Button>
         </div>
