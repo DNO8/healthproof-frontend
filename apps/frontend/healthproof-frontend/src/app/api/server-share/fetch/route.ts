@@ -106,12 +106,16 @@ export async function POST(request: Request) {
       kmsKeyId: data.server_share_kms_key_id ?? "",
     });
 
-    // Audit log
-    await supabase.from("recovery_audit").insert({
-      user_id: userId,
-      action: "fetch_share",
-      metadata: { scheme_version: data.scheme_version },
-    });
+    // Audit log (best effort — table may not exist)
+    try {
+      await supabase.from("recovery_audit").insert({
+        user_id: userId,
+        action: "fetch_share",
+        metadata: { scheme_version: data.scheme_version },
+      });
+    } catch {
+      /* ignore audit log failures */
+    }
 
     // Convert bytes to hex string (secrets.js-grempe format)
     const shareHex = Array.from(shareBytes)
