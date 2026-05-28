@@ -36,10 +36,10 @@ import { saveServerShare } from "@/actions/auth/save-server-share";
 import { saveRecoveryHash } from "@/actions/auth/save-recovery-hash";
 import { saveMasterSecretHash } from "@/actions/auth/save-master-secret-hash";
 import {
+  deriveCrossDevicePassword,
+  deriveAllBackupPasswords,
   encryptPrivateKey,
   decryptPrivateKey,
-  deriveBackupPassword,
-  deriveLegacyBackupPassword,
 } from "@/services/encryption/key-backup";
 import { saveEncryptedPrivateKey } from "@/actions/auth/save-encrypted-private-key";
 
@@ -104,7 +104,7 @@ export function useSyncKeys() {
     // Backup encrypted private key for silent cross-device recovery
     try {
       const privJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
-      const backupPassword = await deriveBackupPassword(uid, walletAddress ?? uid);
+      const backupPassword = await deriveCrossDevicePassword(uid);
       const encrypted = await encryptPrivateKey(JSON.stringify(privJwk), backupPassword);
       await saveEncryptedPrivateKey({ id: uid, encrypted_private_key: encrypted });
     } catch (e) {
@@ -217,7 +217,7 @@ export function useSyncKeys() {
             if (!userWithBackup?.encrypted_private_key) {
               try {
                 const privJwk = await crypto.subtle.exportKey("jwk", kp.privateKey!);
-                const backupPassword = await deriveBackupPassword(userId, walletAddress);
+                const backupPassword = await deriveCrossDevicePassword(userId);
                 const encrypted = await encryptPrivateKey(JSON.stringify(privJwk), backupPassword);
                 await saveEncryptedPrivateKey({ id: userId, encrypted_private_key: encrypted });
                 console.log("[useSyncKeys] Lazy migration: encrypted_private_key backup created");
@@ -235,11 +235,9 @@ export function useSyncKeys() {
 
             // Step 1: Try silent auto-recovery from encrypted_private_key backup
             if (userWithBackupMismatch?.encrypted_private_key && userWithBackupMismatch?.public_key) {
-              const [newPw, oldPw] = await deriveLegacyBackupPassword(userId, walletAddress);
-              // Fallback: onboarding may have used userId as walletAddress when wallet was undefined
-              const onboardingPw = await deriveBackupPassword(userId, userId);
+              const passwords = await deriveAllBackupPasswords(userId, walletAddress);
               let decrypted: string | null = null;
-              for (const pw of [newPw, oldPw, onboardingPw]) {
+              for (const pw of passwords) {
                 decrypted = await decryptPrivateKey(userWithBackupMismatch.encrypted_private_key, pw);
                 if (decrypted) break;
               }
@@ -333,9 +331,9 @@ export function useSyncKeys() {
           setIsRecovering(true);
           // Step 1: Try silent auto-recovery from encrypted_private_key backup
           if (userWithBackup?.encrypted_private_key && userWithBackup?.public_key) {
-            const [newPw, oldPw] = await deriveLegacyBackupPassword(userId, walletAddress);
+            const passwords = await deriveAllBackupPasswords(userId, walletAddress);
             let decrypted: string | null = null;
-            for (const pw of [newPw, oldPw]) {
+            for (const pw of passwords) {
               decrypted = await decryptPrivateKey(userWithBackup.encrypted_private_key, pw);
               if (decrypted) break;
             }
@@ -466,9 +464,9 @@ export function useSyncKeys() {
           let legacyPubJwk: JsonWebKey | null = null;
 
           if (userWithBackup?.encrypted_private_key && userWithBackup?.public_key) {
-            const [newPw, oldPw] = await deriveLegacyBackupPassword(userId, walletAddress);
+            const passwords = await deriveAllBackupPasswords(userId, walletAddress);
             let decrypted: string | null = null;
-            for (const pw of [newPw, oldPw]) {
+            for (const pw of passwords) {
               decrypted = await decryptPrivateKey(
                 userWithBackup.encrypted_private_key,
                 pw

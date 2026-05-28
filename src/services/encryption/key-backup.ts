@@ -107,8 +107,23 @@ export async function decryptPrivateKey(
  * Uses a combination of user-provided secret + wallet signature if available.
  */
 /**
+ * Derive a cross-device consistent password from userId only.
+ * This ensures backups can be recovered on any device for the same user,
+ * regardless of wallet address variations between devices.
+ */
+export async function deriveCrossDevicePassword(userId: string): Promise<string> {
+  const pepper = process.env.NEXT_PUBLIC_KEY_BACKUP_PEPPER ?? "";
+  const raw = `${userId}|${pepper}`;
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
  * Derive a deterministic backup password from userId + walletAddress.
  * Uses SHA-256 for uniform length, with an optional pepper from env.
+ * @deprecated Use deriveCrossDevicePassword for new backups. Kept for decrypting legacy backups.
  */
 export async function deriveBackupPassword(
   userId: string,
@@ -123,19 +138,37 @@ export async function deriveBackupPassword(
 }
 
 /**
- * Return both new and old-style backup passwords for migration.
- * [0] = new (deriveBackupPassword)
- * [1] = old (walletAddress|userId)
+ * Return both cross-device and old-style backup passwords for migration.
+ * [0] = cross-device consistent (userId only) — RECOMMENDED
+ * [1] = old-style plain string (walletAddress|userId)
  */
 export async function deriveLegacyBackupPassword(
   userId: string,
   walletAddress: string | null | undefined
 ): Promise<[string, string]> {
-  const newPw = await deriveBackupPassword(userId, walletAddress ?? userId);
+  const crossDevice = await deriveCrossDevicePassword(userId);
   const oldPw = walletAddress
     ? `${walletAddress.toLowerCase()}|${userId}`
     : `${userId}|${userId}`;
-  return [newPw, oldPw];
+  return [crossDevice, oldPw];
+}
+
+/**
+ * Return all possible backup passwords to try when decrypting.
+ * This handles all historical password derivation schemes for maximum compatibility.
+ */
+export async function deriveAllBackupPasswords(
+  userId: string,
+  walletAddress: string | null | undefined
+): Promise<string[]> {
+  const passwords = new Set<string>();
+  passwords.add(await deriveCrossDevicePassword(userId));
+  passwords.add(await deriveBackupPassword(userId, walletAddress ?? userId));
+  const oldPw = walletAddress
+    ? `${walletAddress.toLowerCase()}|${userId}`
+    : `${userId}|${userId}`;
+  passwords.add(oldPw);
+  return [...passwords];
 }
 
 export function createRecoveryPassword(
