@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptShareForServer } from "@/lib/kms/server-share-crypto";
 
@@ -22,9 +23,21 @@ interface PrivySession {
 export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get("authorization");
-    const privyToken = authHeader?.replace("Bearer ", "");
+    let privyToken = authHeader?.replace("Bearer ", "");
+
+    // Fallback: try cookie if no header token
+    if (!privyToken) {
+      const cookieStore = await cookies();
+      privyToken = cookieStore.get("privy-token")?.value;
+      if (privyToken) {
+        console.log("[server-share/fetch] Using cookie token");
+      }
+    } else {
+      console.log("[server-share/fetch] Using Authorization header token");
+    }
 
     if (!privyToken) {
+      console.error("[server-share/fetch] No token found in header or cookie");
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
@@ -41,6 +54,8 @@ export async function POST(request: Request) {
     });
 
     if (!privyRes.ok) {
+      const privyErr = await privyRes.text().catch(() => "unknown");
+      console.error("[server-share/fetch] Privy verify failed:", privyRes.status, privyErr);
       return NextResponse.json(
         { error: "Invalid or expired authentication" },
         { status: 401 }
