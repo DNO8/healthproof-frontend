@@ -13,14 +13,18 @@ async function updatePublicKeyHandler(
   }
 
   const supabase = createAdminClient();
-  const { error } = await supabase
+  const { data: updatedRows, error } = await supabase
     .from("users")
     .update({ public_key: data.public_key })
-    .eq("id", data.id);
+    .eq("id", data.id)
+    .select("id");
 
   if (error) {
     console.error("[updatePublicKey] error:", error);
     throw new Error("Failed to update public key");
+  }
+  if (!updatedRows || updatedRows.length === 0) {
+    throw new Error("User not found when updating public key");
   }
 
   return { success: true };

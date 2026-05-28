@@ -216,12 +216,19 @@ export function ShareResultsModal({
       }
 
       // 8. Persist rewrapped key so grantee can access without QR scan
-      await savePermissionKey({
-        document_id: documentId,
-        patient_wallet: resolvedWalletAddress,
-        grantee_wallet: trimmedRecipient,
-        encrypted_key: JSON.stringify(rewrapped),
-      });
+      try {
+        const permSave = await savePermissionKey({
+          document_id: documentId,
+          patient_wallet: resolvedWalletAddress,
+          grantee_wallet: trimmedRecipient,
+          encrypted_key: JSON.stringify(rewrapped),
+        });
+        if (!permSave.success) {
+          console.warn("[ShareResultsModal] savePermissionKey:", permSave.error);
+        }
+      } catch (e) {
+        console.warn("[ShareResultsModal] savePermissionKey failed:", e);
+      }
 
       // 9. Build encrypted QR data
       const qr: EncryptedQRData = {

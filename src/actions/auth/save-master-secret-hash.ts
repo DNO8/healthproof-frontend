@@ -12,16 +12,20 @@ async function saveMasterSecretHashHandler(
   }
 
   const supabase = createAdminClient();
-  const { error } = await supabase
+  const { data: updatedRows, error } = await supabase
     .from("users")
     .update({
       master_secret_hash: data.masterSecretHash,
     })
-    .eq("id", data.userId);
+    .eq("id", data.userId)
+    .select("id");
 
   if (error) {
     console.error("[saveMasterSecretHash] Error:", error);
     throw new Error("Failed to save master secret hash");
+  }
+  if (!updatedRows || updatedRows.length === 0) {
+    throw new Error("User not found when saving master secret hash");
   }
 
   return { success: true };

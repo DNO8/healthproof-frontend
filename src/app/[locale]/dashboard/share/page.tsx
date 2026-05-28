@@ -183,12 +183,19 @@ export default function SharePage() {
       }
 
       // Persist rewrapped key so grantee can access without QR scan
-      await savePermissionKey({
-        document_id: documentId,
-        patient_wallet: resolvedWalletAddress,
-        grantee_wallet: trimmedRecipient,
-        encrypted_key: JSON.stringify(rewrapped),
-      });
+      try {
+        const permSave = await savePermissionKey({
+          document_id: documentId,
+          patient_wallet: resolvedWalletAddress,
+          grantee_wallet: trimmedRecipient,
+          encrypted_key: JSON.stringify(rewrapped),
+        });
+        if (!permSave.success) {
+          console.warn("[share/page] savePermissionKey:", permSave.error);
+        }
+      } catch (e) {
+        console.warn("[share/page] savePermissionKey failed:", e);
+      }
 
       const qr: EncryptedQRData = {
         type: "healthproof_permission",

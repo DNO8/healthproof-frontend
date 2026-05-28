@@ -25,7 +25,7 @@ async function saveServerShareHandler(
   const encrypted = await encryptShareForServer(shareBytes);
 
   const supabase = createAdminClient();
-  const { error } = await supabase
+  const { data: updatedRows, error } = await supabase
     .from("users")
     .update({
       server_share_ciphertext: encrypted.encryptedShare,
@@ -33,11 +33,15 @@ async function saveServerShareHandler(
       server_share_kms_key_id: encrypted.kmsKeyId,
       scheme_version: 2,
     })
-    .eq("id", data.userId);
+    .eq("id", data.userId)
+    .select("id");
 
   if (error) {
     console.error("[saveServerShare] Error:", error);
     throw new Error("Failed to save server share");
+  }
+  if (!updatedRows || updatedRows.length === 0) {
+    throw new Error("User not found when saving server share");
   }
 
   return { success: true };

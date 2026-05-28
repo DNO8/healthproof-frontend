@@ -12,14 +12,18 @@ async function saveEncryptedPrivateKeyHandler(
   }
 
   const supabase = createAdminClient();
-  const { error } = await supabase
+  const { data: updatedRows, error } = await supabase
     .from("users")
     .update({ encrypted_private_key: data.encrypted_private_key })
-    .eq("id", data.id);
+    .eq("id", data.id)
+    .select("id");
 
   if (error) {
     console.error("[saveEncryptedPrivateKey] error:", error);
     throw new Error("Failed to save encrypted private key");
+  }
+  if (!updatedRows || updatedRows.length === 0) {
+    throw new Error("User not found when saving encrypted private key");
   }
 
   return { success: true };
