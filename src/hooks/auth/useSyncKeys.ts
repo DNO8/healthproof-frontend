@@ -22,7 +22,7 @@ import { getUserWithBackup } from "@/actions/auth/get-user-with-backup";
 import { hasEncryptedData } from "@/actions/documents/check-user-encrypted-data";
 import { clearDbUserCache } from "@/hooks/auth/useDbUser";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
-import { generateShares, reconstructSecret } from "@/services/encryption/sss";
+import { generateShares, reconstructSecret, hexToBytes } from "@/services/encryption/sss";
 import { hashMasterSecret } from "@/services/encryption/integrity";
 import {
   generateMasterSecret,
@@ -70,6 +70,17 @@ export function useSyncKeys() {
       return false;
     }
   };
+
+  // Helper: inject Privy token into server action payloads (required for withAuth)
+  const withPrivyToken = async <T extends Record<string, unknown>>(data: T): Promise<T & { _privyToken?: string }> => {
+    try {
+      const token = await getAccessToken();
+      return { ...data, ...(token ? { _privyToken: token } : {}) };
+    } catch {
+      return data;
+    }
+  };
+
   const [recoveryState, setRecoveryState] = useState<RecoveryState>({
     needsRecoveryCode: false,
     needsRegeneration: false,
@@ -90,9 +101,7 @@ export function useSyncKeys() {
 
     // Compute hashes
     const masterHash = await hashMasterSecret(masterSecret);
-    const recoveryCode = encodeRecoveryCode(
-      new Uint8Array(share3.split("").map((c) => c.charCodeAt(0)))
-    );
+    const recoveryCode = encodeRecoveryCode(hexToBytes(share3));
     const recoveryHash = await hashRecoveryCode(recoveryCode);
 
     // Save share1 locally
@@ -103,21 +112,21 @@ export function useSyncKeys() {
     });
 
     // Send share2 to server (KMS envelope encryption)
-    await saveServerShare({ userId: uid, share2 });
+    await saveServerShare(await withPrivyToken({ userId: uid, share2 }));
 
     // Save hashes to DB
-    await saveRecoveryHash({ userId: uid, recoveryCodeHash: recoveryHash });
-    await saveMasterSecretHash({ userId: uid, masterSecretHash: masterHash });
+    await saveRecoveryHash(await withPrivyToken({ userId: uid, recoveryCodeHash: recoveryHash }));
+    await saveMasterSecretHash(await withPrivyToken({ userId: uid, masterSecretHash: masterHash }));
 
     // Save public key
-    await updatePublicKey({ id: uid, public_key: publicKeyJwk });
+    await updatePublicKey(await withPrivyToken({ id: uid, public_key: publicKeyJwk }));
 
     // Backup encrypted private key for silent cross-device recovery
     try {
       const privJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
       const backupPassword = await deriveCrossDevicePassword(uid);
       const encrypted = await encryptPrivateKey(JSON.stringify(privJwk), backupPassword);
-      await saveEncryptedPrivateKey({ id: uid, encrypted_private_key: encrypted });
+      await saveEncryptedPrivateKey(await withPrivyToken({ id: uid, encrypted_private_key: encrypted }));
     } catch (e) {
       console.warn("[useSyncKeys] onboard encrypted backup failed:", e);
     }
@@ -126,7 +135,7 @@ export function useSyncKeys() {
     clearDbUserCache();
     clearConflict();
 
-    // Show recovery code once during onboarding
+    // Show recovery code to the user immediately
     setRecoveryState({
       needsRecoveryCode: true,
       needsRegeneration: false,
@@ -290,7 +299,7 @@ export function useSyncKeys() {
                 }
                 const backupPassword = await deriveCrossDevicePassword(userId);
                 const encrypted = await encryptPrivateKey(privJwkStr, backupPassword);
-                await saveEncryptedPrivateKey({ id: userId, encrypted_private_key: encrypted });
+                await saveEncryptedPrivateKey(await withPrivyToken({ id: userId, encrypted_private_key: encrypted }));
                 console.log("[useSyncKeys] Lazy migration: encrypted_private_key backup created");
               } catch (e) {
                 if (e instanceof Error && e.message === "CROSS_DEVICE_BACKUP_UNAVAILABLE") {
@@ -365,8 +374,8 @@ export function useSyncKeys() {
                     masterSecretHash: masterHash,
                     schemeVersion: 2,
                   });
-                  await saveServerShare({ userId, share2 });
-                  await saveMasterSecretHash({ userId, masterSecretHash: masterHash });
+                  await saveServerShare(await withPrivyToken({ userId, share2 }));
+                  await saveMasterSecretHash(await withPrivyToken({ userId, masterSecretHash: masterHash }));
                   sessionStorage.setItem(SYNCED_KEY, userId);
                   clearConflict();
                   try {
@@ -407,10 +416,10 @@ export function useSyncKeys() {
           }
 
           // No DB key → save local to DB
-          const pubRes = await updatePublicKey({
+          const pubRes = await updatePublicKey(await withPrivyToken({
             id: userId,
             public_key: localPk,
-          });
+          }));
           if (pubRes.success) {
             sessionStorage.setItem(SYNCED_KEY, userId);
             clearDbUserCache();
@@ -460,8 +469,8 @@ export function useSyncKeys() {
                   masterSecretHash: masterHash,
                   schemeVersion: 2,
                 });
-                await saveServerShare({ userId, share2 });
-                await saveMasterSecretHash({ userId, masterSecretHash: masterHash });
+                await saveServerShare(await withPrivyToken({ userId, share2 }));
+                await saveMasterSecretHash(await withPrivyToken({ userId, masterSecretHash: masterHash }));
                 sessionStorage.setItem(SYNCED_KEY, userId);
                 clearConflict();
                 console.log("[useSyncKeys] Auto-recovered from encrypted_private_key backup");
@@ -583,9 +592,7 @@ export function useSyncKeys() {
             const [share1, share2, share3] = shares;
 
             const masterHash = await hashMasterSecret(masterSecret);
-            const recoveryCode = encodeRecoveryCode(
-              new Uint8Array(share3.split("").map((c) => c.charCodeAt(0)))
-            );
+            const recoveryCode = encodeRecoveryCode(hexToBytes(share3));
             const recoveryHash = await hashRecoveryCode(recoveryCode);
 
             // Import keypair from legacy JWK
@@ -610,10 +617,10 @@ export function useSyncKeys() {
               schemeVersion: 2,
             });
 
-            await saveServerShare({ userId, share2 });
-            await saveRecoveryHash({ userId, recoveryCodeHash: recoveryHash });
-            await saveMasterSecretHash({ userId, masterSecretHash: masterHash });
-            await updatePublicKey({ id: userId, public_key: JSON.stringify(legacyPubJwk) });
+            await saveServerShare(await withPrivyToken({ userId, share2 }));
+            await saveRecoveryHash(await withPrivyToken({ userId, recoveryCodeHash: recoveryHash }));
+            await saveMasterSecretHash(await withPrivyToken({ userId, masterSecretHash: masterHash }));
+            await updatePublicKey(await withPrivyToken({ id: userId, public_key: JSON.stringify(legacyPubJwk) }));
 
             sessionStorage.setItem(SYNCED_KEY, userId);
             clearDbUserCache();
@@ -741,9 +748,7 @@ export function useSyncKeys() {
       const [share1, share2, share3] = shares;
 
       const masterHash = await hashMasterSecret(masterSecret);
-      const recoveryCode = encodeRecoveryCode(
-        new Uint8Array(share3.split("").map((c) => c.charCodeAt(0)))
-      );
+      const recoveryCode = encodeRecoveryCode(hexToBytes(share3));
       const recoveryHash = await hashRecoveryCode(recoveryCode);
 
       await saveKeyPair(userId, keyPair, {
@@ -752,10 +757,10 @@ export function useSyncKeys() {
         schemeVersion: 2,
       });
 
-      await saveServerShare({ userId, share2 });
-      await saveRecoveryHash({ userId, recoveryCodeHash: recoveryHash });
-      await saveMasterSecretHash({ userId, masterSecretHash: masterHash });
-      await updatePublicKey({ id: userId, public_key: publicKeyJwk });
+      await saveServerShare(await withPrivyToken({ userId, share2 }));
+      await saveRecoveryHash(await withPrivyToken({ userId, recoveryCodeHash: recoveryHash }));
+      await saveMasterSecretHash(await withPrivyToken({ userId, masterSecretHash: masterHash }));
+      await updatePublicKey(await withPrivyToken({ id: userId, public_key: publicKeyJwk }));
 
       sessionStorage.setItem(SYNCED_KEY, userId);
       clearConflict();

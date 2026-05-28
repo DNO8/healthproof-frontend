@@ -12,9 +12,15 @@ async function saveServerShareHandler(
     throw new Error("Unauthorized: userId mismatch");
   }
 
-  const shareBytes = new Uint8Array(
-    data.share2.split("").map((c) => c.charCodeAt(0))
-  );
+  // Convert hex string share to actual bytes before encryption
+  const hexToBytes = (hex: string): Uint8Array => {
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < bytes.length; i++) {
+      bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+    }
+    return bytes;
+  };
+  const shareBytes = hexToBytes(data.share2);
 
   const encrypted = await encryptShareForServer(shareBytes);
 
