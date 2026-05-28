@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     const authHeader = request.headers.get("authorization");
     let privyToken = authHeader?.replace("Bearer ", "");
 
-    // Fallback: try cookie if no header token
+    // Fallback 1: try cookie if no header token
     if (!privyToken) {
       const cookieStore = await cookies();
       privyToken = cookieStore.get("privy-token")?.value;
@@ -36,10 +36,21 @@ export async function POST(request: Request) {
       console.log("[server-share/fetch] Using Authorization header token");
     }
 
+    // Fallback 2: try body token
     if (!privyToken) {
-      console.error("[server-share/fetch] No token found in header or cookie");
+      try {
+        const body = await request.json();
+        if (body?.token) {
+          privyToken = body.token;
+          console.log("[server-share/fetch] Using body token");
+        }
+      } catch { /* not JSON body */ }
+    }
+
+    if (!privyToken) {
+      console.error("[server-share/fetch] No token found in header, cookie or body");
       return NextResponse.json(
-        { error: "Authentication required" },
+        { error: "Auth required - no token in header, cookie or body [v2]" },
         { status: 401 }
       );
     }

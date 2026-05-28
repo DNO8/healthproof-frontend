@@ -155,11 +155,12 @@ export function useSyncKeys() {
       console.log("[useSyncKeys] fetchServerShare: token length", token.length);
       const res = await fetch("/api/server-share/fetch", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ token }),
       });
       if (!res.ok) {
         console.error(
