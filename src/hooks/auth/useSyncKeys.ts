@@ -286,6 +286,18 @@ export function useSyncKeys() {
       /* ignore */
     }
 
+    // Only attempt full sync once per session (survives remounts).
+    // Cleared on logout, successful regeneration, or recovery.
+    try {
+      if (sessionStorage.getItem("hp_keys_sync_attempted") === "1") {
+        console.log("[useSyncKeys] Sync already attempted this session, skipping");
+        return;
+      }
+      sessionStorage.setItem("hp_keys_sync_attempted", "1");
+    } catch {
+      /* ignore */
+    }
+
     ranForRef.current = { userId, wallet: walletAddress };
 
     (async () => {
@@ -736,6 +748,9 @@ export function useSyncKeys() {
   const recoverWithCode = async (code: string): Promise<boolean> => {
     if (!userId) return false;
     try {
+      sessionStorage.removeItem("hp_keys_sync_attempted");
+    } catch { /* ignore */ }
+    try {
       setRecoveryState((s) => ({ ...s, step: "recovering" }));
 
       const userWithBackup = await getUserWithBackup(userId);
@@ -801,7 +816,7 @@ export function useSyncKeys() {
       serverShareAttemptedRef.current = false;
       try {
         sessionStorage.removeItem("hp_server_share_attempted");
-        sessionStorage.removeItem("hp_keys_sync_error");
+        sessionStorage.removeItem("hp_keys_sync_attempted");
       } catch { /* ignore */ }
       const { masterSecret, publicKeyJwk, keyPair } = await generateMasterSecret();
       const shares = generateShares(masterSecret, 2, 3);
@@ -836,6 +851,10 @@ export function useSyncKeys() {
       return true;
     } catch (e) {
       console.error("[useSyncKeys] regenerateKeys failed:", e);
+      // Clean up partially saved local keys so the next sync starts fresh
+      try {
+        await deleteKeyPair(userId);
+      } catch { /* ignore */ }
       return false;
     }
   };
