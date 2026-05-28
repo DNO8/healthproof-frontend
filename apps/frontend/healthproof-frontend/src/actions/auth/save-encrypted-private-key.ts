@@ -30,5 +30,5 @@ async function saveEncryptedPrivateKeyHandler(
 }
 
 export const saveEncryptedPrivateKey = withAuth(saveEncryptedPrivateKeyHandler, {
-  rateLimit: { windowMs: 60000, maxRequests: 20 },
+  rateLimit: { windowMs: 60000, maxRequests: 5 },
 });

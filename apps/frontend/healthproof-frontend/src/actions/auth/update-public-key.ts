@@ -31,5 +31,5 @@ async function updatePublicKeyHandler(
 }
 
 export const updatePublicKey = withAuth(updatePublicKeyHandler, {
-  rateLimit: { windowMs: 60000, maxRequests: 20 },
+  rateLimit: { windowMs: 60000, maxRequests: 5 },
 });

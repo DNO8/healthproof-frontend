@@ -48,5 +48,5 @@ async function saveServerShareHandler(
 }
 
 export const saveServerShare = withAuth(saveServerShareHandler, {
-  rateLimit: { windowMs: 60000, maxRequests: 20 },
+  rateLimit: { windowMs: 60000, maxRequests: 5 },
 });
