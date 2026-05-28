@@ -85,9 +85,10 @@ export async function POST(request: Request) {
       .single();
 
     if (error || !data?.server_share_ciphertext) {
+      console.error("[server-share/fetch] No server_share_ciphertext for user:", userId);
       return NextResponse.json(
         { error: "No server share found for this user" },
-        { status: 404 }
+        { status: 409 }
       );
     }
 

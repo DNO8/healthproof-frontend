@@ -56,6 +56,7 @@ export function useSyncKeys() {
   const { ready, authenticated, user, getAccessToken } = usePrivy();
   const t = useTranslations("keyRecovery");
   const ranForRef = useRef<{ userId: string; wallet: string } | null>(null);
+  const serverShareAttemptedRef = useRef(false);
   const setConflict = useKeyConflictStore((s) => s.setConflict);
   const clearConflict = useKeyConflictStore((s) => s.clearConflict);
   const setIsRecovering = useKeyConflictStore((s) => s.setIsRecovering);
@@ -146,6 +147,11 @@ export function useSyncKeys() {
 
   // ── Helper: fetch server share2 ──
   const fetchServerShare = async (): Promise<string | null> => {
+    if (serverShareAttemptedRef.current) {
+      console.log("[useSyncKeys] fetchServerShare: already attempted this session, skipping");
+      return null;
+    }
+    serverShareAttemptedRef.current = true;
     try {
       const token = await getAccessToken();
       if (!token) {
@@ -163,11 +169,11 @@ export function useSyncKeys() {
         body: JSON.stringify({ token }),
       });
       if (!res.ok) {
-        console.error(
-          "[useSyncKeys] fetchServerShare failed:",
-          res.status,
-          res.statusText
-        );
+        if (res.status === 409) {
+          console.warn("[useSyncKeys] fetchServerShare: no server share stored for this user (409)");
+        } else {
+          console.error("[useSyncKeys] fetchServerShare failed:", res.status, res.statusText);
+        }
         return null;
       }
       const { share } = await res.json();
@@ -242,7 +248,13 @@ export function useSyncKeys() {
                   const localShare1 = await getLocalShare1(userId);
                   if (!localShare1) throw new Error("No local share1 for reconstruction");
                   const share2 = await fetchServerShare();
-                  if (!share2) throw new Error("No server share2 for reconstruction");
+                  if (!share2) {
+                    if (!userWithBackup?.server_share_ciphertext) {
+                      console.warn("[useSyncKeys] No server share stored for user; cross-device backup unavailable");
+                      throw new Error("CROSS_DEVICE_BACKUP_UNAVAILABLE");
+                    }
+                    throw new Error("No server share2 for reconstruction");
+                  }
                   const reconstructed = reconstructSecret([localShare1, share2]);
                   const hash = await hashMasterSecret(reconstructed);
                   if (hash !== userWithBackup?.master_secret_hash) {
@@ -255,7 +267,11 @@ export function useSyncKeys() {
                 await saveEncryptedPrivateKey({ id: userId, encrypted_private_key: encrypted });
                 console.log("[useSyncKeys] Lazy migration: encrypted_private_key backup created");
               } catch (e) {
-                console.warn("[useSyncKeys] Lazy migration backup failed:", e);
+                if (e instanceof Error && e.message === "CROSS_DEVICE_BACKUP_UNAVAILABLE") {
+                  console.log("[useSyncKeys] Skipping backup — user has no server share; keys still work locally");
+                } else {
+                  console.warn("[useSyncKeys] Lazy migration backup failed:", e);
+                }
               }
             }
             sessionStorage.setItem(SYNCED_KEY, userId);
@@ -424,6 +440,7 @@ export function useSyncKeys() {
           // Step 2: Try normal SSS recovery with local share1 + server share2
           const localShare1 = await getLocalShare1(userId);
           if (localShare1) {
+            serverShareAttemptedRef.current = false;
             const share2 = await fetchServerShare();
             if (!share2) {
               console.error("[useSyncKeys] Server share2 unavailable");
@@ -612,6 +629,7 @@ export function useSyncKeys() {
       const userWithBackup = await getUserWithBackup(userId);
       if (!userWithBackup?.master_secret_hash) return false;
 
+      serverShareAttemptedRef.current = false;
       const share2 = await fetchServerShare();
       if (!share2) return false;
 
