@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function getUserPublicKey(
   idOrWallet: string,
 ): Promise<string | null> {
+  try {
   const supabase = createAdminClient();
 
   // Try lookup by user ID first
@@ -29,5 +30,12 @@ export async function getUserPublicKey(
     return null;
   }
 
-  return (byWallet.public_key as string | null) ?? null;
+    return (byWallet.public_key as string | null) ?? null;
+  } catch (err) {
+    console.error("[getUserPublicKey] failed", {
+      idOrWallet,
+      error: err instanceof Error ? { message: err.message, stack: err.stack } : err,
+    });
+    return null;
+  }
 }

@@ -24,6 +24,7 @@ async function handler(
   data: { doctorWallet: string },
   _auth: AuthContext
 ): Promise<{ documents: SharedDocument[] }> {
+  try {
   const supabase = createAdminClient();
 
   // 1. Get all permission_keys granted to this doctor
@@ -98,7 +99,14 @@ async function handler(
       : null,
   }));
 
-  return { documents: enriched };
+    return { documents: enriched };
+  } catch (err) {
+    console.error("[listSharedDocuments] failed", {
+      doctorWallet: data.doctorWallet,
+      error: err instanceof Error ? { message: err.message, stack: err.stack } : err,
+    });
+    throw err;
+  }
 }
 
 export const listSharedDocuments = withAuth(handler, {

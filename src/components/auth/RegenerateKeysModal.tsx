@@ -12,8 +12,12 @@ interface RegenerateKeysModalProps {
 export function RegenerateKeysModal({ onRegenerate, onDismiss, onSwitchToRecovery }: RegenerateKeysModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmText, setConfirmText] = useState("");
+  const CONFIRM_PHRASE = "PERDER ACCESO";
+  const canRegenerate = confirmText.trim() === CONFIRM_PHRASE;
 
   const handleRegenerate = async () => {
+    if (!canRegenerate) return;
     setLoading(true);
     setError(null);
     const ok = await onRegenerate();
@@ -25,8 +29,8 @@ export function RegenerateKeysModal({ onRegenerate, onDismiss, onSwitchToRecover
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6">
-      <div className="flex max-h-[85vh] w-full max-w-md flex-col rounded-2xl bg-white shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-4 sm:py-6">
+      <div className="flex max-h-[90dvh] w-full max-w-md flex-col rounded-2xl bg-white shadow-xl">
         <div className="p-5 sm:p-6">
           <div className="mb-3 flex items-center gap-2 text-amber-600">
             <AlertTriangle className="h-5 w-5 shrink-0" />
@@ -40,10 +44,23 @@ export function RegenerateKeysModal({ onRegenerate, onDismiss, onSwitchToRecover
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 sm:px-6">
-          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
             <strong>Advertencia:</strong> Si generas nuevas claves, los documentos
             cifrados anteriormente <strong>no podrán ser desencriptados</strong>.
             Los nuevos documentos usarán las claves nuevas.
+          </div>
+
+          <div className="mb-3 space-y-1">
+            <label className="block text-xs font-medium text-gray-700">
+              Escribe "{CONFIRM_PHRASE}" para confirmar
+            </label>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder={CONFIRM_PHRASE}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium uppercase tracking-wider focus:border-amber-500 focus:outline-none"
+            />
           </div>
 
           {error && (
@@ -51,12 +68,12 @@ export function RegenerateKeysModal({ onRegenerate, onDismiss, onSwitchToRecover
           )}
         </div>
 
-        <div className="flex flex-col gap-2 p-5 pt-2 sm:p-6 sm:pt-2">
+        <div className="sticky bottom-0 bg-white p-4 sm:p-6 sm:pt-3">
           {onSwitchToRecovery && (
             <button
               type="button"
               onClick={onSwitchToRecovery}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-sky-50 py-2.5 text-sm font-medium text-sky-700 hover:bg-sky-100"
+              className="mb-2 flex w-full items-center justify-center gap-2 rounded-lg bg-sky-50 py-2.5 text-sm font-medium text-sky-700 hover:bg-sky-100"
             >
               <KeyRound className="h-4 w-4" />
               Tengo mi código de recuperación
@@ -73,7 +90,7 @@ export function RegenerateKeysModal({ onRegenerate, onDismiss, onSwitchToRecover
             <button
               type="button"
               onClick={handleRegenerate}
-              disabled={loading}
+              disabled={loading || !canRegenerate}
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-600 py-2.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}

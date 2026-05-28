@@ -33,8 +33,8 @@ export function RecoveryInputModal({ onRecover, onDismiss }: RecoveryInputModalP
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6">
-      <div className="flex max-h-[85vh] w-full max-w-md flex-col rounded-2xl bg-white shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-4 sm:py-6">
+      <div className="flex max-h-[90dvh] w-full max-w-md flex-col rounded-2xl bg-white shadow-xl">
         <div className="p-5 sm:p-6">
           <div className="mb-3 flex items-center gap-2 text-slate-800">
             <KeyRound className="h-5 w-5 shrink-0" />
@@ -62,23 +62,25 @@ export function RecoveryInputModal({ onRecover, onDismiss }: RecoveryInputModalP
           </form>
         </div>
 
-        <div className="flex flex-col gap-2 p-5 pt-3 sm:flex-row sm:p-6 sm:pt-3">
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="w-full rounded-lg bg-gray-100 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={loading || !code.trim()}
-            onClick={handleSubmit}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-          >
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            Recuperar
-          </button>
+        <div className="sticky bottom-0 bg-white p-4 sm:p-6 sm:pt-3">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="w-full rounded-lg bg-gray-100 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !code.trim()}
+              onClick={handleSubmit}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+            >
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              Recuperar
+            </button>
+          </div>
         </div>
       </div>
     </div>

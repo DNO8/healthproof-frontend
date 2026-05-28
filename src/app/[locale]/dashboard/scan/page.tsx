@@ -29,10 +29,12 @@ export default function ScanPage() {
 
   async function processPayload(payload: string) {
     if (!myUserId) return;
+    console.log("[ScanPage] processPayload start, userId:", myUserId);
     setScanning(true);
     setError(null);
     try {
       const data = JSON.parse(payload.trim()) as EncryptedQRData;
+      console.log("[ScanPage] QR parsed, docId:", data.crypto?.document_id, "patient:", data.payload?.patient_wallet, "grantee:", data.payload?.grantee_wallet);
       const crypto = data.crypto;
       if (!crypto?.document_id || !crypto.cid || !crypto.encrypted_key || !crypto.patient_public_key) {
         throw new Error(t("invalidQR"));
@@ -53,14 +55,17 @@ export default function ScanPage() {
           qrGrantee: data.payload.grantee_wallet,
         });
       }
+      console.log("[ScanPage] checking on-chain access...");
       const access = await checkAccessOnChain({
         patientWallet: data.payload.patient_wallet,
         requesterWallet: data.payload.grantee_wallet,
         documentId: crypto.document_id,
       });
+      console.log("[ScanPage] access result:", access);
       if (!access.success || !access.data) {
         throw new Error(t("noAccess"));
       }
+      console.log("[ScanPage] saving permission key...");
       const saveResult = await savePermissionKey({
         document_id: crypto.document_id,
         patient_wallet: data.payload.patient_wallet,
@@ -69,14 +74,18 @@ export default function ScanPage() {
       });
       if ("error" in saveResult && saveResult.error) {
         console.warn("[ScanPage] savePermissionKey:", saveResult.error);
+      } else {
+        console.log("[ScanPage] permission key saved");
       }
       sileo.success({ title: t("accessGranted"), description: t("redirecting") });
       const params = new URLSearchParams();
       params.set("doc", crypto.document_id);
       params.set("pk", crypto.patient_public_key);
+      console.log("[ScanPage] redirecting to shared with doc:", crypto.document_id);
       router.push(`/dashboard/shared?${params.toString()}`);
     } catch (e) {
       const msg = String(e).slice(0, 200);
+      console.error("[ScanPage] processPayload error:", msg, e);
       setError(msg);
       sileo.error({ title: t("scanErrorTitle"), description: msg });
     } finally {

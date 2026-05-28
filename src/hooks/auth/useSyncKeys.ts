@@ -35,7 +35,10 @@ import { saveServerShare } from "@/actions/auth/save-server-share";
 import { saveRecoveryHash } from "@/actions/auth/save-recovery-hash";
 import { saveMasterSecretHash } from "@/actions/auth/save-master-secret-hash";
 import {
+  encryptPrivateKey,
   decryptPrivateKey,
+  deriveBackupPassword,
+  deriveLegacyBackupPassword,
 } from "@/services/encryption/key-backup";
 import { saveEncryptedPrivateKey } from "@/actions/auth/save-encrypted-private-key";
 
@@ -53,6 +56,7 @@ export function useSyncKeys() {
   const ranForRef = useRef<{ userId: string; wallet: string } | null>(null);
   const setConflict = useKeyConflictStore((s) => s.setConflict);
   const clearConflict = useKeyConflictStore((s) => s.clearConflict);
+  const setIsRecovering = useKeyConflictStore((s) => s.setIsRecovering);
   const [recoveryState, setRecoveryState] = useState<RecoveryState>({
     needsRecoveryCode: false,
     needsRegeneration: false,
@@ -94,6 +98,16 @@ export function useSyncKeys() {
 
     // Save public key
     await updatePublicKey({ id: uid, public_key: publicKeyJwk });
+
+    // Backup encrypted private key for silent cross-device recovery
+    try {
+      const privJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
+      const backupPassword = await deriveBackupPassword(uid, walletAddress ?? uid);
+      const encrypted = await encryptPrivateKey(JSON.stringify(privJwk), backupPassword);
+      await saveEncryptedPrivateKey({ id: uid, encrypted_private_key: encrypted });
+    } catch (e) {
+      console.warn("[useSyncKeys] onboard encrypted backup failed:", e);
+    }
 
     sessionStorage.setItem(SYNCED_KEY, uid);
     clearDbUserCache();
@@ -197,6 +211,18 @@ export function useSyncKeys() {
           }
 
           if (dbPk === localPk) {
+            // Lazy migration: create encrypted_private_key backup if missing
+            if (!userWithBackup?.encrypted_private_key) {
+              try {
+                const privJwk = await crypto.subtle.exportKey("jwk", kp.privateKey!);
+                const backupPassword = await deriveBackupPassword(userId, walletAddress);
+                const encrypted = await encryptPrivateKey(JSON.stringify(privJwk), backupPassword);
+                await saveEncryptedPrivateKey({ id: userId, encrypted_private_key: encrypted });
+                console.log("[useSyncKeys] Lazy migration: encrypted_private_key backup created");
+              } catch (e) {
+                console.warn("[useSyncKeys] Lazy migration backup failed:", e);
+              }
+            }
             sessionStorage.setItem(SYNCED_KEY, userId);
             return;
           }
@@ -223,15 +249,62 @@ export function useSyncKeys() {
 
         // ── Case C: IndexedDB empty, user on scheme v2 ──
         if (schemeVersion === 2) {
-          // Try normal recovery: local share1 missing, need share2 from server
-          // But if share1 is also gone, we need recovery code (share3)
-          const localShare1 = await getLocalShare1(userId);
+          setIsRecovering(true);
+          // Step 1: Try silent auto-recovery from encrypted_private_key backup
+          if (userWithBackup?.encrypted_private_key && userWithBackup?.public_key) {
+            const [newPw, oldPw] = await deriveLegacyBackupPassword(userId, walletAddress);
+            let decrypted: string | null = null;
+            for (const pw of [newPw, oldPw]) {
+              decrypted = await decryptPrivateKey(userWithBackup.encrypted_private_key, pw);
+              if (decrypted) break;
+            }
+            if (decrypted) {
+              try {
+                const privJwk = JSON.parse(decrypted) as JsonWebKey;
+                const pubJwk = JSON.parse(userWithBackup.public_key) as JsonWebKey;
+                const privateKey = await crypto.subtle.importKey(
+                  "jwk",
+                  privJwk,
+                  { name: "ECDH", namedCurve: "P-256" },
+                  false,
+                  ["deriveKey", "deriveBits"]
+                );
+                const publicKey = await crypto.subtle.importKey(
+                  "jwk",
+                  pubJwk,
+                  { name: "ECDH", namedCurve: "P-256" },
+                  true,
+                  []
+                );
+                // Reconstruct SSS shares for this device so recovery code remains valid
+                const encoder = new TextEncoder();
+                const masterSecret = encoder.encode(JSON.stringify(privJwk));
+                const shares = generateShares(masterSecret, 2, 3);
+                const [share1, share2] = shares;
+                const masterHash = await hashMasterSecret(masterSecret);
+                await saveKeyPair(userId, { privateKey, publicKey }, {
+                  share1,
+                  masterSecretHash: masterHash,
+                  schemeVersion: 2,
+                });
+                await saveServerShare({ userId, share2 });
+                await saveMasterSecretHash({ userId, masterSecretHash: masterHash });
+                sessionStorage.setItem(SYNCED_KEY, userId);
+                clearConflict();
+                console.log("[useSyncKeys] Auto-recovered from encrypted_private_key backup");
+                return;
+              } catch (e) {
+                console.warn("[useSyncKeys] Auto-recovery from encrypted_private_key failed:", e);
+              }
+            }
+          }
 
+          // Step 2: Try normal SSS recovery with local share1 + server share2
+          const localShare1 = await getLocalShare1(userId);
           if (localShare1) {
             const share2 = await fetchServerShare();
             if (!share2) {
               console.error("[useSyncKeys] Server share2 unavailable");
-              // If server never had a share (KMS was off during onboarding), offer regeneration
               if (!userWithBackup?.server_share_ciphertext) {
                 setRecoveryState({
                   needsRecoveryCode: false,
@@ -276,7 +349,7 @@ export function useSyncKeys() {
             return;
           }
 
-          // No local share1 → need recovery code or regeneration
+          // Step 3: No local share1 → need recovery code or regeneration
           if (!userWithBackup?.server_share_ciphertext) {
             setRecoveryState({
               needsRecoveryCode: false,
@@ -302,13 +375,15 @@ export function useSyncKeys() {
           let legacyPubJwk: JsonWebKey | null = null;
 
           if (userWithBackup?.encrypted_private_key && userWithBackup?.public_key) {
-            const legacyPassword = walletAddress
-              ? `${walletAddress.toLowerCase()}|${userId}`
-              : `${userId}|${userId}`;
-            const decrypted = await decryptPrivateKey(
-              userWithBackup.encrypted_private_key,
-              legacyPassword
-            );
+            const [newPw, oldPw] = await deriveLegacyBackupPassword(userId, walletAddress);
+            let decrypted: string | null = null;
+            for (const pw of [newPw, oldPw]) {
+              decrypted = await decryptPrivateKey(
+                userWithBackup.encrypted_private_key,
+                pw
+              );
+              if (decrypted) break;
+            }
             if (decrypted) {
               legacyPrivJwk = JSON.parse(decrypted) as JsonWebKey;
               legacyPubJwk = JSON.parse(userWithBackup.public_key) as JsonWebKey;
@@ -400,10 +475,11 @@ export function useSyncKeys() {
         await onboardNewUser(userId);
       } catch (err) {
         console.error("[useSyncKeys] Error syncing keys:", err);
+        setIsRecovering(false);
         ranForRef.current = null;
       }
     })();
-  }, [ready, authenticated, userId, walletAddress, setConflict, clearConflict]);
+  }, [ready, authenticated, userId, walletAddress, setConflict, clearConflict, setIsRecovering]);
 
   // ── Manual recovery with recovery code ──
   const recoverWithCode = async (code: string): Promise<boolean> => {

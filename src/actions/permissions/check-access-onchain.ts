@@ -27,6 +27,7 @@ async function checkAccessHandler(
   data: CheckAccessData,
   _auth: AuthContext
 ): Promise<boolean> {
+  try {
   const publicClient = createPublicClient({
     chain: HEALTHPROOF_CHAIN,
     transport: http(),
@@ -58,6 +59,15 @@ async function checkAccessHandler(
   });
 
   return result as boolean;
+  } catch (err) {
+    console.error("[checkAccessOnChain] failed", {
+      patientWallet: data.patientWallet,
+      requesterWallet: data.requesterWallet,
+      documentId: data.documentId,
+      error: err instanceof Error ? { message: err.message, stack: err.stack } : err,
+    });
+    throw err;
+  }
 }
 
 export const checkAccessOnChain = withAuth(checkAccessHandler, {
