@@ -16,7 +16,13 @@ import {
 } from "@aws-sdk/client-kms";
 import { kmsClient } from "./client";
 
-const KEY_ID = process.env.AWS_KMS_KEY_ID;
+function getKmsKeyId(): string {
+  const keyId = process.env.AWS_KMS_KEY_ID;
+  if (!keyId) {
+    throw new Error("AWS_KMS_KEY_ID not configured");
+  }
+  return keyId;
+}
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
@@ -51,13 +57,11 @@ export interface EncryptedServerShare {
 export async function encryptShareForServer(
   share: Uint8Array,
 ): Promise<EncryptedServerShare> {
-  if (!KEY_ID) {
-    throw new Error("AWS_KMS_KEY_ID not configured");
-  }
+  const keyId = getKmsKeyId();
 
   // 1. Generate DEK from KMS
   const genCmd = new GenerateDataKeyCommand({
-    KeyId: KEY_ID,
+    KeyId: keyId,
     KeySpec: "AES_256",
   });
   const genRes = await kmsClient.send(genCmd);
@@ -96,7 +100,7 @@ export async function encryptShareForServer(
   return {
     encryptedShare: arrayBufferToBase64(combined.buffer),
     encryptedDek: arrayBufferToBase64(encryptedDek.buffer),
-    kmsKeyId: KEY_ID,
+    kmsKeyId: keyId,
   };
 }
 
@@ -109,9 +113,7 @@ export async function encryptShareForServer(
 export async function decryptShareForServer(
   encrypted: EncryptedServerShare,
 ): Promise<Uint8Array> {
-  if (!KEY_ID) {
-    throw new Error("AWS_KMS_KEY_ID not configured");
-  }
+  getKmsKeyId(); // validate env is present
 
   // 1. Decrypt DEK via KMS
   const decryptDekCmd = new DecryptCommand({
