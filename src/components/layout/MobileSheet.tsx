@@ -96,6 +96,8 @@ export function MobileSheet() {
     sessionStorage.removeItem("hp_upserted");
     sessionStorage.removeItem("hp_wallet_synced");
     sessionStorage.removeItem("hp_keys_synced");
+    sessionStorage.removeItem("hp_keys_sync_attempts");
+    sessionStorage.removeItem("hp_keys_sync_error");
     sessionStorage.removeItem("hp_welcome_shown");
     sessionStorage.removeItem("hp_logging_out");
     localStorage.removeItem("hp_intended_role");

@@ -57,8 +57,6 @@ export function useSyncKeys() {
   const t = useTranslations("keyRecovery");
   const ranForRef = useRef<{ userId: string; wallet: string } | null>(null);
   const serverShareAttemptedRef = useRef(false);
-  const lastErrorTsRef = useRef(0);
-  const errorCountRef = useRef(0);
   const setConflict = useKeyConflictStore((s) => s.setConflict);
   const clearConflict = useKeyConflictStore((s) => s.clearConflict);
   const setIsRecovering = useKeyConflictStore((s) => s.setIsRecovering);
@@ -244,14 +242,21 @@ export function useSyncKeys() {
       return;
     }
 
-    // Backoff: if we recently failed, wait at least 10s before retrying
-    const now = Date.now();
-    if (now - lastErrorTsRef.current < 10_000) {
-      return;
-    }
-    // Cap retries at 3 to prevent infinite loops
-    if (errorCountRef.current >= 3) {
-      return;
+    // Backoff persisted in sessionStorage so it survives remounts/StrictMode.
+    // Cap to 1 retry per session to prevent server action storms.
+    const SYNC_ERROR_KEY = "hp_keys_sync_error";
+    const SYNC_ATTEMPT_KEY = "hp_keys_sync_attempts";
+    try {
+      const lastErrTs = parseInt(sessionStorage.getItem(SYNC_ERROR_KEY) ?? "0", 10);
+      const attempts = parseInt(sessionStorage.getItem(SYNC_ATTEMPT_KEY) ?? "0", 10);
+      if (Date.now() - lastErrTs < 30_000) return;
+      if (attempts >= 1) {
+        console.warn("[useSyncKeys] Max sync attempts reached for this session");
+        return;
+      }
+      sessionStorage.setItem(SYNC_ATTEMPT_KEY, String(attempts + 1));
+    } catch {
+      /* ignore */
     }
 
     ranForRef.current = { userId, wallet: walletAddress };
@@ -691,8 +696,11 @@ export function useSyncKeys() {
       } catch (err) {
         console.error("[useSyncKeys] Error syncing keys:", err);
         setIsRecovering(false);
-        lastErrorTsRef.current = Date.now();
-        errorCountRef.current += 1;
+        try {
+          sessionStorage.setItem("hp_keys_sync_error", String(Date.now()));
+        } catch {
+          /* ignore */
+        }
       }
     })();
   }, [ready, authenticated, userId, walletAddress, setConflict, clearConflict, setIsRecovering]);
@@ -766,6 +774,8 @@ export function useSyncKeys() {
       serverShareAttemptedRef.current = false;
       try {
         sessionStorage.removeItem("hp_server_share_attempted");
+        sessionStorage.removeItem("hp_keys_sync_attempts");
+        sessionStorage.removeItem("hp_keys_sync_error");
       } catch { /* ignore */ }
       const { masterSecret, publicKeyJwk, keyPair } = await generateMasterSecret();
       const shares = generateShares(masterSecret, 2, 3);
