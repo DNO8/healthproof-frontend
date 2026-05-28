@@ -12,9 +12,12 @@ async function savePermissionKeyHandler(
   },
   auth: AuthContext,
 ) {
-  // Only the patient can save permission keys for their documents
-  if (auth.wallet.toLowerCase() !== data.patient_wallet.toLowerCase()) {
-    throw new Error("Unauthorized: only the patient can save permission keys");
+  // Patient or grantee can save permission keys
+  const caller = auth.wallet.toLowerCase();
+  const patient = data.patient_wallet.toLowerCase();
+  const grantee = data.grantee_wallet.toLowerCase();
+  if (caller !== patient && caller !== grantee) {
+    throw new Error("Unauthorized: only the patient or grantee can save permission keys");
   }
 
   const supabase = createAdminClient();

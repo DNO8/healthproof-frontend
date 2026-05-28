@@ -81,6 +81,17 @@ export function useSyncKeys() {
     }
   };
 
+  // Helper: fail fast when a withAuth-wrapped server action returns an error
+  function assertOk<T>(
+    result: { success: true; data: T } | { success: false; error: string; code: number },
+    label: string,
+  ): T {
+    if (!result.success) {
+      throw new Error(`${label} failed: ${result.error} (code ${result.code})`);
+    }
+    return result.data;
+  }
+
   const [recoveryState, setRecoveryState] = useState<RecoveryState>({
     needsRecoveryCode: false,
     needsRegeneration: false,
@@ -112,21 +123,21 @@ export function useSyncKeys() {
     });
 
     // Send share2 to server (KMS envelope encryption)
-    await saveServerShare(await withPrivyToken({ userId: uid, share2 }));
+    assertOk(await saveServerShare(await withPrivyToken({ userId: uid, share2 })), "saveServerShare");
 
     // Save hashes to DB
-    await saveRecoveryHash(await withPrivyToken({ userId: uid, recoveryCodeHash: recoveryHash }));
-    await saveMasterSecretHash(await withPrivyToken({ userId: uid, masterSecretHash: masterHash }));
+    assertOk(await saveRecoveryHash(await withPrivyToken({ userId: uid, recoveryCodeHash: recoveryHash })), "saveRecoveryHash");
+    assertOk(await saveMasterSecretHash(await withPrivyToken({ userId: uid, masterSecretHash: masterHash })), "saveMasterSecretHash");
 
     // Save public key
-    await updatePublicKey(await withPrivyToken({ id: uid, public_key: publicKeyJwk }));
+    assertOk(await updatePublicKey(await withPrivyToken({ id: uid, public_key: publicKeyJwk })), "updatePublicKey");
 
     // Backup encrypted private key for silent cross-device recovery
     try {
       const privJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
       const backupPassword = await deriveCrossDevicePassword(uid);
       const encrypted = await encryptPrivateKey(JSON.stringify(privJwk), backupPassword);
-      await saveEncryptedPrivateKey(await withPrivyToken({ id: uid, encrypted_private_key: encrypted }));
+      assertOk(await saveEncryptedPrivateKey(await withPrivyToken({ id: uid, encrypted_private_key: encrypted })), "saveEncryptedPrivateKey");
     } catch (e) {
       console.warn("[useSyncKeys] onboard encrypted backup failed:", e);
     }
@@ -299,7 +310,7 @@ export function useSyncKeys() {
                 }
                 const backupPassword = await deriveCrossDevicePassword(userId);
                 const encrypted = await encryptPrivateKey(privJwkStr, backupPassword);
-                await saveEncryptedPrivateKey(await withPrivyToken({ id: userId, encrypted_private_key: encrypted }));
+                assertOk(await saveEncryptedPrivateKey(await withPrivyToken({ id: userId, encrypted_private_key: encrypted })), "saveEncryptedPrivateKey");
                 console.log("[useSyncKeys] Lazy migration: encrypted_private_key backup created");
               } catch (e) {
                 if (e instanceof Error && e.message === "CROSS_DEVICE_BACKUP_UNAVAILABLE") {
@@ -374,8 +385,8 @@ export function useSyncKeys() {
                     masterSecretHash: masterHash,
                     schemeVersion: 2,
                   });
-                  await saveServerShare(await withPrivyToken({ userId, share2 }));
-                  await saveMasterSecretHash(await withPrivyToken({ userId, masterSecretHash: masterHash }));
+                  assertOk(await saveServerShare(await withPrivyToken({ userId, share2 })), "saveServerShare");
+                  assertOk(await saveMasterSecretHash(await withPrivyToken({ userId, masterSecretHash: masterHash })), "saveMasterSecretHash");
                   sessionStorage.setItem(SYNCED_KEY, userId);
                   clearConflict();
                   try {
@@ -469,8 +480,8 @@ export function useSyncKeys() {
                   masterSecretHash: masterHash,
                   schemeVersion: 2,
                 });
-                await saveServerShare(await withPrivyToken({ userId, share2 }));
-                await saveMasterSecretHash(await withPrivyToken({ userId, masterSecretHash: masterHash }));
+                assertOk(await saveServerShare(await withPrivyToken({ userId, share2 })), "saveServerShare");
+                assertOk(await saveMasterSecretHash(await withPrivyToken({ userId, masterSecretHash: masterHash })), "saveMasterSecretHash");
                 sessionStorage.setItem(SYNCED_KEY, userId);
                 clearConflict();
                 console.log("[useSyncKeys] Auto-recovered from encrypted_private_key backup");
@@ -617,10 +628,10 @@ export function useSyncKeys() {
               schemeVersion: 2,
             });
 
-            await saveServerShare(await withPrivyToken({ userId, share2 }));
-            await saveRecoveryHash(await withPrivyToken({ userId, recoveryCodeHash: recoveryHash }));
-            await saveMasterSecretHash(await withPrivyToken({ userId, masterSecretHash: masterHash }));
-            await updatePublicKey(await withPrivyToken({ id: userId, public_key: JSON.stringify(legacyPubJwk) }));
+            assertOk(await saveServerShare(await withPrivyToken({ userId, share2 })), "saveServerShare");
+            assertOk(await saveRecoveryHash(await withPrivyToken({ userId, recoveryCodeHash: recoveryHash })), "saveRecoveryHash");
+            assertOk(await saveMasterSecretHash(await withPrivyToken({ userId, masterSecretHash: masterHash })), "saveMasterSecretHash");
+            assertOk(await updatePublicKey(await withPrivyToken({ id: userId, public_key: JSON.stringify(legacyPubJwk) })), "updatePublicKey");
 
             sessionStorage.setItem(SYNCED_KEY, userId);
             clearDbUserCache();
@@ -757,10 +768,10 @@ export function useSyncKeys() {
         schemeVersion: 2,
       });
 
-      await saveServerShare(await withPrivyToken({ userId, share2 }));
-      await saveRecoveryHash(await withPrivyToken({ userId, recoveryCodeHash: recoveryHash }));
-      await saveMasterSecretHash(await withPrivyToken({ userId, masterSecretHash: masterHash }));
-      await updatePublicKey(await withPrivyToken({ id: userId, public_key: publicKeyJwk }));
+      assertOk(await saveServerShare(await withPrivyToken({ userId, share2 })), "saveServerShare");
+      assertOk(await saveRecoveryHash(await withPrivyToken({ userId, recoveryCodeHash: recoveryHash })), "saveRecoveryHash");
+      assertOk(await saveMasterSecretHash(await withPrivyToken({ userId, masterSecretHash: masterHash })), "saveMasterSecretHash");
+      assertOk(await updatePublicKey(await withPrivyToken({ id: userId, public_key: publicKeyJwk })), "updatePublicKey");
 
       sessionStorage.setItem(SYNCED_KEY, userId);
       clearConflict();

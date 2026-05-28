@@ -1148,7 +1148,7 @@
     "resetActor": "Reset this actor",
     "alreadyDone": "Already completed",
     "completedBadge": "Done",
-    "tryItNow": "Try Demo!",
+    "tryItNow": "Try it now !",
     "demoComplete": "Medical interoperability on-chain",
     "demoCompleteSub": "Starting with verifiable clinical documents and exam results.",
     "skipDemo": "Skip demo",
@@ -1296,7 +1296,7 @@
     "summaryStepNumber": "Step {number}",
     "summaryConclusion": "Document encrypted, fragmented, and verifiable on-chain.",
     "summaryConclusionSub": "HealthProof ensures end-to-end traceability without exposing patient data.",
-    "tryItNow": "Try it now!",
+    "tryItNow": "Try Demo!",
     "demoComplete": "Medical interoperability on-chain",
     "demoCompleteSub": "Starting with verifiable clinical documents and exam results.",
     "viewSummary": "View summary"

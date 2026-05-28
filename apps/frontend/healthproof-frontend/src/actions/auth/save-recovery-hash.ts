@@ -12,16 +12,20 @@ async function saveRecoveryHashHandler(
   }
 
   const supabase = createAdminClient();
-  const { error } = await supabase
+  const { data: updatedRows, error } = await supabase
     .from("users")
     .update({
       recovery_code_hash: data.recoveryCodeHash,
     })
-    .eq("id", data.userId);
+    .eq("id", data.userId)
+    .select("id");
 
   if (error) {
     console.error("[saveRecoveryHash] Error:", error);
     throw new Error("Failed to save recovery hash");
+  }
+  if (!updatedRows || updatedRows.length === 0) {
+    throw new Error("User not found when saving recovery hash");
   }
 
   return { success: true };
