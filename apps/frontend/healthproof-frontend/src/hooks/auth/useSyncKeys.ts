@@ -148,6 +148,10 @@ export function useSyncKeys() {
   const fetchServerShare = async (): Promise<string | null> => {
     try {
       const token = await getAccessToken();
+      if (!token) {
+        console.error("[useSyncKeys] fetchServerShare: no Privy token available");
+        return null;
+      }
       const res = await fetch("/api/server-share/fetch", {
         method: "POST",
         headers: {
