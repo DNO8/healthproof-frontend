@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { getRoleOnChain } from "@/actions/healthcare-networks/register-entity-onchain";
 import { CONTRACT_TO_ROLE, type UserRole } from "@/types/domain.types";
 
@@ -46,6 +46,7 @@ export function clearOnChainRoleCache() {
 export function useOnChainRole(walletAddress: string | null | undefined) {
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const inFlightRef = useRef(false);
 
   const refetch = useCallback(async () => {
     if (!walletAddress) {
@@ -60,6 +61,9 @@ export function useOnChainRole(walletAddress: string | null | undefined) {
       setLoading(false);
       return;
     }
+
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
 
     setLoading(true);
     try {
@@ -77,6 +81,7 @@ export function useOnChainRole(walletAddress: string | null | undefined) {
       console.error("useOnChainRole error:", err);
       setRole(null);
     } finally {
+      inFlightRef.current = false;
       setLoading(false);
     }
   }, [walletAddress]);

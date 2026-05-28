@@ -56,6 +56,7 @@ export function useSyncKeys() {
   const { ready, authenticated, user, getAccessToken } = usePrivy();
   const t = useTranslations("keyRecovery");
   const ranForRef = useRef<{ userId: string; wallet: string } | null>(null);
+  const syncInProgressRef = useRef(false);
   const serverShareAttemptedRef = useRef(false);
   const setConflict = useKeyConflictStore((s) => s.setConflict);
   const clearConflict = useKeyConflictStore((s) => s.clearConflict);
@@ -287,6 +288,8 @@ export function useSyncKeys() {
     }
 
     ranForRef.current = { userId, wallet: walletAddress };
+    if (syncInProgressRef.current) return;
+    syncInProgressRef.current = true;
 
     (async () => {
       try {
@@ -444,6 +447,9 @@ export function useSyncKeys() {
                   return;
                 } catch (e) {
                   console.warn("[useSyncKeys] Auto-recovery from key_mismatch failed:", e);
+                  try {
+                    sessionStorage.setItem("hp_keys_sync_error", String(Date.now()));
+                  } catch { /* ignore */ }
                 }
               }
             }
@@ -542,6 +548,9 @@ export function useSyncKeys() {
                 return;
               } catch (e) {
                 console.warn("[useSyncKeys] Auto-recovery from encrypted_private_key failed:", e);
+                try {
+                  sessionStorage.setItem("hp_keys_sync_error", String(Date.now()));
+                } catch { /* ignore */ }
               }
             }
           }
@@ -728,6 +737,8 @@ export function useSyncKeys() {
         } catch {
           /* ignore */
         }
+      } finally {
+        syncInProgressRef.current = false;
       }
     })();
   }, [ready, authenticated, userId, walletAddress, setConflict, clearConflict, setIsRecovering]);
@@ -796,8 +807,7 @@ export function useSyncKeys() {
     if (!userId) return false;
     try {
       console.warn("[useSyncKeys] Regenerating keys for", userId);
-      // Clear gates so the next sync can run fresh
-      ranForRef.current = null;
+      // Only clear server-share gate; keep ranForRef so the effect stays blocked
       serverShareAttemptedRef.current = false;
       try {
         sessionStorage.removeItem("hp_server_share_attempted");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { getDashboardStats, type DashboardStats } from "@/actions/dashboard/dashboard-stats";
 import type { UserRole } from "@/types/domain.types";
 
@@ -49,6 +49,7 @@ export function useDashboardStats(
 ) {
   const [stats, setStats] = useState<DashboardStats>({});
   const [loading, setLoading] = useState(true);
+  const inFlightRef = useRef(false);
 
   const refetch = useCallback(async () => {
     if (!wallet || !role) {
@@ -64,6 +65,9 @@ export function useDashboardStats(
       return;
     }
 
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+
     setLoading(true);
     try {
       const result = await getDashboardStats(wallet, role);
@@ -73,6 +77,7 @@ export function useDashboardStats(
       console.error("[useDashboardStats]", err);
       setStats({});
     } finally {
+      inFlightRef.current = false;
       setLoading(false);
     }
   }, [wallet, role]);
