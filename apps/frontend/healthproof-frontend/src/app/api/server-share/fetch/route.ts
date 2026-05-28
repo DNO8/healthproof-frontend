@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { jwtVerify, createRemoteJWKSet } from "jose";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptShareForServer } from "@/lib/kms/server-share-crypto";
 
-const PRIVY_VERIFY_URL = "https://auth.privy.io/api/v1/sessions/verify";
-
-interface PrivySession {
-  user: {
-    id: string;
-    wallet_address: string;
-  };
-}
+const PRIVY_JWKS = createRemoteJWKSet(
+  new URL("https://auth.privy.io/api/v1/sessions/jwks.json")
+);
 
 /**
  * POST /api/server-share/fetch
@@ -55,35 +51,32 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify with Privy API
-    const privyRes = await fetch(PRIVY_VERIFY_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${privyToken}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!privyRes.ok) {
-      const privyErr = await privyRes.text().catch(() => "unknown");
-      console.error("[server-share/fetch] Privy verify failed:", privyRes.status, privyErr);
+    // Verify JWT locally against Privy JWKS
+    let payload;
+    try {
+      const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+      const { payload: verifiedPayload } = await jwtVerify(privyToken, PRIVY_JWKS, {
+        issuer: "https://auth.privy.io",
+        audience: appId,
+        clockTolerance: 60,
+      });
+      payload = verifiedPayload;
+      console.log("[server-share/fetch] JWT verified, sub:", payload.sub);
+    } catch (jwtErr) {
+      console.error("[server-share/fetch] JWT verification failed:", jwtErr);
       return NextResponse.json(
         { error: "Invalid or expired authentication" },
         { status: 401 }
       );
     }
 
-    const session = (await privyRes.json()) as PrivySession;
-
-    if (!session.user?.id) {
+    const userId = payload.sub;
+    if (!userId) {
       return NextResponse.json(
         { error: "No wallet connected" },
         { status: 401 }
       );
     }
-
-    // Infer userId from session (prevents enumeration of other users)
-    const userId = session.user.id;
 
     const supabase = createAdminClient();
     const { data, error } = await supabase
