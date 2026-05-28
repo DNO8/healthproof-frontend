@@ -92,12 +92,43 @@ export function useSyncKeys() {
     return result.data;
   }
 
-  const [recoveryState, setRecoveryState] = useState<RecoveryState>({
-    needsRecoveryCode: false,
-    needsRegeneration: false,
-    recoveryCode: null,
-    step: "idle",
+  const RECOVERY_STATE_KEY = "hp_recovery_state";
+  const [recoveryState, setRecoveryStateInternal] = useState<RecoveryState>(() => {
+    if (typeof window === "undefined") {
+      return {
+        needsRecoveryCode: false,
+        needsRegeneration: false,
+        recoveryCode: null,
+        step: "idle",
+      };
+    }
+    try {
+      const raw = sessionStorage.getItem(RECOVERY_STATE_KEY);
+      if (raw) return JSON.parse(raw) as RecoveryState;
+    } catch {
+      /* ignore */
+    }
+    return {
+      needsRecoveryCode: false,
+      needsRegeneration: false,
+      recoveryCode: null,
+      step: "idle",
+    };
   });
+
+  const setRecoveryState = (
+    next: RecoveryState | ((prev: RecoveryState) => RecoveryState),
+  ) => {
+    setRecoveryStateInternal((prev) => {
+      const value = typeof next === "function" ? next(prev) : next;
+      try {
+        sessionStorage.setItem(RECOVERY_STATE_KEY, JSON.stringify(value));
+      } catch {
+        /* ignore */
+      }
+      return value;
+    });
+  };
 
   const userId = user?.id;
   const walletAddress = user?.wallet?.address;
@@ -242,19 +273,15 @@ export function useSyncKeys() {
       return;
     }
 
-    // Backoff persisted in sessionStorage so it survives remounts/StrictMode.
-    // Cap to 1 retry per session to prevent server action storms.
-    const SYNC_ERROR_KEY = "hp_keys_sync_error";
-    const SYNC_ATTEMPT_KEY = "hp_keys_sync_attempts";
+    // Cooldown after errors, persisted in sessionStorage so it survives remounts.
+    // Successful runs are gated by SYNCED_KEY + ranForRef. Recovery state is
+    // persisted in sessionStorage so the modal still shows after remount.
     try {
-      const lastErrTs = parseInt(sessionStorage.getItem(SYNC_ERROR_KEY) ?? "0", 10);
-      const attempts = parseInt(sessionStorage.getItem(SYNC_ATTEMPT_KEY) ?? "0", 10);
-      if (Date.now() - lastErrTs < 30_000) return;
-      if (attempts >= 1) {
-        console.warn("[useSyncKeys] Max sync attempts reached for this session");
+      const lastErrTs = parseInt(sessionStorage.getItem("hp_keys_sync_error") ?? "0", 10);
+      if (Date.now() - lastErrTs < 30_000) {
+        console.warn("[useSyncKeys] In error cooldown, skipping sync");
         return;
       }
-      sessionStorage.setItem(SYNC_ATTEMPT_KEY, String(attempts + 1));
     } catch {
       /* ignore */
     }
@@ -774,7 +801,6 @@ export function useSyncKeys() {
       serverShareAttemptedRef.current = false;
       try {
         sessionStorage.removeItem("hp_server_share_attempted");
-        sessionStorage.removeItem("hp_keys_sync_attempts");
         sessionStorage.removeItem("hp_keys_sync_error");
       } catch { /* ignore */ }
       const { masterSecret, publicKeyJwk, keyPair } = await generateMasterSecret();
