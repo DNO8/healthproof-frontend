@@ -10,7 +10,7 @@ interface DemoSummaryProps {
 }
 
 export function DemoSummary({ onClose }: DemoSummaryProps) {
-  const t = useTranslations("heroDemo");
+  const t = useTranslations("demoFlow");
   const router = useRouter();
 
   const steps = [

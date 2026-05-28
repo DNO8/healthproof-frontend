@@ -62,6 +62,14 @@ export default function SharedDocumentsPage() {
           })
         );
         setPatientKeys(keyMap);
+        if (uniquePatients.length > 0 && Object.values(keyMap).every((v) => v === null)) {
+          console.warn("[SharedPage] No patient public keys resolved");
+          sileo.warning({
+            title: "Claves de pacientes no disponibles",
+            description: "No se pudieron obtener las claves públicas de los pacientes. Es posible que las claves de cifrado aún se estén recuperando.",
+            duration: 5000,
+          });
+        }
       } else {
         setDocs([]);
       }

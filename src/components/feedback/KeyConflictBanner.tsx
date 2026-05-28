@@ -15,14 +15,14 @@ export function KeyConflictBanner() {
   const title =
     conflict === "missing_local_keys"
       ? isRecovering
-        ? "Recuperando claves de cifrado..."
+        ? t("recoveringTitle")
         : t("missingLocalKeys")
       : t("keyMismatch");
 
   const description =
     conflict === "missing_local_keys"
       ? isRecovering
-        ? "Detectamos que estás en un nuevo dispositivo. Intentando recuperar tus claves desde el respaldo en el servidor..."
+        ? t("recoveringDesc")
         : t("missingLocalKeysDesc")
       : t("keyMismatchDesc");
 
@@ -40,7 +40,7 @@ export function KeyConflictBanner() {
             {isRecovering && (
               <div className="mt-3 flex items-center gap-2 text-xs text-amber-700">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Por favor espera, esto puede tomar unos segundos.</span>
+                <span>{t("recoveringWait")}</span>
               </div>
             )}
 

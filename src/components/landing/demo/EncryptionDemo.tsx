@@ -19,7 +19,7 @@ function bufToBase64(buf: ArrayBuffer): string {
 }
 
 export function EncryptionDemo({ onEncrypted }: EncryptionDemoProps) {
-  const t = useTranslations("heroDemo");
+  const t = useTranslations("demoFlow");
   const locale = useLocale();
   const plaintext = locale === "es" ? MOCK_CLINICAL_TEXT_ES : MOCK_CLINICAL_TEXT_EN;
 

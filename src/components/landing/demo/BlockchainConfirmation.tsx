@@ -19,7 +19,7 @@ const ACTION_LABELS: Record<ActionType, string> = {
 };
 
 export function BlockchainConfirmation({ action, onComplete }: BlockchainConfirmationProps) {
-  const t = useTranslations("heroDemo");
+  const t = useTranslations("demoFlow");
   const [stage, setStage] = useState<"confirming" | "done">("confirming");
   const [hash] = useState(() => generateMockHash());
   const [block] = useState(() => getNextBlockNumber());

@@ -11,6 +11,9 @@ import {
   RegulatoryUrgencySection,
   SolutionSection,
   TeamSection,
+  TechDecentralizedNetworkSection,
+  TechEncryptionSection,
+  TechTraceabilitySection,
   TechnologySection,
   UseCasesSection,
   WorkflowSection,
@@ -57,6 +60,15 @@ export function LandingPage() {
           <SectionDivider label={t("technology")} />
         </ScrollReveal>
         <TechnologySection />
+
+        {/* §6.1 Decentralized Network */}
+        <TechDecentralizedNetworkSection />
+
+        {/* §6.2 Encryption */}
+        <TechEncryptionSection />
+
+        {/* §6.3 Traceability */}
+        <TechTraceabilitySection />
 
         {/* §10 Team */}
         <ScrollReveal y={30} duration={0.5}>

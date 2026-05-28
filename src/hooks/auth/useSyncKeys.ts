@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
+import { useTranslations } from "next-intl";
 import {
   generateKeyPair,
   exportPublicKey,
@@ -53,6 +54,7 @@ export interface RecoveryState {
 
 export function useSyncKeys() {
   const { ready, authenticated, user } = usePrivy();
+  const t = useTranslations("keyRecovery");
   const ranForRef = useRef<{ userId: string; wallet: string } | null>(null);
   const setConflict = useKeyConflictStore((s) => s.setConflict);
   const clearConflict = useKeyConflictStore((s) => s.clearConflict);
@@ -292,6 +294,16 @@ export function useSyncKeys() {
                 sessionStorage.setItem(SYNCED_KEY, userId);
                 clearConflict();
                 console.log("[useSyncKeys] Auto-recovered from encrypted_private_key backup");
+                try {
+                  const { sileo } = await import("sileo");
+                  sileo.success({
+                    title: t("recoverySuccess"),
+                    description: t("recoverySuccessDesc"),
+                    duration: 5000,
+                  });
+                } catch {
+                  /* sileo not available in tests */
+                }
                 return;
               } catch (e) {
                 console.warn("[useSyncKeys] Auto-recovery from encrypted_private_key failed:", e);

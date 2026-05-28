@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { KeyRound, Loader2 } from "lucide-react";
 
 interface RecoveryInputModalProps {
@@ -9,6 +10,7 @@ interface RecoveryInputModalProps {
 }
 
 export function RecoveryInputModal({ onRecover, onDismiss }: RecoveryInputModalProps) {
+  const t = useTranslations("keyRecovery.recoveryInput");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,14 +22,14 @@ export function RecoveryInputModal({ onRecover, onDismiss }: RecoveryInputModalP
 
     const normalized = code.replace(/\s/g, "");
     if (normalized.length < 8) {
-      setError("Código inválido");
+      setError(t("invalid"));
       setLoading(false);
       return;
     }
 
     const ok = await onRecover(normalized);
     if (!ok) {
-      setError("Código incorrecto o expirado. Inténtalo de nuevo.");
+      setError(t("wrongOrExpired"));
     }
     setLoading(false);
   };
@@ -38,11 +40,11 @@ export function RecoveryInputModal({ onRecover, onDismiss }: RecoveryInputModalP
         <div className="p-5 sm:p-6">
           <div className="mb-3 flex items-center gap-2 text-slate-800">
             <KeyRound className="h-5 w-5 shrink-0" />
-            <h2 className="text-base font-semibold sm:text-lg">Recuperar cuenta</h2>
+            <h2 className="text-base font-semibold sm:text-lg">{t("title")}</h2>
           </div>
 
           <p className="text-sm text-gray-600">
-            Ingresa tu código de recuperación para acceder a tu cuenta desde este dispositivo.
+            {t("info")}
           </p>
         </div>
 
@@ -51,7 +53,7 @@ export function RecoveryInputModal({ onRecover, onDismiss }: RecoveryInputModalP
             <textarea
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="Pega tu código de recuperación aquí..."
+              placeholder={t("placeholder")}
               className="max-h-32 w-full rounded-lg border border-gray-300 p-3 font-mono text-sm focus:border-blue-500 focus:outline-none"
               rows={3}
             />
@@ -69,7 +71,7 @@ export function RecoveryInputModal({ onRecover, onDismiss }: RecoveryInputModalP
               onClick={onDismiss}
               className="w-full rounded-lg bg-gray-100 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
             >
-              Cancelar
+              {t("cancel")}
             </button>
             <button
               type="submit"
@@ -78,7 +80,7 @@ export function RecoveryInputModal({ onRecover, onDismiss }: RecoveryInputModalP
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Recuperar
+              {t("action")}
             </button>
           </div>
         </div>

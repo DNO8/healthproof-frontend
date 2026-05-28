@@ -7,5 +7,8 @@ export { RegulatoryUrgencySection } from "./RegulatoryUrgencySection";
 export { SolutionSection } from "./SolutionSection";
 export { TeamSection } from "./TeamSection";
 export { TechnologySection } from "./TechnologySection";
+export { TechDecentralizedNetworkSection } from "./TechDecentralizedNetworkSection";
+export { TechEncryptionSection } from "./TechEncryptionSection";
+export { TechTraceabilitySection } from "./TechTraceabilitySection";
 export { UseCasesSection } from "./UseCasesSection";
 export { WorkflowSection } from "./WorkflowSection";

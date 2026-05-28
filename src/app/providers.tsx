@@ -12,6 +12,7 @@ import { useRegisterIdentity } from "@/hooks/healthcare-networks/useRegisterIden
 import { useSwitchToHygieia } from "@/hooks/admin/useSwitchToHygieia";
 import { KeyConflictBanner } from "@/components/feedback/KeyConflictBanner";
 import { RpcHealthBanner } from "@/components/feedback/RpcHealthBanner";
+import { PrivyErrorBoundary } from "@/components/feedback/PrivyErrorBoundary";
 import { RecoveryCodeModal } from "@/components/auth/RecoveryCodeModal";
 import { RecoveryInputModal } from "@/components/auth/RecoveryInputModal";
 import { RegenerateKeysModal } from "@/components/auth/RegenerateKeysModal";
@@ -70,27 +71,29 @@ function PrivyTokenSync({ children }: { children: React.ReactNode }) {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <PrivyProvider
-      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? ""}
-      config={{
-        loginMethods: ["email", "wallet", "google"],
-        appearance: {
-          theme: "light",
-          accentColor: "#93C5FD",
-          logo: "/images/logo/healthproof-logo.png",
-        },
-        embeddedWallets: {
-          ethereum: {
-            createOnLogin: "users-without-wallets",
+    <PrivyErrorBoundary>
+      <PrivyProvider
+        appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? ""}
+        config={{
+          loginMethods: ["email", "wallet", "google"],
+          appearance: {
+            theme: "light",
+            accentColor: "#93C5FD",
+            logo: "/images/logo/healthproof-logo.png",
           },
-        },
-      }}
-    >
-      <QueryClientProvider client={queryClient}>
-        <WagmiProvider config={wagmiConfig}>
-          <PrivyTokenSync>{children}</PrivyTokenSync>
-        </WagmiProvider>
-      </QueryClientProvider>
-    </PrivyProvider>
+          embeddedWallets: {
+            ethereum: {
+              createOnLogin: "users-without-wallets",
+            },
+          },
+        }}
+      >
+        <QueryClientProvider client={queryClient}>
+          <WagmiProvider config={wagmiConfig}>
+            <PrivyTokenSync>{children}</PrivyTokenSync>
+          </WagmiProvider>
+        </QueryClientProvider>
+      </PrivyProvider>
+    </PrivyErrorBoundary>
   );
 }
