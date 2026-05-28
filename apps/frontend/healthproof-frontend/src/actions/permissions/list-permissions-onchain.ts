@@ -17,8 +17,13 @@ interface ListPermissionsParams {
 
 async function handler(
   data: ListPermissionsParams,
-  _auth: AuthContext,
+  auth: AuthContext,
 ): Promise<{ permissions: OnChainPermission[]; total: number }> {
+  // Caller can only list permissions for their own wallet
+  if (auth.wallet.toLowerCase() !== data.patientWallet.toLowerCase()) {
+    throw new Error("Unauthorized: can only list your own permissions");
+  }
+
   const publicClient = createPublicClient({
     chain: HEALTHPROOF_CHAIN,
     transport: http(),

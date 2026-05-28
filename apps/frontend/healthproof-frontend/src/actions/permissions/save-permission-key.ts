@@ -1,16 +1,23 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAuth, type AuthContext } from "@/lib/auth/with-auth";
 
-export async function savePermissionKey(data: {
-  document_id: string;
-  patient_wallet: string;
-  grantee_wallet: string;
-  encrypted_key: string;
-}) {
-  try {
+async function savePermissionKeyHandler(
+  data: {
+    document_id: string;
+    patient_wallet: string;
+    grantee_wallet: string;
+    encrypted_key: string;
+  },
+  auth: AuthContext,
+) {
+  // Only the patient can save permission keys for their documents
+  if (auth.wallet.toLowerCase() !== data.patient_wallet.toLowerCase()) {
+    throw new Error("Unauthorized: only the patient can save permission keys");
+  }
+
   const supabase = createAdminClient();
-
   const { error } = await supabase.from("permission_keys").upsert(
     {
       document_id: data.document_id,
@@ -21,48 +28,46 @@ export async function savePermissionKey(data: {
     { onConflict: "document_id,grantee_wallet" },
   );
 
-    if (error) {
-      console.error("savePermissionKey error:", error);
-      return { error: error.message };
-    }
-
-    return { success: true };
-  } catch (err) {
-    console.error("[savePermissionKey] failed", {
-      documentId: data.document_id,
-      patientWallet: data.patient_wallet,
-      granteeWallet: data.grantee_wallet,
-      error: err instanceof Error ? { message: err.message, stack: err.stack } : err,
-    });
-    throw err;
+  if (error) {
+    console.error("[savePermissionKey] error:", error);
+    throw new Error("Failed to save permission key");
   }
+
+  return { success: true };
 }
 
-export async function getPermissionKey(
-  documentId: string,
-  granteeWallet: string,
+export const savePermissionKey = withAuth(savePermissionKeyHandler, {
+  rateLimit: { windowMs: 60000, maxRequests: 10 },
+});
+
+async function getPermissionKeyHandler(
+  data: { documentId: string; granteeWallet: string },
+  auth: AuthContext,
 ): Promise<string | null> {
-  try {
   const supabase = createAdminClient();
 
-  const { data, error } = await supabase
+  const { data: row, error } = await supabase
     .from("permission_keys")
-    .select("encrypted_key")
-    .eq("document_id", documentId)
-    .eq("grantee_wallet", granteeWallet.toLowerCase())
+    .select("encrypted_key, patient_wallet, grantee_wallet")
+    .eq("document_id", data.documentId)
+    .eq("grantee_wallet", data.granteeWallet.toLowerCase())
     .single();
 
-    if (error || !data) {
-      return null;
-    }
-
-    return data.encrypted_key as string;
-  } catch (err) {
-    console.error("[getPermissionKey] failed", {
-      documentId,
-      granteeWallet,
-      error: err instanceof Error ? { message: err.message, stack: err.stack } : err,
-    });
+  if (error || !row) {
     return null;
   }
+
+  // Authorization: caller must be the patient or the grantee
+  const caller = auth.wallet.toLowerCase();
+  const patient = (row.patient_wallet as string).toLowerCase();
+  const grantee = (row.grantee_wallet as string).toLowerCase();
+  if (caller !== patient && caller !== grantee) {
+    throw new Error("Unauthorized: not authorized to access this permission key");
+  }
+
+  return row.encrypted_key as string;
 }
+
+export const getPermissionKey = withAuth(getPermissionKeyHandler, {
+  rateLimit: { windowMs: 60000, maxRequests: 20 },
+});
