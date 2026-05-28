@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptShareForServer } from "@/lib/kms/server-share-crypto";
-import { createAdminClient as createKmsAdminClient } from "@/lib/supabase/admin";
 
 const PRIVY_VERIFY_URL = "https://auth.privy.io/api/v1/sessions/verify";
 
@@ -23,8 +21,8 @@ interface PrivySession {
  */
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const privyToken = cookieStore.get("privy-token")?.value;
+    const authHeader = request.headers.get("authorization");
+    const privyToken = authHeader?.replace("Bearer ", "");
 
     if (!privyToken) {
       return NextResponse.json(

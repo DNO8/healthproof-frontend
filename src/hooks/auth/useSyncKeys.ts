@@ -53,7 +53,7 @@ export interface RecoveryState {
 }
 
 export function useSyncKeys() {
-  const { ready, authenticated, user } = usePrivy();
+  const { ready, authenticated, user, getAccessToken } = usePrivy();
   const t = useTranslations("keyRecovery");
   const ranForRef = useRef<{ userId: string; wallet: string } | null>(null);
   const setConflict = useKeyConflictStore((s) => s.setConflict);
@@ -147,12 +147,23 @@ export function useSyncKeys() {
   // ── Helper: fetch server share2 ──
   const fetchServerShare = async (): Promise<string | null> => {
     try {
+      const token = await getAccessToken();
       const res = await fetch("/api/server-share/fetch", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}), // userId inferred from session
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
       });
-      if (!res.ok) return null;
+      if (!res.ok) {
+        console.error(
+          "[useSyncKeys] fetchServerShare failed:",
+          res.status,
+          res.statusText
+        );
+        return null;
+      }
       const { share } = await res.json();
       return share as string;
     } catch (e) {
