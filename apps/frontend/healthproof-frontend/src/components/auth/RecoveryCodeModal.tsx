@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Copy, Download, AlertTriangle, Check } from "lucide-react";
 
 interface RecoveryCodeModalProps {
@@ -9,6 +10,7 @@ interface RecoveryCodeModalProps {
 }
 
 export function RecoveryCodeModal({ recoveryCode, onDismiss }: RecoveryCodeModalProps) {
+  const t = useTranslations("keyRecovery.recoveryCode");
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -33,12 +35,11 @@ export function RecoveryCodeModal({ recoveryCode, onDismiss }: RecoveryCodeModal
         <div className="p-5 sm:p-6">
           <div className="mb-3 flex items-center gap-2 text-amber-600">
             <AlertTriangle className="h-5 w-5 shrink-0" />
-            <h2 className="text-base font-semibold sm:text-lg">Guarda tu código de recuperación</h2>
+            <h2 className="text-base font-semibold sm:text-lg">{t("title")}</h2>
           </div>
 
           <p className="text-sm text-gray-600">
-            Este código es necesario para recuperar tu cuenta en un nuevo dispositivo.
-            Se muestra <strong>una sola vez</strong>. Guárdalo en papel o en un gestor de contraseñas.
+            {t("info")}
           </p>
         </div>
 
@@ -59,14 +60,14 @@ export function RecoveryCodeModal({ recoveryCode, onDismiss }: RecoveryCodeModal
               className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-100 px-4 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-200"
             >
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              {copied ? "Copiado" : "Copiar"}
+              {copied ? t("copied") : t("copy")}
             </button>
             <button
               onClick={handleDownload}
               className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
             >
               <Download className="h-4 w-4" />
-              Descargar
+              {t("download")}
             </button>
           </div>
 
@@ -75,7 +76,7 @@ export function RecoveryCodeModal({ recoveryCode, onDismiss }: RecoveryCodeModal
               onClick={onDismiss}
               className="w-full rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
             >
-              He guardado mi código
+              {t("saved")}
             </button>
           </div>
         </div>
