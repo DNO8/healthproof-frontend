@@ -53,9 +53,12 @@ export function useDbUser() {
     userId ? getCached(userId) : null,
   );
   const [loading, setLoading] = useState(!dbUser);
+  const inFlightRef = useRef(false);
 
   const refetch = useCallback(async () => {
     if (!userId) return;
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setLoading(true);
     try {
       const result = await getDbUser({ idOrWallet: userId });
@@ -66,6 +69,7 @@ export function useDbUser() {
     } catch (err) {
       console.error("getDbUser failed:", err);
     } finally {
+      inFlightRef.current = false;
       setLoading(false);
     }
   }, [userId]);
