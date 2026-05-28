@@ -60,6 +60,16 @@ export function useSyncKeys() {
   const setConflict = useKeyConflictStore((s) => s.setConflict);
   const clearConflict = useKeyConflictStore((s) => s.clearConflict);
   const setIsRecovering = useKeyConflictStore((s) => s.setIsRecovering);
+
+  // Robust gating: refs survive re-renders but NOT remounts.
+  // Use sessionStorage as backup so we don't loop if PrivyTokenSync remounts.
+  const alreadyProcessed = (uid: string) => {
+    try {
+      return sessionStorage.getItem(SYNCED_KEY) === uid;
+    } catch {
+      return false;
+    }
+  };
   const [recoveryState, setRecoveryState] = useState<RecoveryState>({
     needsRecoveryCode: false,
     needsRegeneration: false,
@@ -151,6 +161,17 @@ export function useSyncKeys() {
       console.log("[useSyncKeys] fetchServerShare: already attempted this session, skipping");
       return null;
     }
+    // Also check a sessionStorage flag so we don't re-fetch across remounts
+    const flagKey = "hp_server_share_attempted";
+    try {
+      if (sessionStorage.getItem(flagKey) === "1") {
+        console.log("[useSyncKeys] fetchServerShare: sessionStorage flag set, skipping");
+        return null;
+      }
+      sessionStorage.setItem(flagKey, "1");
+    } catch {
+      /* ignore storage errors */
+    }
     serverShareAttemptedRef.current = true;
     try {
       const token = await getAccessToken();
@@ -186,6 +207,11 @@ export function useSyncKeys() {
 
   useEffect(() => {
     if (!ready || !authenticated || !userId || !walletAddress) return;
+
+    // sessionStorage gate: survives remounts / StrictMode double-mount
+    if (alreadyProcessed(userId)) {
+      return;
+    }
 
     const alreadyRan = ranForRef.current;
     if (
@@ -272,6 +298,25 @@ export function useSyncKeys() {
                 } else {
                   console.warn("[useSyncKeys] Lazy migration backup failed:", e);
                 }
+              }
+            }
+            // If the user has no server share at all, they may want to regenerate
+            // for cross-device support — but ONLY if they have no encrypted data.
+            if (!userWithBackup?.server_share_ciphertext && walletAddress) {
+              try {
+                const hasData = await hasEncryptedData(walletAddress);
+                if (!hasData) {
+                  console.warn("[useSyncKeys] No server share and no encrypted data — safe to regenerate");
+                  setRecoveryState({
+                    needsRecoveryCode: false,
+                    needsRegeneration: true,
+                    recoveryCode: null,
+                    step: "idle",
+                  });
+                  return;
+                }
+              } catch {
+                /* ignore check failure */
               }
             }
             sessionStorage.setItem(SYNCED_KEY, userId);
@@ -441,6 +486,7 @@ export function useSyncKeys() {
           const localShare1 = await getLocalShare1(userId);
           if (localShare1) {
             serverShareAttemptedRef.current = false;
+            try { sessionStorage.removeItem("hp_server_share_attempted"); } catch { /* ignore */ }
             const share2 = await fetchServerShare();
             if (!share2) {
               console.error("[useSyncKeys] Server share2 unavailable");
@@ -630,6 +676,7 @@ export function useSyncKeys() {
       if (!userWithBackup?.master_secret_hash) return false;
 
       serverShareAttemptedRef.current = false;
+      try { sessionStorage.removeItem("hp_server_share_attempted"); } catch { /* ignore */ }
       const share2 = await fetchServerShare();
       if (!share2) return false;
 
@@ -683,6 +730,12 @@ export function useSyncKeys() {
     if (!userId) return false;
     try {
       console.warn("[useSyncKeys] Regenerating keys for", userId);
+      // Clear gates so the next sync can run fresh
+      ranForRef.current = null;
+      serverShareAttemptedRef.current = false;
+      try {
+        sessionStorage.removeItem("hp_server_share_attempted");
+      } catch { /* ignore */ }
       const { masterSecret, publicKeyJwk, keyPair } = await generateMasterSecret();
       const shares = generateShares(masterSecret, 2, 3);
       const [share1, share2, share3] = shares;
