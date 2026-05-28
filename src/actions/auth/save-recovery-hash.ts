@@ -32,5 +32,5 @@ async function saveRecoveryHashHandler(
 }
 
 export const saveRecoveryHash = withAuth(saveRecoveryHashHandler, {
-  rateLimit: { windowMs: 60000, maxRequests: 20 },
+  rateLimit: { windowMs: 60000, maxRequests: 5 },
 });

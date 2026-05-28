@@ -32,5 +32,5 @@ async function saveMasterSecretHashHandler(
 }
 
 export const saveMasterSecretHash = withAuth(saveMasterSecretHashHandler, {
-  rateLimit: { windowMs: 60000, maxRequests: 20 },
+  rateLimit: { windowMs: 60000, maxRequests: 5 },
 });

@@ -57,6 +57,8 @@ export function useSyncKeys() {
   const t = useTranslations("keyRecovery");
   const ranForRef = useRef<{ userId: string; wallet: string } | null>(null);
   const serverShareAttemptedRef = useRef(false);
+  const lastErrorTsRef = useRef(0);
+  const errorCountRef = useRef(0);
   const setConflict = useKeyConflictStore((s) => s.setConflict);
   const clearConflict = useKeyConflictStore((s) => s.clearConflict);
   const setIsRecovering = useKeyConflictStore((s) => s.setIsRecovering);
@@ -239,6 +241,16 @@ export function useSyncKeys() {
       alreadyRan.userId === userId &&
       alreadyRan.wallet === walletAddress
     ) {
+      return;
+    }
+
+    // Backoff: if we recently failed, wait at least 10s before retrying
+    const now = Date.now();
+    if (now - lastErrorTsRef.current < 10_000) {
+      return;
+    }
+    // Cap retries at 3 to prevent infinite loops
+    if (errorCountRef.current >= 3) {
       return;
     }
 
@@ -679,7 +691,8 @@ export function useSyncKeys() {
       } catch (err) {
         console.error("[useSyncKeys] Error syncing keys:", err);
         setIsRecovering(false);
-        ranForRef.current = null;
+        lastErrorTsRef.current = Date.now();
+        errorCountRef.current += 1;
       }
     })();
   }, [ready, authenticated, userId, walletAddress, setConflict, clearConflict, setIsRecovering]);
