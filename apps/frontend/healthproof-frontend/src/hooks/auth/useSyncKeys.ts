@@ -152,6 +152,7 @@ export function useSyncKeys() {
         console.error("[useSyncKeys] fetchServerShare: no Privy token available");
         return null;
       }
+      console.log("[useSyncKeys] fetchServerShare: token length", token.length);
       const res = await fetch("/api/server-share/fetch", {
         method: "POST",
         headers: {
