@@ -216,9 +216,25 @@ export function useSyncKeys() {
             // Lazy migration: create encrypted_private_key backup if missing
             if (!userWithBackup?.encrypted_private_key) {
               try {
-                const privJwk = await crypto.subtle.exportKey("jwk", kp.privateKey!);
+                let privJwkStr: string;
+                try {
+                  const privJwk = await crypto.subtle.exportKey("jwk", kp.privateKey!);
+                  privJwkStr = JSON.stringify(privJwk);
+                } catch (exportErr) {
+                  // Key is non-extractable → reconstruct master secret from SSS shares
+                  const localShare1 = await getLocalShare1(userId);
+                  if (!localShare1) throw new Error("No local share1 for reconstruction");
+                  const share2 = await fetchServerShare();
+                  if (!share2) throw new Error("No server share2 for reconstruction");
+                  const reconstructed = reconstructSecret([localShare1, share2]);
+                  const hash = await hashMasterSecret(reconstructed);
+                  if (hash !== userWithBackup?.master_secret_hash) {
+                    throw new Error("Master secret hash mismatch during reconstruction");
+                  }
+                  privJwkStr = new TextDecoder().decode(reconstructed);
+                }
                 const backupPassword = await deriveCrossDevicePassword(userId);
-                const encrypted = await encryptPrivateKey(JSON.stringify(privJwk), backupPassword);
+                const encrypted = await encryptPrivateKey(privJwkStr, backupPassword);
                 await saveEncryptedPrivateKey({ id: userId, encrypted_private_key: encrypted });
                 console.log("[useSyncKeys] Lazy migration: encrypted_private_key backup created");
               } catch (e) {
