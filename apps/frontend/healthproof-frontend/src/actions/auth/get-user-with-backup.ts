@@ -29,6 +29,7 @@ export interface UserWithBackup {
 export async function getUserWithBackup(
   idOrWallet: string,
 ): Promise<UserWithBackup | null> {
+  try {
   const supabase = createAdminClient();
 
   // Try lookup by Privy DID first
@@ -75,23 +76,30 @@ export async function getUserWithBackup(
     return null;
   }
 
-  return {
-    id: byWallet.id as string,
-    email: (byWallet.email as string) ?? "",
-    wallet_address: byWallet.wallet_address as string | null,
-    full_name: byWallet.full_name as string | null,
-    created_at: byWallet.created_at as string,
-    public_key: (byWallet.public_key as string | null) ?? null,
-    encrypted_private_key:
-      (byWallet.encrypted_private_key as string | null) ?? null,
-    key_share: (byWallet.key_share as string | null) ?? null,
-    key_version: (byWallet.key_version as number | null) ?? null,
-    server_share_ciphertext: (byWallet.server_share_ciphertext as string | null) ?? null,
-    server_share_dek_ciphertext: (byWallet.server_share_dek_ciphertext as string | null) ?? null,
-    server_share_kms_key_id: (byWallet.server_share_kms_key_id as string | null) ?? null,
-    recovery_code_hash: (byWallet.recovery_code_hash as string | null) ?? null,
-    recovery_code_used_at: (byWallet.recovery_code_used_at as string | null) ?? null,
-    master_secret_hash: (byWallet.master_secret_hash as string | null) ?? null,
-    scheme_version: (byWallet.scheme_version as number | null) ?? null,
-  };
+    return {
+      id: byWallet.id as string,
+      email: (byWallet.email as string) ?? "",
+      wallet_address: byWallet.wallet_address as string | null,
+      full_name: byWallet.full_name as string | null,
+      created_at: byWallet.created_at as string,
+      public_key: (byWallet.public_key as string | null) ?? null,
+      encrypted_private_key:
+        (byWallet.encrypted_private_key as string | null) ?? null,
+      key_share: (byWallet.key_share as string | null) ?? null,
+      key_version: (byWallet.key_version as number | null) ?? null,
+      server_share_ciphertext: (byWallet.server_share_ciphertext as string | null) ?? null,
+      server_share_dek_ciphertext: (byWallet.server_share_dek_ciphertext as string | null) ?? null,
+      server_share_kms_key_id: (byWallet.server_share_kms_key_id as string | null) ?? null,
+      recovery_code_hash: (byWallet.recovery_code_hash as string | null) ?? null,
+      recovery_code_used_at: (byWallet.recovery_code_used_at as string | null) ?? null,
+      master_secret_hash: (byWallet.master_secret_hash as string | null) ?? null,
+      scheme_version: (byWallet.scheme_version as number | null) ?? null,
+    };
+  } catch (err) {
+    console.error("[getUserWithBackup] failed", {
+      idOrWallet,
+      error: err instanceof Error ? { message: err.message, stack: err.stack } : err,
+    });
+    return null;
+  }
 }

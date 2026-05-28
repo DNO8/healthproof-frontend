@@ -43,6 +43,45 @@ export async function detectMime(blob: Blob): Promise<string> {
   return blob.type || "application/octet-stream";
 }
 
+function PDFPreview({ file }: { file: DecryptedFile }) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setFailed(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (failed) {
+    return (
+      <div className="mt-4 flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-300 p-6">
+        <span className="text-2xl">📄</span>
+        <p className="text-xs text-slate-400">
+          Vista previa del PDF no disponible en este navegador.
+        </p>
+        <a
+          href={file.url}
+          download="document.pdf"
+          className="rounded-lg bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
+        >
+          Descargar PDF
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full" style={{ minHeight: 320 }}>
+      <iframe
+        src={file.url}
+        className="w-full rounded-xl border border-slate-200"
+        style={{ minHeight: 320, height: 480 }}
+        title="Decrypted PDF"
+        onLoad={() => setFailed(false)}
+      />
+    </div>
+  );
+}
+
 export function FilePreview({ file }: { file: DecryptedFile }) {
   const [textContent, setTextContent] = useState<string | null>(null);
 
@@ -80,16 +119,7 @@ export function FilePreview({ file }: { file: DecryptedFile }) {
   }
 
   if (file.mime === "application/pdf") {
-    return (
-      <div className="w-full" style={{ minHeight: 320 }}>
-        <iframe
-          src={file.url}
-          className="w-full rounded-xl border border-slate-200"
-          style={{ minHeight: 320, height: 480 }}
-          title="Decrypted PDF"
-        />
-      </div>
-    );
+    return <PDFPreview file={file} />;
   }
 
   if (textContent !== null) {

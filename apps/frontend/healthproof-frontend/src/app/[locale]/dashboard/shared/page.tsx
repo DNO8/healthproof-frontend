@@ -13,6 +13,8 @@ import { useDocumentDecrypt } from "@/hooks/documents/useDocumentDecrypt";
 import { FilePreview } from "@/components/documents/FilePreview";
 import { EmptyState, SkeletonList } from "@/components/ui";
 import { FileText } from "lucide-react";
+import { isAuthSuccess } from "@/lib/auth/with-auth";
+import { SharedErrorBoundary } from "@/components/feedback/SharedErrorBoundary";
 import type { SharedDocument } from "@/actions/documents/list-shared-documents";
 
 function formatAddress(addr: string): string {
@@ -40,10 +42,12 @@ export default function SharedDocumentsPage() {
 
   const fetchDocs = useCallback(async () => {
     if (!walletAddress) return;
+    console.log("[SharedPage] fetchDocs start, wallet:", walletAddress);
     setLoading(true);
     try {
       const res = await listSharedDocuments({ doctorWallet: walletAddress });
-      if (res.success && res.data) {
+      console.log("[SharedPage] listSharedDocuments result:", res.success, "count:", isAuthSuccess(res) ? res.data.documents.length : 0);
+      if (isAuthSuccess(res) && res.data) {
         setDocs(res.data.documents);
         // Pre-fetch patient public keys
         const uniquePatients = [...new Set(res.data.documents.map((d) => d.patient_wallet))];
@@ -62,6 +66,7 @@ export default function SharedDocumentsPage() {
         setDocs([]);
       }
     } catch (e) {
+      console.error("[SharedPage] fetchDocs error:", e);
       sileo.error({ title: t("loadError"), description: String(e).slice(0, 120) });
     } finally {
       setLoading(false);
@@ -75,6 +80,7 @@ export default function SharedDocumentsPage() {
   // Auto-select document from QR scan redirect
   useEffect(() => {
     if (!highlightDocId || docs.length === 0 || hasAttemptedAutoDecrypt) return;
+    console.log("[SharedPage] auto-decrypt trigger, docId:", highlightDocId, "qrPatientKey:", !!qrPatientKey);
     const doc = docs.find((d) => d.document_id === highlightDocId);
     if (doc && doc.document_id !== selectedDoc?.document_id) {
       setSelectedDoc(doc);
@@ -89,6 +95,7 @@ export default function SharedDocumentsPage() {
 
   async function performDecrypt(doc: SharedDocument, silent = false) {
     if (!walletAddress || !userId) return null;
+    console.log("[SharedPage] performDecrypt start, docId:", doc.document_id, "silent:", silent);
     if (!doc.iv) {
       if (!silent) sileo.error({ title: t("noIv"), description: t("noIvDesc") });
       return null;
@@ -112,6 +119,7 @@ export default function SharedDocumentsPage() {
 
     // Resolve patient public key: QR param → pre-fetched map → on-demand fetch
     let senderKey = qrPatientKey ?? patientKeys[doc.patient_wallet] ?? null;
+    console.log("[SharedPage] senderKey source:", qrPatientKey ? "QR" : patientKeys[doc.patient_wallet] ? "prefetch" : "fetch");
     if (!senderKey) {
       try {
         senderKey = await getUserPublicKey(doc.patient_wallet);
@@ -140,6 +148,7 @@ export default function SharedDocumentsPage() {
       senderPublicKeyJwk: senderKey,
       myUserId: userId,
     });
+    console.log("[SharedPage] decrypt result:", result ? "success" : "failed", "error:", decryptError);
     if (!result && !silent) {
       sileo.error({ title: t("decryptFailed"), description: t("decryptFailedDesc") });
     }
@@ -163,80 +172,82 @@ export default function SharedDocumentsPage() {
   const isDecrypting = decryptLoading;
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <h1 className="mb-6 text-2xl font-bold text-slate-800">{t("title")}</h1>
+    <SharedErrorBoundary>
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+        <h1 className="mb-6 text-2xl font-bold text-slate-800">{t("title")}</h1>
 
-      {loading ? (
-        <SkeletonList count={3} />
-      ) : docs.length === 0 ? (
-        <EmptyState
-          icon={FileText}
-          title={t("empty")}
-        />
-      ) : (
-        <div className="space-y-4">
-          {docs.map((doc) => {
-            const isSelected = selectedDoc?.document_id === doc.document_id;
-            const isBusy = isDecrypting && isSelected;
-            return (
-              <div
-                key={doc.document_id}
-                className={`neu-shell rounded-xl p-5 sm:p-6 space-y-3 transition-all ${
-                  isSelected ? "border-l-4 border-l-sky-500" : ""
-                }`}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">
-                      {doc.file_name ?? t("documentTitle")}
-                    </p>
-                    <p className="text-[10px] font-mono text-slate-400 mt-0.5">
-                      {formatAddress(doc.document_id)}
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      {t("sharedOn")}: {new Date(doc.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <button
-                    className="rounded-lg bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100 disabled:opacity-50"
-                    disabled={isBusy}
-                    onClick={() => handleView(doc)}
-                    type="button"
-                  >
-                    {isBusy ? t("decrypting") : t("view")}
-                  </button>
-                </div>
-
-                <div className="text-xs text-slate-500 space-y-1">
-                  <p>{t("patient")}: {doc.patient_name || formatAddress(doc.patient_wallet)}</p>
-                  {doc.uploader_wallet && (
-                    <p>{t("uploadedBy")}: {doc.uploader_name || formatAddress(doc.uploader_wallet)}</p>
-                  )}
-                  {doc.doc_created_at && (
-                    <p>{t("uploadedOn")}: {new Date(doc.doc_created_at).toLocaleDateString()}</p>
-                  )}
-                </div>
-
-                {isSelected && decryptedFile && (
-                  <div className="mt-3 pt-3 border-t border-slate-200/60 space-y-3">
-                    <FilePreview file={decryptedFile} />
+        {loading ? (
+          <SkeletonList count={3} />
+        ) : docs.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title={t("empty")}
+          />
+        ) : (
+          <div className="space-y-4">
+            {docs.map((doc) => {
+              const isSelected = selectedDoc?.document_id === doc.document_id;
+              const isBusy = isDecrypting && isSelected;
+              return (
+                <div
+                  key={doc.document_id}
+                  className={`neu-shell rounded-xl p-5 sm:p-6 space-y-3 transition-all ${
+                    isSelected ? "border-l-4 border-l-sky-500" : ""
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">
+                        {doc.file_name ?? t("documentTitle")}
+                      </p>
+                      <p className="text-[10px] font-mono text-slate-400 mt-0.5">
+                        {formatAddress(doc.document_id)}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {t("sharedOn")}: {new Date(doc.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
                     <button
-                      className="w-full rounded-lg bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
-                      onClick={handleDownload}
+                      className="rounded-lg bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100 disabled:opacity-50"
+                      disabled={isBusy}
+                      onClick={() => handleView(doc)}
                       type="button"
                     >
-                      {t("download")}
+                      {isBusy ? t("decrypting") : t("view")}
                     </button>
                   </div>
-                )}
-                {isSelected && decryptError && (
-                  <p className="mt-2 text-xs text-red-500">{decryptError}</p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </main>
+
+                  <div className="text-xs text-slate-500 space-y-1">
+                    <p>{t("patient")}: {doc.patient_name || formatAddress(doc.patient_wallet)}</p>
+                    {doc.uploader_wallet && (
+                      <p>{t("uploadedBy")}: {doc.uploader_name || formatAddress(doc.uploader_wallet)}</p>
+                    )}
+                    {doc.doc_created_at && (
+                      <p>{t("uploadedOn")}: {new Date(doc.doc_created_at).toLocaleDateString()}</p>
+                    )}
+                  </div>
+
+                  {isSelected && decryptedFile && (
+                    <div className="mt-3 pt-3 border-t border-slate-200/60 space-y-3">
+                      <FilePreview file={decryptedFile} />
+                      <button
+                        className="w-full rounded-lg bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
+                        onClick={handleDownload}
+                        type="button"
+                      >
+                        {t("download")}
+                      </button>
+                    </div>
+                  )}
+                  {isSelected && decryptError && (
+                    <p className="mt-2 text-xs text-red-500">{decryptError}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
+    </SharedErrorBoundary>
   );
 }
