@@ -1,14 +1,18 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { usePrivy } from "@privy-io/react-auth";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
-import { Loader2 } from "lucide-react";
+import { deleteKeyPair } from "@/services/encryption/keystore";
+import { Loader2, RotateCcw, KeyRound } from "lucide-react";
 
 export function KeyConflictBanner() {
   const t = useTranslations("keyConflict");
+  const { user } = usePrivy();
   const conflict = useKeyConflictStore((s) => s.conflict);
   const isRecovering = useKeyConflictStore((s) => s.isRecovering);
   const clearConflict = useKeyConflictStore((s) => s.clearConflict);
+  const setRequestRegenerate = useKeyConflictStore((s) => s.setRequestRegenerate);
 
   if (!conflict) return null;
 
@@ -25,6 +29,19 @@ export function KeyConflictBanner() {
         ? t("recoveringDesc")
         : t("missingLocalKeysDesc")
       : t("keyMismatchDesc");
+
+  const handleClearAndRetry = async () => {
+    const userId = user?.id;
+    if (userId) {
+      await deleteKeyPair(userId);
+    }
+    window.location.reload();
+  };
+
+  const handleRequestRegenerate = () => {
+    setRequestRegenerate(true);
+    clearConflict();
+  };
 
   return (
     <div className="fixed inset-x-0 top-[60px] z-50 flex justify-center px-4 py-3">
@@ -45,14 +62,34 @@ export function KeyConflictBanner() {
             )}
 
             {!isRecovering && conflict === "key_mismatch" && (
-              <div className="mt-3 rounded-xl bg-amber-100/60 p-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">
-                  {t("actionRequired")}
-                </p>
-                <ul className="mt-1.5 space-y-1 text-xs text-amber-800">
-                  <li>• {t("useOriginalBrowser")}</li>
-                  <li>• {t("contactSupport")}</li>
-                </ul>
+              <div className="mt-3 space-y-2">
+                <div className="rounded-xl bg-amber-100/60 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+                    {t("actionRequired")}
+                  </p>
+                  <ul className="mt-1.5 space-y-1 text-xs text-amber-800">
+                    <li>• {t("useOriginalBrowser")}</li>
+                    <li>• {t("contactSupport")}</li>
+                  </ul>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleClearAndRetry}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-amber-700 shadow-sm transition hover:bg-amber-50"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    {t("clearAndRetry")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRequestRegenerate}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-amber-700 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-amber-800"
+                  >
+                    <KeyRound className="h-3.5 w-3.5" />
+                    {t("regenerateKeys")}
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -16,6 +16,7 @@ import { PrivyErrorBoundary } from "@/components/feedback/PrivyErrorBoundary";
 import { RecoveryCodeModal } from "@/components/auth/RecoveryCodeModal";
 import { RecoveryInputModal } from "@/components/auth/RecoveryInputModal";
 import { RegenerateKeysModal } from "@/components/auth/RegenerateKeysModal";
+import { useKeyConflictStore } from "@/state/key-conflict.store";
 import { wagmiConfig } from "@/lib/wagmi";
 
 const queryClient = new QueryClient();
@@ -34,9 +35,16 @@ function PrivyTokenSync({ children }: { children: React.ReactNode }) {
   useRegisterIdentity();
 
   const [forceRecoveryInput, setForceRecoveryInput] = useState(false);
+  const requestRegenerate = useKeyConflictStore((s) => s.requestRegenerate);
+  const setRequestRegenerate = useKeyConflictStore((s) => s.setRequestRegenerate);
 
   const showRecoveryInput = recoveryState.step === "needs_input" || forceRecoveryInput;
-  const showRegenerate = recoveryState.needsRegeneration && !forceRecoveryInput;
+  const showRegenerate = (recoveryState.needsRegeneration || requestRegenerate) && !forceRecoveryInput;
+
+  const handleDismissRegenerate = () => {
+    setRequestRegenerate(false);
+    dismissRecoveryCode();
+  };
 
   return (
     <>
@@ -60,7 +68,7 @@ function PrivyTokenSync({ children }: { children: React.ReactNode }) {
       {showRegenerate && (
         <RegenerateKeysModal
           onRegenerate={regenerateKeys}
-          onDismiss={dismissRecoveryCode}
+          onDismiss={handleDismissRegenerate}
           onSwitchToRecovery={() => setForceRecoveryInput(true)}
         />
       )}

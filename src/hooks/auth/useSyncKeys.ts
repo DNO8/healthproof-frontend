@@ -229,8 +229,87 @@ export function useSyncKeys() {
             return;
           }
 
-          // DB key differs → always show conflict; never auto-regenerate
+          // DB key differs → try auto-recovery from backup, then set up recovery
           if (dbPk && dbPk !== localPk) {
+            const userWithBackupMismatch = await getUserWithBackup(userId);
+
+            // Step 1: Try silent auto-recovery from encrypted_private_key backup
+            if (userWithBackupMismatch?.encrypted_private_key && userWithBackupMismatch?.public_key) {
+              const [newPw, oldPw] = await deriveLegacyBackupPassword(userId, walletAddress);
+              // Fallback: onboarding may have used userId as walletAddress when wallet was undefined
+              const onboardingPw = await deriveBackupPassword(userId, userId);
+              let decrypted: string | null = null;
+              for (const pw of [newPw, oldPw, onboardingPw]) {
+                decrypted = await decryptPrivateKey(userWithBackupMismatch.encrypted_private_key, pw);
+                if (decrypted) break;
+              }
+
+              if (decrypted) {
+                try {
+                  const privJwk = JSON.parse(decrypted) as JsonWebKey;
+                  const pubJwk = JSON.parse(userWithBackupMismatch.public_key) as JsonWebKey;
+                  const privateKey = await crypto.subtle.importKey(
+                    "jwk",
+                    privJwk,
+                    { name: "ECDH", namedCurve: "P-256" },
+                    false,
+                    ["deriveKey", "deriveBits"]
+                  );
+                  const publicKey = await crypto.subtle.importKey(
+                    "jwk",
+                    pubJwk,
+                    { name: "ECDH", namedCurve: "P-256" },
+                    true,
+                    []
+                  );
+                  // Reconstruct SSS shares for this device so recovery code remains valid
+                  const encoder = new TextEncoder();
+                  const masterSecret = encoder.encode(JSON.stringify(privJwk));
+                  const shares = generateShares(masterSecret, 2, 3);
+                  const [share1, share2] = shares;
+                  const masterHash = await hashMasterSecret(masterSecret);
+                  await saveKeyPair(userId, { privateKey, publicKey }, {
+                    share1,
+                    masterSecretHash: masterHash,
+                    schemeVersion: 2,
+                  });
+                  await saveServerShare({ userId, share2 });
+                  await saveMasterSecretHash({ userId, masterSecretHash: masterHash });
+                  sessionStorage.setItem(SYNCED_KEY, userId);
+                  clearConflict();
+                  try {
+                    const { sileo } = await import("sileo");
+                    sileo.success({
+                      title: t("recoverySuccess"),
+                      description: t("recoverySuccessDesc"),
+                      duration: 5000,
+                    });
+                  } catch { /* sileo not available in tests */ }
+                  return;
+                } catch (e) {
+                  console.warn("[useSyncKeys] Auto-recovery from key_mismatch failed:", e);
+                }
+              }
+            }
+
+            // Auto-recovery failed → delete incorrect local keys and offer recovery/regenerate
+            await deleteKeyPair(userId);
+
+            if (!userWithBackupMismatch?.server_share_ciphertext) {
+              setRecoveryState({
+                needsRecoveryCode: false,
+                needsRegeneration: true,
+                recoveryCode: null,
+                step: "idle",
+              });
+            } else {
+              setRecoveryState({
+                needsRecoveryCode: true,
+                needsRegeneration: false,
+                recoveryCode: null,
+                step: "needs_input",
+              });
+            }
             setConflict("key_mismatch");
             return;
           }

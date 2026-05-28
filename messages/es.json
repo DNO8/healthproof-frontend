@@ -958,6 +958,7 @@
     "useOriginalBrowser": "Inicia sesión desde el navegador original donde se crearon tus claves.",
     "contactSupport": "Si ya no tienes acceso a ese navegador, contacta a soporte para resetear tus claves.",
     "regenerateKeys": "Generar nuevas claves",
+    "clearAndRetry": "Borrar claves e intentar recuperar",
     "regenerateWarning": "⚠️ Advertencia: Esto eliminará permanentemente el acceso a documentos cifrados anteriormente. Solo para usuarios de prueba.",
     "confirmRegenerate": "¿Estás seguro? Esta acción no se puede deshacer.",
     "dismiss": "Cerrar",

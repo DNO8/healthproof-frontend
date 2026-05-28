@@ -8,15 +8,19 @@ export type KeyConflictReason =
 interface KeyConflictState {
   conflict: KeyConflictReason;
   isRecovering: boolean;
+  requestRegenerate: boolean;
   setConflict: (reason: KeyConflictReason) => void;
   clearConflict: () => void;
   setIsRecovering: (value: boolean) => void;
+  setRequestRegenerate: (value: boolean) => void;
 }
 
 export const useKeyConflictStore = create<KeyConflictState>((set) => ({
   conflict: null,
   isRecovering: false,
+  requestRegenerate: false,
   setConflict: (reason) => set({ conflict: reason, isRecovering: false }),
   clearConflict: () => set({ conflict: null, isRecovering: false }),
   setIsRecovering: (value) => set({ isRecovering: value }),
+  setRequestRegenerate: (value) => set({ requestRegenerate: value }),
 }));

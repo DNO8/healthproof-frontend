@@ -958,6 +958,7 @@
     "useOriginalBrowser": "Log in from the original browser where your keys were created.",
     "contactSupport": "If you no longer have access to that browser, contact support to reset your keys.",
     "regenerateKeys": "Generate new keys",
+    "clearAndRetry": "Clear keys and attempt recovery",
     "regenerateWarning": "⚠️ Warning: This will permanently remove access to previously encrypted documents. For test users only.",
     "confirmRegenerate": "Are you sure? This action cannot be undone.",
     "dismiss": "Dismiss",
