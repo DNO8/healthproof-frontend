@@ -131,3 +131,112 @@ body {
     transform: translateY(0);
   }
 }
+
+/* ── Driver.js Onboarding Popover — Neumorphism ── */
+.hp-driver-popover {
+  background: var(--hp-bg) !important;
+  border-radius: var(--hp-radius-xl) !important;
+  border: 1px solid var(--hp-border) !important;
+  box-shadow: var(--hp-shadow-elevated) !important;
+  color: var(--hp-text) !important;
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif !important;
+  padding: 1.25rem !important;
+  max-width: 360px !important;
+}
+
+.hp-driver-popover .driver-popover-title {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  color: var(--hp-text) !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.hp-driver-popover .driver-popover-description {
+  font-size: 0.875rem !important;
+  color: var(--hp-muted) !important;
+  line-height: 1.5 !important;
+}
+
+.hp-driver-popover .driver-popover-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-top: 1rem !important;
+  padding-top: 0.75rem !important;
+  border-top: 1px solid var(--hp-border) !important;
+}
+
+.hp-driver-popover .driver-popover-progress-text {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: var(--hp-muted) !important;
+}
+
+.hp-driver-popover .driver-popover-prev-btn,
+.hp-driver-popover .driver-popover-next-btn,
+.hp-driver-popover .driver-popover-close-btn {
+  border-radius: var(--hp-radius-lg) !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  padding: 0.5rem 1rem !important;
+  border: 1px solid var(--hp-border) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.hp-driver-popover .driver-popover-prev-btn {
+  background: var(--hp-bg) !important;
+  color: var(--hp-muted) !important;
+  box-shadow: var(--hp-shadow-raised) !important;
+}
+
+.hp-driver-popover .driver-popover-prev-btn:hover {
+  box-shadow: var(--hp-shadow-elevated) !important;
+  transform: translateY(-1px) !important;
+}
+
+.hp-driver-popover .driver-popover-next-btn {
+  background: var(--hp-primary) !important;
+  color: var(--hp-text) !important;
+  box-shadow: var(--hp-shadow-raised) !important;
+}
+
+.hp-driver-popover .driver-popover-next-btn:hover {
+  background: var(--hp-primary-soft) !important;
+  box-shadow: var(--hp-shadow-elevated) !important;
+  transform: translateY(-1px) !important;
+}
+
+.hp-driver-popover .driver-popover-close-btn {
+  background: var(--hp-bg) !important;
+  color: var(--hp-muted) !important;
+  box-shadow: var(--hp-shadow-inset) !important;
+}
+
+.hp-driver-popover .driver-popover-close-btn:hover {
+  color: var(--hp-text) !important;
+}
+
+.hp-driver-popover .driver-popover-arrow {
+  border-color: var(--hp-bg) !important;
+}
+
+/* Skip button injected via onPopoverRender */
+.hp-driver-popover [data-tour-skip] {
+  border-radius: var(--hp-radius-lg) !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  padding: 0.5rem 1rem !important;
+  border: 1px solid var(--hp-border) !important;
+  background: var(--hp-bg) !important;
+  color: var(--hp-muted) !important;
+  box-shadow: var(--hp-shadow-inset) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.hp-driver-popover [data-tour-skip]:hover {
+  color: var(--hp-text) !important;
+  box-shadow: var(--hp-shadow-pressed) !important;
+  transform: translateY(1px) !important;
+}

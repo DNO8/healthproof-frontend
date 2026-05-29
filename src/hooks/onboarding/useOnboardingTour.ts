@@ -60,8 +60,7 @@ export function useOnboardingTour(
           const btn = document.createElement("button");
           btn.dataset.tourSkip = "true";
           btn.textContent = t("buttons.skip");
-          btn.className =
-            "ml-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50";
+          btn.className = "ml-2 text-xs font-medium";
           btn.type = "button";
           btn.onclick = () => drvRef.destroy();
           popover.footerButtons.appendChild(btn);
