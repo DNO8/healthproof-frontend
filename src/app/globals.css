@@ -173,12 +173,21 @@ body {
 }
 
 .hp-driver-popover .driver-popover-prev-btn,
-.hp-driver-popover .driver-popover-next-btn,
-.hp-driver-popover .driver-popover-close-btn {
+.hp-driver-popover .driver-popover-next-btn {
   border-radius: var(--hp-radius-lg) !important;
   font-size: 0.8125rem !important;
   font-weight: 600 !important;
   padding: 0.5rem 1rem !important;
+  border: 1px solid var(--hp-border) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.hp-driver-popover .driver-popover-close-btn {
+  border-radius: var(--hp-radius-lg) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  padding: 0.35rem 0.65rem !important;
   border: 1px solid var(--hp-border) !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
@@ -224,9 +233,9 @@ body {
 /* Skip button injected via onPopoverRender */
 .hp-driver-popover [data-tour-skip] {
   border-radius: var(--hp-radius-lg) !important;
-  font-size: 0.8125rem !important;
+  font-size: 0.75rem !important;
   font-weight: 600 !important;
-  padding: 0.5rem 1rem !important;
+  padding: 0.35rem 0.65rem !important;
   border: 1px solid var(--hp-border) !important;
   background: var(--hp-bg) !important;
   color: var(--hp-muted) !important;
@@ -239,4 +248,34 @@ body {
   color: var(--hp-text) !important;
   box-shadow: var(--hp-shadow-pressed) !important;
   transform: translateY(1px) !important;
+}
+
+/* ── Responsive: mobile ── */
+@media (max-width: 640px) {
+  .hp-driver-popover {
+    max-width: 92vw !important;
+    padding: 0.875rem !important;
+    border-radius: var(--hp-radius-lg) !important;
+  }
+
+  .hp-driver-popover .driver-popover-title {
+    font-size: 0.9375rem !important;
+  }
+
+  .hp-driver-popover .driver-popover-description {
+    font-size: 0.8125rem !important;
+  }
+
+  .hp-driver-popover .driver-popover-footer {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+
+  .hp-driver-popover .driver-popover-prev-btn,
+  .hp-driver-popover .driver-popover-next-btn,
+  .hp-driver-popover .driver-popover-close-btn,
+  .hp-driver-popover [data-tour-skip] {
+    font-size: 0.75rem !important;
+    padding: 0.3rem 0.55rem !important;
+  }
 }
