@@ -7,6 +7,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useTranslations } from "next-intl";
 import type { UserRole } from "@/types/domain.types";
 import { clearDbUserCache } from "@/hooks/auth/useDbUser";
+import { clearUserSession } from "@/lib/auth/clear-session";
 import { LINKS_BY_ROLE } from "@/lib/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -76,13 +77,7 @@ export function DashboardSidebar({ role, walletAddress }: DashboardSidebarProps)
     sessionStorage.setItem("hp_logging_out", "true");
     await logout();
     clearDbUserCache();
-    sessionStorage.removeItem("hp_upserted");
-    sessionStorage.removeItem("hp_wallet_synced");
-    sessionStorage.removeItem("hp_keys_synced");
-    sessionStorage.removeItem("hp_keys_sync_error");
-    sessionStorage.removeItem("hp_recovery_state");
-    sessionStorage.removeItem("hp_welcome_shown");
-    sessionStorage.removeItem("hp_logging_out");
+    clearUserSession();
     sileo.success({ title: t("signedOut"), description: t("signedOutDesc") });
     router.push("/auth");
   }

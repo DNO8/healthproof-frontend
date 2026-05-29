@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Copy, Download, AlertTriangle, Check } from "lucide-react";
+import { Copy, Download, AlertTriangle, Check, ShieldAlert } from "lucide-react";
 
 interface RecoveryCodeModalProps {
   recoveryCode: string;
@@ -41,6 +41,20 @@ export function RecoveryCodeModal({ recoveryCode, onDismiss }: RecoveryCodeModal
           <p className="text-sm text-gray-600">
             {t("info")}
           </p>
+
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3">
+            <div className="flex items-start gap-2">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+              <div>
+                <p className="text-xs font-semibold text-red-700">{t("warningTitle")}</p>
+                <ul className="mt-1 list-disc pl-4 text-xs text-red-600">
+                  <li>{t("warning1")}</li>
+                  <li>{t("warning2")}</li>
+                  <li>{t("warning3")}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 sm:px-6">

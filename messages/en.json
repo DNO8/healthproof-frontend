@@ -981,6 +981,10 @@
     "recoveryCode": {
       "title": "Save your recovery code",
       "info": "This code is required to recover your account on a new device. It is shown only once. Save it on paper or in a password manager.",
+      "warningTitle": "Without this code you will lose your data if you:",
+      "warning1": "Clear browser data or cookies",
+      "warning2": "Use incognito / private browsing mode",
+      "warning3": "Switch browsers or devices",
       "copy": "Copy",
       "copied": "Copied",
       "download": "Download",
@@ -1030,10 +1034,6 @@
       "startButton": "Start tour",
       "replayButton": "Replay tour"
     },
-    "closing": {
-      "title": "You're all set",
-      "description": "You can restart this tour anytime from your profile."
-    },
     "patient": {
       "header": {
         "title": "Welcome to HealthProof",
@@ -1054,6 +1054,10 @@
       "profileBanner": {
         "title": "Complete your profile",
         "description": "Make sure your profile is up to date so doctors and labs can reach you."
+      },
+      "closing": {
+        "title": "You're all set",
+        "description": "You can restart this tour anytime from your profile."
       }
     },
     "doctor": {
@@ -1076,6 +1080,10 @@
       "profileBanner": {
         "title": "Complete your profile",
         "description": "Make sure your profile is up to date with your specialty and institution."
+      },
+      "closing": {
+        "title": "You're all set",
+        "description": "You can restart this tour anytime from your profile."
       }
     },
     "lab": {
@@ -1098,6 +1106,88 @@
       "profileBanner": {
         "title": "Complete your profile",
         "description": "Make sure your profile is up to date with your lab information."
+      },
+      "closing": {
+        "title": "You're all set",
+        "description": "You can restart this tour anytime from your profile."
+      }
+    },
+    "institution": {
+      "header": {
+        "title": "Welcome to HealthProof",
+        "description": "This is your institution dashboard. Here you can manage networks and verify healthcare members."
+      },
+      "metrics": {
+        "title": "Your institution at a glance",
+        "description": "These cards show quick stats about your healthcare network and verified members."
+      },
+      "quickNav": {
+        "title": "Quick navigation",
+        "description": "Access networks, members, and verification tools directly from here."
+      },
+      "quickActions": {
+        "title": "Quick actions",
+        "description": "Manage your institution's workflow and member verification."
+      },
+      "profileBanner": {
+        "title": "Complete your profile",
+        "description": "Make sure your profile is up to date with your institution details."
+      },
+      "closing": {
+        "title": "You're all set",
+        "description": "You can restart this tour anytime from your profile."
+      }
+    },
+    "certifier": {
+      "header": {
+        "title": "Welcome to HealthProof",
+        "description": "This is your certifier dashboard. Here you can register and verify healthcare entities on-chain."
+      },
+      "metrics": {
+        "title": "Your certification activity at a glance",
+        "description": "These cards show quick stats about entities you've verified and certifications issued."
+      },
+      "quickNav": {
+        "title": "Quick navigation",
+        "description": "Access verification tools, entity registrations, and audit trails directly from here."
+      },
+      "quickActions": {
+        "title": "Quick actions",
+        "description": "Verify entities and manage your certification workflow."
+      },
+      "profileBanner": {
+        "title": "Complete your profile",
+        "description": "Make sure your profile is up to date with your certifier credentials."
+      },
+      "closing": {
+        "title": "You're all set",
+        "description": "You can restart this tour anytime from your profile."
+      }
+    },
+    "admin": {
+      "header": {
+        "title": "Welcome to HealthProof",
+        "description": "This is your admin dashboard. Here you can manage protocol settings and system configuration."
+      },
+      "metrics": {
+        "title": "System overview at a glance",
+        "description": "These cards show quick stats about protocol modules and network activity."
+      },
+      "quickNav": {
+        "title": "Quick navigation",
+        "description": "Access protocol settings, kernel modules, and network management directly from here."
+      },
+      "quickActions": {
+        "title": "Quick actions",
+        "description": "Manage system settings and monitor protocol health."
+      },
+      "profileBanner": {
+        "title": "Complete your profile",
+        "description": "Make sure your admin profile is up to date."
+      },
+      "closing": {
+        "title": "You're all set",
+        "description": "You can restart this tour anytime from your profile."
       }
     }
   },

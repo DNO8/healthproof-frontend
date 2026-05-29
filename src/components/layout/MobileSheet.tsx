@@ -14,6 +14,7 @@ import { useUiStore } from "@/state/ui.store";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
 import { useDbUser, clearDbUserCache } from "@/hooks/auth/useDbUser";
+import { clearUserSession } from "@/lib/auth/clear-session";
 import { LINKS_BY_ROLE } from "@/lib/navigation";
 import type { UserRole } from "@/types/domain.types";
 import type { LucideIcon } from "lucide-react";
@@ -92,14 +93,7 @@ export function MobileSheet() {
     sessionStorage.setItem("hp_logging_out", "true");
     await logout();
     clearDbUserCache();
-    // Only remove app-specific keys — NEVER clear all storage
-    sessionStorage.removeItem("hp_upserted");
-    sessionStorage.removeItem("hp_wallet_synced");
-    sessionStorage.removeItem("hp_keys_synced");
-    sessionStorage.removeItem("hp_keys_sync_error");
-    sessionStorage.removeItem("hp_recovery_state");
-    sessionStorage.removeItem("hp_welcome_shown");
-    sessionStorage.removeItem("hp_logging_out");
+    clearUserSession();
     localStorage.removeItem("hp_intended_role");
     sileo.success({ title: t("signedOut"), description: t("signedOutDescription") });
     window.location.href = "/";

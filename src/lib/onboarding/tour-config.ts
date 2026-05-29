@@ -27,8 +27,8 @@ function buildStep(
   return {
     element: selector,
     popover: {
-      title: t(`onboardingTour.${role}.${key}.title`),
-      description: t(`onboardingTour.${role}.${key}.description`),
+      title: t(`${role}.${key}.title`),
+      description: t(`${role}.${key}.description`),
       side: key === "closing" ? "over" : "bottom",
       align: "start",
     },
