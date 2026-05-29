@@ -14,6 +14,7 @@ export interface DbUser {
   created_at: string;
   public_key: string | null;
   role: string | null;
+  onboarding_completed_at: string | null;
 }
 
 function getCached(userId: string): DbUser | null {

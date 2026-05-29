@@ -7,6 +7,7 @@ import { useDbUser } from "@/hooks/auth/useDbUser";
 import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { useDashboardStats } from "@/hooks/dashboard/useDashboardStats";
+import { useOnboardingTour } from "@/hooks/onboarding/useOnboardingTour";
 import { WelcomeToast } from "../WelcomeToast";
 import { ProfileBanner } from "../ProfileBanner";
 import { DashboardActions } from "../DashboardActions";
@@ -97,6 +98,7 @@ export default function OverviewPage() {
   const walletAddress = useWalletAddress();
   const { role, loading: roleLoading } = useOnChainRole(walletAddress);
   const { stats, loading: statsLoading } = useDashboardStats(walletAddress, role);
+  useOnboardingTour(role, user?.id ?? null);
 
   if (roleLoading) {
     return (
@@ -127,7 +129,7 @@ export default function OverviewPage() {
       <WelcomeToast email={email} roleLabel={roleLabel} />
 
       {/* Header */}
-      <div className="neu-shell border border-white/70 p-8 sm:p-10">
+      <div data-tour="role-header" className="neu-shell border border-white/70 p-8 sm:p-10">
         <div className="flex items-center gap-3">
           {(() => {
             const Icon = ROLE_ICONS[effectiveRole];
@@ -156,7 +158,7 @@ export default function OverviewPage() {
         )}
 
         {/* Metrics */}
-        <div className="mt-8 grid gap-5 sm:grid-cols-3">
+        <div data-tour="metrics" className="mt-8 grid gap-5 sm:grid-cols-3">
           {metricKeys.map((key) => (
             <button
               className="neu-surface hover:neu-pressed cursor-pointer rounded-2xl p-6 text-left transition-all duration-200"
@@ -189,7 +191,7 @@ export default function OverviewPage() {
       </div>
 
       {/* Quick Navigation — replaces desktop sidebar */}
-      <div className="mt-8">
+      <div data-tour="quick-nav" className="mt-8">
         <h2 className="mb-5 text-lg font-bold text-slate-800">
           {t("quickNavTitle") ?? "Navegación"}
         </h2>
