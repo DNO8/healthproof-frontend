@@ -42,6 +42,7 @@ import {
   decryptPrivateKey,
 } from "@/services/encryption/key-backup";
 import { saveEncryptedPrivateKey } from "@/actions/auth/save-encrypted-private-key";
+import { requestTourStart } from "@/lib/onboarding/tour-events";
 
 const SYNCED_KEY = "hp_keys_synced";
 
@@ -185,6 +186,8 @@ export function useSyncKeys() {
       recoveryCode,
       step: "show_recovery_code",
     });
+
+    requestTourStart();
   };
 
   // ── Helper: reconstruct from two shares ──
@@ -794,10 +797,30 @@ export function useSyncKeys() {
         recoveryCode: null,
         step: "idle",
       });
+      try {
+        const { sileo } = await import("sileo");
+        sileo.success({
+          title: t("recoverySuccess"),
+          description: t("recoverySuccessDesc"),
+          duration: 5000,
+        });
+      } catch {
+        /* sileo not available in tests */
+      }
       return true;
     } catch (e) {
       console.error("[useSyncKeys] recoverWithCode failed:", e);
       setRecoveryState((s) => ({ ...s, step: "needs_input" }));
+      try {
+        const { sileo } = await import("sileo");
+        sileo.error({
+          title: t("recoveryFailed"),
+          description: t("recoveryFailedDesc"),
+          duration: 5000,
+        });
+      } catch {
+        /* sileo not available in tests */
+      }
       return false;
     }
   };

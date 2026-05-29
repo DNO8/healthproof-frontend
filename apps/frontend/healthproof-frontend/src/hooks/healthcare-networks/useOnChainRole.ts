@@ -47,6 +47,7 @@ export function useOnChainRole(walletAddress: string | null | undefined) {
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const inFlightRef = useRef(false);
+  const fetchedForRef = useRef<Set<string>>(new Set());
 
   const refetch = useCallback(async () => {
     if (!walletAddress) {
@@ -62,8 +63,14 @@ export function useOnChainRole(walletAddress: string | null | undefined) {
       return;
     }
 
+    if (fetchedForRef.current.has(walletAddress.toLowerCase())) {
+      setLoading(false);
+      return;
+    }
+
     if (inFlightRef.current) return;
     inFlightRef.current = true;
+    fetchedForRef.current.add(walletAddress.toLowerCase());
 
     setLoading(true);
     try {
@@ -76,10 +83,12 @@ export function useOnChainRole(walletAddress: string | null | undefined) {
         setCache(walletAddress, resolved);
       } else {
         setRole(null);
+        fetchedForRef.current.delete(walletAddress.toLowerCase());
       }
     } catch (err) {
       console.error("useOnChainRole error:", err);
       setRole(null);
+      fetchedForRef.current.delete(walletAddress.toLowerCase());
     } finally {
       inFlightRef.current = false;
       setLoading(false);

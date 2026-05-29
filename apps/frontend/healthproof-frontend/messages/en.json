@@ -1016,6 +1016,91 @@
     "recoveryFailed": "Failed to restore keys",
     "recoveryFailedDesc": "An error occurred while restoring your keys. Please try again or contact support."
   },
+  "onboardingTour": {
+    "buttons": {
+      "next": "Next",
+      "previous": "Previous",
+      "done": "Done",
+      "skip": "Skip tour"
+    },
+    "profile": {
+      "cardTitle": "Guided tour",
+      "cardDescriptionFirst": "Learn the key features of your dashboard with a quick walkthrough.",
+      "cardDescriptionRepeat": "Review the dashboard features with a quick walkthrough.",
+      "startButton": "Start tour",
+      "replayButton": "Replay tour"
+    },
+    "closing": {
+      "title": "You're all set",
+      "description": "You can restart this tour anytime from your profile."
+    },
+    "patient": {
+      "header": {
+        "title": "Welcome to HealthProof",
+        "description": "This is your patient dashboard. Here you can manage your medical documents, permissions, and more."
+      },
+      "metrics": {
+        "title": "Your health at a glance",
+        "description": "These cards show quick stats: your documents, active permissions, and verifications. Click any card to jump to that section."
+      },
+      "quickNav": {
+        "title": "Quick navigation",
+        "description": "Access your orders, documents, permissions, guardians, and invitations directly from here."
+      },
+      "quickActions": {
+        "title": "Quick actions",
+        "description": "Use these buttons to share results or view your orders quickly."
+      },
+      "profileBanner": {
+        "title": "Complete your profile",
+        "description": "Make sure your profile is up to date so doctors and labs can reach you."
+      }
+    },
+    "doctor": {
+      "header": {
+        "title": "Welcome to HealthProof",
+        "description": "This is your doctor dashboard. Here you can manage orders, episodes, and access shared patient data."
+      },
+      "metrics": {
+        "title": "Your practice at a glance",
+        "description": "These cards show quick stats: orders issued, verified results, and active patients. Click any card to jump to that section."
+      },
+      "quickNav": {
+        "title": "Quick navigation",
+        "description": "Access orders, episodes, shared documents, scan QR codes, and invitations."
+      },
+      "quickActions": {
+        "title": "Quick actions",
+        "description": "Scan QR codes for emergency access and manage your workflow."
+      },
+      "profileBanner": {
+        "title": "Complete your profile",
+        "description": "Make sure your profile is up to date with your specialty and institution."
+      }
+    },
+    "lab": {
+      "header": {
+        "title": "Welcome to HealthProof",
+        "description": "This is your lab dashboard. Here you can manage lab orders and upload patient results securely."
+      },
+      "metrics": {
+        "title": "Your lab at a glance",
+        "description": "These cards show quick stats: tests performed, results uploaded, and pending orders. Click any card to jump to that section."
+      },
+      "quickNav": {
+        "title": "Quick navigation",
+        "description": "Access lab orders, upload results, scan QR codes, and manage invitations."
+      },
+      "quickActions": {
+        "title": "Quick actions",
+        "description": "Scan QR codes to quickly identify patients and manage your workflow."
+      },
+      "profileBanner": {
+        "title": "Complete your profile",
+        "description": "Make sure your profile is up to date with your lab information."
+      }
+    }
+  },
   "errors": {
     "notFound": {
       "code": "404",

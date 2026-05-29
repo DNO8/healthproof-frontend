@@ -1016,6 +1016,91 @@
     "recoveryFailed": "Error al restaurar claves",
     "recoveryFailedDesc": "Ocurrió un error al restaurar tus claves. Por favor intenta de nuevo o contacta a soporte."
   },
+  "onboardingTour": {
+    "buttons": {
+      "next": "Siguiente",
+      "previous": "Anterior",
+      "done": "Finalizar",
+      "skip": "Saltar tour"
+    },
+    "profile": {
+      "cardTitle": "Tour guiado",
+      "cardDescriptionFirst": "Conoce las funciones principales de tu panel con un recorrido rápido.",
+      "cardDescriptionRepeat": "Revisa las funciones del panel con un recorrido rápido.",
+      "startButton": "Iniciar tour",
+      "replayButton": "Repetir tour"
+    },
+    "closing": {
+      "title": "Todo listo",
+      "description": "Puedes reiniciar este tour en cualquier momento desde tu perfil."
+    },
+    "patient": {
+      "header": {
+        "title": "Bienvenido a HealthProof",
+        "description": "Este es tu panel de paciente. Aquí puedes gestionar tus documentos médicos, permisos y más."
+      },
+      "metrics": {
+        "title": "Tu salud de un vistazo",
+        "description": "Estas tarjetas muestran estadísticas rápidas: tus documentos, permisos activos y verificaciones. Haz clic en cualquiera para ir a esa sección."
+      },
+      "quickNav": {
+        "title": "Navegación rápida",
+        "description": "Accede a tus órdenes, documentos, permisos, guardianes e invitaciones directamente desde aquí."
+      },
+      "quickActions": {
+        "title": "Acciones rápidas",
+        "description": "Usa estos botones para compartir resultados o ver tus órdenes rápidamente."
+      },
+      "profileBanner": {
+        "title": "Completa tu perfil",
+        "description": "Asegúrate de que tu perfil esté actualizado para que doctores y laboratorios puedan contactarte."
+      }
+    },
+    "doctor": {
+      "header": {
+        "title": "Bienvenido a HealthProof",
+        "description": "Este es tu panel de doctor. Aquí puedes gestionar órdenes, episodios y acceder a datos compartidos de pacientes."
+      },
+      "metrics": {
+        "title": "Tu práctica de un vistazo",
+        "description": "Estas tarjetas muestran estadísticas rápidas: órdenes emitidas, resultados verificados y pacientes activos. Haz clic en cualquiera para ir a esa sección."
+      },
+      "quickNav": {
+        "title": "Navegación rápida",
+        "description": "Accede a órdenes, episodios, documentos compartidos, escaneo QR e invitaciones."
+      },
+      "quickActions": {
+        "title": "Acciones rápidas",
+        "description": "Escanea códigos QR para acceso de emergencia y gestiona tu flujo de trabajo."
+      },
+      "profileBanner": {
+        "title": "Completa tu perfil",
+        "description": "Asegúrate de que tu perfil esté actualizado con tu especialidad e institución."
+      }
+    },
+    "lab": {
+      "header": {
+        "title": "Bienvenido a HealthProof",
+        "description": "Este es tu panel de laboratorio. Aquí puedes gestionar órdenes de lab y subir resultados de pacientes de forma segura."
+      },
+      "metrics": {
+        "title": "Tu laboratorio de un vistazo",
+        "description": "Estas tarjetas muestran estadísticas rápidas: pruebas realizadas, resultados subidos y órdenes pendientes. Haz clic en cualquiera para ir a esa sección."
+      },
+      "quickNav": {
+        "title": "Navegación rápida",
+        "description": "Accede a órdenes de lab, sube resultados, escanea QR y gestiona invitaciones."
+      },
+      "quickActions": {
+        "title": "Acciones rápidas",
+        "description": "Escanea códigos QR para identificar pacientes rápidamente y gestiona tu flujo de trabajo."
+      },
+      "profileBanner": {
+        "title": "Completa tu perfil",
+        "description": "Asegúrate de que tu perfil esté actualizado con la información de tu laboratorio."
+      }
+    }
+  },
   "errors": {
     "notFound": {
       "code": "404",

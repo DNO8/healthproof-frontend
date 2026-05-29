@@ -78,7 +78,7 @@ export function DashboardActions({
 
   return (
     <>
-      <div className="mt-8">
+      <div data-tour="quick-actions" className="mt-8">
         <h2 className="mb-5 text-lg font-bold text-slate-800">{t("title")}</h2>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {actions.map((action) => {
