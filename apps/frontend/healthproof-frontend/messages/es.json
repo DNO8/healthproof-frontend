@@ -981,6 +981,10 @@
     "recoveryCode": {
       "title": "Guarda tu código de recuperación",
       "info": "Este código es necesario para recuperar tu cuenta en un nuevo dispositivo. Se muestra una sola vez. Guárdalo en papel o en un gestor de contraseñas.",
+      "warningTitle": "Sin este código perderás tus datos si:",
+      "warning1": "Borras los datos o cookies del navegador",
+      "warning2": "Usas modo incógnito / navegación privada",
+      "warning3": "Cambias de navegador o dispositivo",
       "copy": "Copiar",
       "copied": "Copiado",
       "download": "Descargar",
@@ -1030,10 +1034,6 @@
       "startButton": "Iniciar tour",
       "replayButton": "Repetir tour"
     },
-    "closing": {
-      "title": "Todo listo",
-      "description": "Puedes reiniciar este tour en cualquier momento desde tu perfil."
-    },
     "patient": {
       "header": {
         "title": "Bienvenido a HealthProof",
@@ -1054,6 +1054,10 @@
       "profileBanner": {
         "title": "Completa tu perfil",
         "description": "Asegúrate de que tu perfil esté actualizado para que doctores y laboratorios puedan contactarte."
+      },
+      "closing": {
+        "title": "Todo listo",
+        "description": "Puedes reiniciar este tour en cualquier momento desde tu perfil."
       }
     },
     "doctor": {
@@ -1076,6 +1080,10 @@
       "profileBanner": {
         "title": "Completa tu perfil",
         "description": "Asegúrate de que tu perfil esté actualizado con tu especialidad e institución."
+      },
+      "closing": {
+        "title": "Todo listo",
+        "description": "Puedes reiniciar este tour en cualquier momento desde tu perfil."
       }
     },
     "lab": {
@@ -1098,6 +1106,88 @@
       "profileBanner": {
         "title": "Completa tu perfil",
         "description": "Asegúrate de que tu perfil esté actualizado con la información de tu laboratorio."
+      },
+      "closing": {
+        "title": "Todo listo",
+        "description": "Puedes reiniciar este tour en cualquier momento desde tu perfil."
+      }
+    },
+    "institution": {
+      "header": {
+        "title": "Bienvenido a HealthProof",
+        "description": "Este es tu panel de institución. Aquí puedes gestionar redes y verificar miembros de salud."
+      },
+      "metrics": {
+        "title": "Tu institución de un vistazo",
+        "description": "Estas tarjetas muestran estadísticas rápidas sobre tu red de salud y miembros verificados."
+      },
+      "quickNav": {
+        "title": "Navegación rápida",
+        "description": "Accede a redes, miembros y herramientas de verificación directamente desde aquí."
+      },
+      "quickActions": {
+        "title": "Acciones rápidas",
+        "description": "Gestiona el flujo de trabajo de tu institución y la verificación de miembros."
+      },
+      "profileBanner": {
+        "title": "Completa tu perfil",
+        "description": "Asegúrate de que tu perfil esté actualizado con los datos de tu institución."
+      },
+      "closing": {
+        "title": "Todo listo",
+        "description": "Puedes reiniciar este tour en cualquier momento desde tu perfil."
+      }
+    },
+    "certifier": {
+      "header": {
+        "title": "Bienvenido a HealthProof",
+        "description": "Este es tu panel de certificador. Aquí puedes registrar y verificar entidades de salud on-chain."
+      },
+      "metrics": {
+        "title": "Tu actividad de certificación de un vistazo",
+        "description": "Estas tarjetas muestran estadísticas rápidas sobre entidades verificadas y certificaciones emitidas."
+      },
+      "quickNav": {
+        "title": "Navegación rápida",
+        "description": "Accede a herramientas de verificación, registros de entidades y trazas de auditoría directamente desde aquí."
+      },
+      "quickActions": {
+        "title": "Acciones rápidas",
+        "description": "Verifica entidades y gestiona tu flujo de trabajo de certificación."
+      },
+      "profileBanner": {
+        "title": "Completa tu perfil",
+        "description": "Asegúrate de que tu perfil esté actualizado con tus credenciales de certificador."
+      },
+      "closing": {
+        "title": "Todo listo",
+        "description": "Puedes reiniciar este tour en cualquier momento desde tu perfil."
+      }
+    },
+    "admin": {
+      "header": {
+        "title": "Bienvenido a HealthProof",
+        "description": "Este es tu panel de administrador. Aquí puedes gestionar la configuración del protocolo y del sistema."
+      },
+      "metrics": {
+        "title": "Vista general del sistema",
+        "description": "Estas tarjetas muestran estadísticas rápidas sobre módulos del protocolo y actividad de la red."
+      },
+      "quickNav": {
+        "title": "Navegación rápida",
+        "description": "Accede a configuración del protocolo, módulos del kernel y gestión de redes directamente desde aquí."
+      },
+      "quickActions": {
+        "title": "Acciones rápidas",
+        "description": "Gestiona la configuración del sistema y monitorea la salud del protocolo."
+      },
+      "profileBanner": {
+        "title": "Completa tu perfil",
+        "description": "Asegúrate de que tu perfil de administrador esté actualizado."
+      },
+      "closing": {
+        "title": "Todo listo",
+        "description": "Puedes reiniciar este tour en cualquier momento desde tu perfil."
       }
     }
   },

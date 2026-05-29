@@ -106,7 +106,12 @@ export function useSyncKeys() {
     }
     try {
       const raw = sessionStorage.getItem(RECOVERY_STATE_KEY);
-      if (raw) return JSON.parse(raw) as RecoveryState;
+      if (raw) {
+        const parsed = JSON.parse(raw) as RecoveryState & { userId?: string };
+        if (parsed.userId && parsed.userId === user?.id) {
+          return parsed;
+        }
+      }
     } catch {
       /* ignore */
     }
@@ -124,7 +129,10 @@ export function useSyncKeys() {
     setRecoveryStateInternal((prev) => {
       const value = typeof next === "function" ? next(prev) : next;
       try {
-        sessionStorage.setItem(RECOVERY_STATE_KEY, JSON.stringify(value));
+        sessionStorage.setItem(
+          RECOVERY_STATE_KEY,
+          JSON.stringify({ ...value, userId })
+        );
       } catch {
         /* ignore */
       }
@@ -259,6 +267,32 @@ export function useSyncKeys() {
       return null;
     }
   };
+
+  // Guard: if recovery state in sessionStorage belongs to another user, reset it
+  useEffect(() => {
+    if (!userId) return;
+    try {
+      const raw = sessionStorage.getItem(RECOVERY_STATE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as RecoveryState & { userId?: string };
+        if (parsed.userId === userId) {
+          setRecoveryStateInternal((current) =>
+            current.step === "idle" ? parsed : current
+          );
+        } else {
+          sessionStorage.removeItem(RECOVERY_STATE_KEY);
+          setRecoveryStateInternal({
+            needsRecoveryCode: false,
+            needsRegeneration: false,
+            recoveryCode: null,
+            step: "idle",
+          });
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [userId]);
 
   useEffect(() => {
     if (!ready || !authenticated || !userId || !walletAddress) return;

@@ -11,6 +11,7 @@ import {
 } from "@/i18n/navigation";
 import { useUiStore } from "@/state/ui.store";
 import { clearDbUserCache } from "@/hooks/auth/useDbUser";
+import { clearUserSession } from "@/lib/auth/clear-session";
 
 export function Nav() {
   const t = useTranslations("nav");
@@ -30,8 +31,7 @@ export function Nav() {
     sessionStorage.setItem("hp_logging_out", "true");
     await logout();
     clearDbUserCache();
-    sessionStorage.clear();
-    localStorage.clear();
+    clearUserSession();
     sileo.success({
       title: t("signedOut"),
       description: t("signedOutDescription"),
