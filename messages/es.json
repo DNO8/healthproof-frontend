@@ -1026,7 +1026,11 @@
     "regenerateSuccess": "Nuevas claves generadas",
     "regenerateSuccessDesc": "Tus nuevas claves de cifrado han sido creadas. Guarda tu código de recuperación para evitar perder el acceso.",
     "regenerateFailed": "Error al generar claves",
-    "regenerateFailedDesc": "Ocurrió un error al generar nuevas claves. Por favor intenta de nuevo."
+    "regenerateFailedDesc": "Ocurrió un error al generar nuevas claves. Por favor intenta de nuevo.",
+    "recoveryCodeUpdated": "Código de recuperación actualizado",
+    "recoveryCodeUpdatedDesc": "Tus claves de cifrado fueron regeneradas. Tu código de recuperación anterior ya no es válido. Por favor guarda el nuevo que se muestra en pantalla.",
+    "recoveryCodeExpired": "El código de recuperación ya no es válido",
+    "recoveryCodeExpiredDesc": "Este código de recuperación pertenece a una versión anterior de tus claves. Si regeneraste tus claves o recuperaste en otro dispositivo, debes usar el código de recuperación más reciente."
   },
   "onboardingTour": {
     "buttons": {

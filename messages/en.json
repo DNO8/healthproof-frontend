@@ -1026,7 +1026,11 @@
     "regenerateSuccess": "New keys generated",
     "regenerateSuccessDesc": "Your new encryption keys have been created. Save your recovery code to avoid losing access.",
     "regenerateFailed": "Failed to generate keys",
-    "regenerateFailedDesc": "An error occurred while generating new keys. Please try again."
+    "regenerateFailedDesc": "An error occurred while generating new keys. Please try again.",
+    "recoveryCodeUpdated": "Recovery code updated",
+    "recoveryCodeUpdatedDesc": "Your encryption keys were regenerated. Your previous recovery code is no longer valid. Please save the new one shown on screen.",
+    "recoveryCodeExpired": "Recovery code is no longer valid",
+    "recoveryCodeExpiredDesc": "This recovery code belongs to an older version of your keys. If you regenerated your keys or recovered on another device, you must use the most recent recovery code."
   },
   "onboardingTour": {
     "buttons": {
