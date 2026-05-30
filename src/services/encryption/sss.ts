@@ -31,11 +31,18 @@ export function hexToBytes(hex: string): Uint8Array {
  * @param total - N (total shares)
  * @returns Array of shares as hex strings (each includes x-coordinate in header)
  */
+const MAX_SECRET_LENGTH = 512; // BITS=8 max for secrets.js-grempe
+
 export function generateShares(
   secret: Uint8Array,
   threshold: number,
   total: number,
 ): string[] {
+  if (secret.length > MAX_SECRET_LENGTH) {
+    throw new Error(
+      `Secret too long for SSS with BITS=8 (max ${MAX_SECRET_LENGTH} bytes, got ${secret.length})`
+    );
+  }
   const secretHex = bytesToHex(secret);
   // secrets.js-grempe uses bits param for internal char size.
   // We convert raw bytes to hex because the lib operates on hex strings

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { decodeJwt } from "jose";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptShareForServer } from "@/lib/kms/server-share-crypto";
+import { verifyPrivyToken, verifySelf } from "@/lib/auth/privy-verify";
+import type { JWTPayload } from "jose";
 
 /**
  * POST /api/server-share/fetch
@@ -17,54 +18,27 @@ export async function POST(request: Request) {
     const authHeader = request.headers.get("authorization");
     let privyToken = authHeader?.replace("Bearer ", "");
 
-    // Fallback 1: try cookie if no header token
+    // Fallback: try cookie if no header token
     if (!privyToken) {
       const cookieStore = await cookies();
       privyToken = cookieStore.get("privy-token")?.value;
-      if (privyToken) {
-        console.log("[server-share/fetch] Using cookie token");
-      }
-    } else {
-      console.log("[server-share/fetch] Using Authorization header token");
-    }
-
-    // Fallback 2: try body token
-    if (!privyToken) {
-      try {
-        const body = await request.json();
-        if (body?.token) {
-          privyToken = body.token;
-          console.log("[server-share/fetch] Using body token");
-        }
-      } catch { /* not JSON body */ }
     }
 
     if (!privyToken) {
-      console.error("[server-share/fetch] No token found in header, cookie or body");
       return NextResponse.json(
-        { error: "Auth required - no token in header, cookie or body [v2]" },
+        { error: "Auth required" },
         { status: 401 }
       );
     }
 
-    // Decode JWT payload (signature verification skipped due to no public JWKS)
-    let payload;
+    // Verify JWT signature against Privy JWKS
+    let payload: JWTPayload;
     try {
-      payload = decodeJwt(privyToken);
-      console.log("[server-share/fetch] JWT decoded:", payload.sub ?? payload.userId);
-    } catch (jwtErr) {
-      console.error("[server-share/fetch] JWT decode failed:", jwtErr);
+      payload = await verifyPrivyToken();
+    } catch (verifyErr) {
+      console.error("[server-share/fetch] JWT verification failed");
       return NextResponse.json(
-        { error: "Invalid token format" },
-        { status: 401 }
-      );
-    }
-
-    // Check expiration
-    if (payload.exp && Date.now() >= payload.exp * 1000) {
-      console.error("[server-share/fetch] JWT expired");
-      return NextResponse.json(
-        { error: "Token expired" },
+        { error: "Invalid or expired token" },
         { status: 401 }
       );
     }
@@ -85,7 +59,7 @@ export async function POST(request: Request) {
       .single();
 
     if (error || !data?.server_share_ciphertext) {
-      console.error("[server-share/fetch] No server_share_ciphertext for user:", userId);
+      console.error("[server-share/fetch] No server_share_ciphertext");
       return NextResponse.json(
         { error: "No server share found for this user" },
         { status: 409 }

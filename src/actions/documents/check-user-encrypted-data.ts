@@ -1,15 +1,19 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { verifySelf } from "@/lib/auth/privy-verify";
 
 /**
  * Check if a user has any encrypted documents (as uploader or patient).
  * Used to prevent automatic key regeneration when existing data depends on them.
+ * Restricted to the authenticated user only (HIPAA access control).
  */
 export async function hasEncryptedData(
   walletAddress: string,
 ): Promise<boolean> {
   if (!walletAddress) return false;
+
+  await verifySelf(walletAddress);
 
   const supabase = createAdminClient();
   const wallet = walletAddress.toLowerCase();

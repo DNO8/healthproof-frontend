@@ -12,6 +12,12 @@ async function saveServerShareHandler(
     throw new Error("Unauthorized: userId mismatch");
   }
 
+  // Validate share2 is a valid hex string
+  const hexPattern = /^[0-9a-fA-F]+$/;
+  if (!data.share2 || data.share2.length % 2 !== 0 || !hexPattern.test(data.share2)) {
+    throw new Error("Invalid share2: must be a valid hex string");
+  }
+
   // Convert hex string share to actual bytes before encryption
   const hexToBytes = (hex: string): Uint8Array => {
     const bytes = new Uint8Array(hex.length / 2);

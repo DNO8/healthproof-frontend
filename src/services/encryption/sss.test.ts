@@ -75,4 +75,12 @@ describe("SSS(2,3) over ECDH JWK-sized secrets", () => {
       expect(share.length).toBeGreaterThan(0);
     }
   });
+
+  it("extract share3 and reconstruct with share2", () => {
+    const shares = generateShares(sampleSecret, 2, 3);
+    const [, , share3] = shares;
+    const share2 = shares[1];
+    const reconstructed = reconstructSecret([share2, share3]);
+    expect(new Uint8Array(reconstructed)).toEqual(sampleSecret);
+  });
 });
