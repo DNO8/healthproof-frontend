@@ -44,10 +44,9 @@ export function generateShares(
     );
   }
   const secretHex = bytesToHex(secret);
-  // secrets.js-grempe uses bits param for internal char size.
-  // We convert raw bytes to hex because the lib operates on hex strings
-  // and the header byte carries the x-coordinate.
-  const shares = secrets.share(secretHex, total, threshold, BITS);
+  // secrets.js-grempe: (secret, numShares, threshold, [padLength])
+  // padLength defaults to 128 bits; do NOT pass BITS here.
+  const shares = secrets.share(secretHex, total, threshold);
   return shares;
 }
 

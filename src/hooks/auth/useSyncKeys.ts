@@ -1088,8 +1088,33 @@ export function useSyncKeys() {
         sessionStorage.removeItem("hp_server_share_attempted");
       } catch { /* ignore */ }
       const { masterSecret, publicKeyJwk, keyPair } = await generateMasterSecret();
+      logFlow("regenerate:master-secret", { length: masterSecret.length });
+
       const shares = generateShares(masterSecret, 2, 3);
+      logFlow("regenerate:shares-generated", {
+        count: shares.length,
+        types: shares.map((s) => typeof s),
+      });
+
       const [share1, share2, share3] = shares;
+
+      // Diagnostic logging for share2 before sending to server
+      const hexPattern = /^[0-9a-fA-F]+$/;
+      logFlow("regenerate:share2-check", {
+        type: typeof share2,
+        length: share2?.length,
+        isString: typeof share2 === "string",
+        isHex: typeof share2 === "string" && hexPattern.test(share2),
+        evenLength: typeof share2 === "string" && share2.length % 2 === 0,
+        prefix: typeof share2 === "string" ? share2.slice(0, 16) : null,
+      });
+
+      if (!share2 || typeof share2 !== "string" || !hexPattern.test(share2) || share2.length % 2 !== 0) {
+        console.error("[useSyncKeys] regenerateKeys aborted: share2 is not a valid hex string", {
+          share2: typeof share2 === "string" ? `${share2.slice(0, 20)}...` : share2,
+        });
+        throw new Error("Generated share2 is not a valid hex string. This is a bug; please report it.");
+      }
 
       const masterHash = await hashMasterSecret(masterSecret);
       const recoveryCode = encodeRecoveryCode(hexToBytes(share3));
