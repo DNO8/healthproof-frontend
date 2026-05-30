@@ -81,6 +81,10 @@ export function withAuth<T, R>(
           (cleanData as unknown as Record<string, unknown>)?.wallet ??
           (cleanData as unknown as Record<string, unknown>)?.wallet_address;
         if (typeof walletFromPayload === "string" && walletFromPayload.startsWith("0x")) {
+          console.warn(
+            "[withAuth] DEV BYPASS ACTIVE: using wallet from payload instead of Privy token. " +
+            "This is insecure and should only be used on localhost.",
+          );
           auth = {
             userId: "dev-user",
             wallet: walletFromPayload.toLowerCase(),

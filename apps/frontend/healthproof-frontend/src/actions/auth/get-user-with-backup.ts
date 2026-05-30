@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { verifySelf } from "@/lib/auth/privy-verify";
 
 export interface UserWithBackup {
   id: string;
@@ -25,15 +26,18 @@ export interface UserWithBackup {
 /**
  * Get user data including encrypted private key backup.
  * Used for key recovery when IndexedDB is empty.
+ * Restricted to the authenticated user only (HIPAA access control).
  */
 export async function getUserWithBackup(
   idOrWallet: string,
 ): Promise<UserWithBackup | null> {
+  await verifySelf(idOrWallet);
+
   try {
   const supabase = createAdminClient();
 
   // Try lookup by Privy DID first
-  const { data, error } = await supabase
+  const { data: row, error } = await supabase
     .from("users")
     .select(
       "id, email, wallet_address, full_name, created_at, public_key, encrypted_private_key, key_share, key_version, server_share_ciphertext, server_share_dek_ciphertext, server_share_kms_key_id, recovery_code_hash, recovery_code_used_at, master_secret_hash, scheme_version",
@@ -41,25 +45,25 @@ export async function getUserWithBackup(
     .eq("id", idOrWallet)
     .single();
 
-  if (!error && data) {
+  if (!error && row) {
     return {
-      id: data.id as string,
-      email: (data.email as string) ?? "",
-      wallet_address: data.wallet_address as string | null,
-      full_name: data.full_name as string | null,
-      created_at: data.created_at as string,
-      public_key: (data.public_key as string | null) ?? null,
+      id: row.id as string,
+      email: (row.email as string) ?? "",
+      wallet_address: row.wallet_address as string | null,
+      full_name: row.full_name as string | null,
+      created_at: row.created_at as string,
+      public_key: (row.public_key as string | null) ?? null,
       encrypted_private_key:
-        (data.encrypted_private_key as string | null) ?? null,
-      key_share: (data.key_share as string | null) ?? null,
-      key_version: (data.key_version as number | null) ?? null,
-      server_share_ciphertext: (data.server_share_ciphertext as string | null) ?? null,
-      server_share_dek_ciphertext: (data.server_share_dek_ciphertext as string | null) ?? null,
-      server_share_kms_key_id: (data.server_share_kms_key_id as string | null) ?? null,
-      recovery_code_hash: (data.recovery_code_hash as string | null) ?? null,
-      recovery_code_used_at: (data.recovery_code_used_at as string | null) ?? null,
-      master_secret_hash: (data.master_secret_hash as string | null) ?? null,
-      scheme_version: (data.scheme_version as number | null) ?? null,
+        (row.encrypted_private_key as string | null) ?? null,
+      key_share: (row.key_share as string | null) ?? null,
+      key_version: (row.key_version as number | null) ?? null,
+      server_share_ciphertext: (row.server_share_ciphertext as string | null) ?? null,
+      server_share_dek_ciphertext: (row.server_share_dek_ciphertext as string | null) ?? null,
+      server_share_kms_key_id: (row.server_share_kms_key_id as string | null) ?? null,
+      recovery_code_hash: (row.recovery_code_hash as string | null) ?? null,
+      recovery_code_used_at: (row.recovery_code_used_at as string | null) ?? null,
+      master_secret_hash: (row.master_secret_hash as string | null) ?? null,
+      scheme_version: (row.scheme_version as number | null) ?? null,
     };
   }
 

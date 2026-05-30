@@ -1,8 +1,10 @@
 // IndexedDB-based keystore for ECDH private keys + SSS metadata
 // CryptoKey objects marked as non-extractable can only be stored in IndexedDB
 
+import { encryptShare1, decryptShare1 } from "./keystore-crypto";
+
 const DB_NAME = "healthproof-keystore";
-const DB_VERSION = 2;
+const DB_VERSION = 3; // v3: share1 encrypted at rest
 const STORE_NAME = "ecdh-keys";
 
 function openDb(): Promise<IDBDatabase> {
@@ -16,9 +18,8 @@ function openDb(): Promise<IDBDatabase> {
 
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, { keyPath: "userId" });
-      } else {
-        // Migration from v1 to v2: store now holds extra fields; no schema change needed
       }
+      // v2 → v3 migration: share1 may be plaintext; next save will encrypt it
     };
 
     request.onsuccess = () => resolve(request.result);
@@ -50,6 +51,28 @@ export async function saveKeyPair(
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
 
+    let share1 = opts?.share1;
+    if (share1) {
+      // Encrypt share1 before storing (async, but we can fire-and-forget
+      // inside the promise chain). To keep the IndexedDB API sync-friendly,
+      // we encrypt upfront.
+      encryptShare1(share1, userId).then((encrypted) => {
+        const record: StoredKeyPair = {
+          userId,
+          privateKey: keyPair.privateKey,
+          publicKey: keyPair.publicKey,
+          createdAt: new Date().toISOString(),
+          ...opts,
+          share1: encrypted,
+        };
+        const putReq = store.put(record);
+        putReq.onsuccess = () => resolve();
+        putReq.onerror = () => reject(putReq.error);
+        tx.oncomplete = () => db.close();
+      }).catch(reject);
+      return;
+    }
+
     const record: StoredKeyPair = {
       userId,
       privateKey: keyPair.privateKey,
@@ -69,7 +92,7 @@ export async function getKeyPair(
   userId: string,
 ): Promise<StoredKeyPair | null> {
   const db = await openDb();
-  return new Promise((resolve, reject) => {
+  const raw = await new Promise<StoredKeyPair | null>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readonly");
     const store = tx.objectStore(STORE_NAME);
 
@@ -78,6 +101,19 @@ export async function getKeyPair(
     request.onerror = () => reject(request.error);
     tx.oncomplete = () => db.close();
   });
+
+  if (!raw?.share1) {
+    return raw;
+  }
+
+  // Decrypt share1 if encrypted; legacy plaintext passes through
+  try {
+    const decrypted = await decryptShare1(raw.share1, userId);
+    return { ...raw, share1: decrypted };
+  } catch {
+    // If decryption fails, return raw so caller can handle (e.g., migration)
+    return raw;
+  }
 }
 
 export async function hasKeyPair(userId: string): Promise<boolean> {
@@ -105,6 +141,7 @@ export async function saveLocalShare1(
   userId: string,
   share1: string,
 ): Promise<void> {
+  const encrypted = await encryptShare1(share1, userId);
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readwrite");
@@ -116,7 +153,7 @@ export async function saveLocalShare1(
       const updated: StoredKeyPair = {
         ...existing,
         userId,
-        share1,
+        share1: encrypted,
       };
       const putReq = store.put(updated);
       putReq.onsuccess = () => resolve();
@@ -133,6 +170,38 @@ export async function saveLocalShare1(
 export async function getLocalShare1(userId: string): Promise<string | null> {
   const pair = await getKeyPair(userId);
   return pair?.share1 ?? null;
+}
+
+/**
+ * Re-encrypt a plaintext share1 in IndexedDB (migration helper).
+ * Call after detecting an unencrypted share1 on read.
+ */
+export async function migrateLocalShare1(userId: string): Promise<void> {
+  const db = await openDb();
+  const raw = await new Promise<StoredKeyPair | null>((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.get(userId);
+    req.onsuccess = () => resolve(req.result ?? null);
+    req.onerror = () => reject(req.error);
+    tx.oncomplete = () => db.close();
+  });
+
+  if (!raw?.share1) return;
+
+  const { isEncryptedShare1 } = await import("./keystore-crypto");
+  if (isEncryptedShare1(raw.share1)) return; // already encrypted
+
+  const encrypted = await encryptShare1(raw.share1, userId);
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    const updated = { ...raw, share1: encrypted };
+    const putReq = store.put(updated);
+    putReq.onsuccess = () => resolve();
+    putReq.onerror = () => reject(putReq.error);
+    tx.oncomplete = () => db.close();
+  });
 }
 
 /**

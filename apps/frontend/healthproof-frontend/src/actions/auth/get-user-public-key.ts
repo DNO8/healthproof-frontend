@@ -1,12 +1,14 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAuth } from "@/lib/auth/privy-verify";
 
 export async function getUserPublicKey(
   idOrWallet: string,
 ): Promise<string | null> {
   try {
-  const supabase = createAdminClient();
+    await requireAuth();
+    const supabase = createAdminClient();
 
   // Try lookup by user ID first
   const { data, error } = await supabase

@@ -1030,7 +1030,25 @@
     "recoveryCodeUpdated": "Código de recuperación actualizado",
     "recoveryCodeUpdatedDesc": "Tus claves de cifrado fueron regeneradas. Tu código de recuperación anterior ya no es válido. Por favor guarda el nuevo que se muestra en pantalla.",
     "recoveryCodeExpired": "El código de recuperación ya no es válido",
-    "recoveryCodeExpiredDesc": "Este código de recuperación pertenece a una versión anterior de tus claves. Si regeneraste tus claves o recuperaste en otro dispositivo, debes usar el código de recuperación más reciente."
+    "recoveryCodeExpiredDesc": "Este código de recuperación pertenece a una versión anterior de tus claves. Si regeneraste tus claves o recuperaste en otro dispositivo, debes usar el código de recuperación más reciente.",
+    "keysGenerated": "Claves generadas",
+    "keysGeneratedDesc": "Tus claves de cifrado se crearon correctamente.",
+    "backupCreateWarning": "Advertencia de respaldo",
+    "backupCreateWarningDesc": "No se pudo crear el respaldo multi-dispositivo, pero tus claves locales funcionan.",
+    "crossDeviceBackupReady": "Respaldo listo",
+    "crossDeviceBackupReadyDesc": "Tu respaldo multi-dispositivo se creó correctamente.",
+    "crossDeviceBackupUnavailable": "Respaldo no disponible",
+    "crossDeviceBackupUnavailableDesc": "No tienes share de servidor; el acceso multi-dispositivo no está habilitado.",
+    "backupCreateFailed": "Error de respaldo",
+    "backupCreateFailedDesc": "No se pudo crear el respaldo. Intenta de nuevo más tarde.",
+    "autoRecoveryFailed": "Recuperación automática fallida",
+    "autoRecoveryFailedDesc": "No se pudo recuperar automáticamente desde el respaldo.",
+    "keyMismatchDetected": "Claves desincronizadas",
+    "keyMismatchDetectedDesc": "Se detectó un conflicto de claves. Por favor recupera o regenera.",
+    "recoveryCodeRequired": "Código de recuperación requerido",
+    "recoveryCodeRequiredDesc": "Necesitas tu código de recuperación para acceder a tus claves.",
+    "legacyDecryptFailed": "Migración fallida",
+    "legacyDecryptFailedDesc": "No se pudieron migrar tus claves antiguas."
   },
   "onboardingTour": {
     "buttons": {

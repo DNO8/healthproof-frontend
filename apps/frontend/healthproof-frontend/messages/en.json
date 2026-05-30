@@ -1030,7 +1030,25 @@
     "recoveryCodeUpdated": "Recovery code updated",
     "recoveryCodeUpdatedDesc": "Your encryption keys were regenerated. Your previous recovery code is no longer valid. Please save the new one shown on screen.",
     "recoveryCodeExpired": "Recovery code is no longer valid",
-    "recoveryCodeExpiredDesc": "This recovery code belongs to an older version of your keys. If you regenerated your keys or recovered on another device, you must use the most recent recovery code."
+    "recoveryCodeExpiredDesc": "This recovery code belongs to an older version of your keys. If you regenerated your keys or recovered on another device, you must use the most recent recovery code.",
+    "keysGenerated": "Keys generated",
+    "keysGeneratedDesc": "Your encryption keys were created successfully.",
+    "backupCreateWarning": "Backup warning",
+    "backupCreateWarningDesc": "Cross-device backup could not be created, but your local keys work.",
+    "crossDeviceBackupReady": "Backup ready",
+    "crossDeviceBackupReadyDesc": "Your cross-device backup was created successfully.",
+    "crossDeviceBackupUnavailable": "Backup unavailable",
+    "crossDeviceBackupUnavailableDesc": "You have no server share; cross-device access is not enabled.",
+    "backupCreateFailed": "Backup error",
+    "backupCreateFailedDesc": "Could not create backup. Try again later.",
+    "autoRecoveryFailed": "Auto-recovery failed",
+    "autoRecoveryFailedDesc": "Could not auto-recover from backup.",
+    "keyMismatchDetected": "Key mismatch detected",
+    "keyMismatchDetectedDesc": "A key conflict was detected. Please recover or regenerate.",
+    "recoveryCodeRequired": "Recovery code required",
+    "recoveryCodeRequiredDesc": "You need your recovery code to access your keys.",
+    "legacyDecryptFailed": "Migration failed",
+    "legacyDecryptFailedDesc": "Could not migrate your old keys."
   },
   "onboardingTour": {
     "buttons": {
