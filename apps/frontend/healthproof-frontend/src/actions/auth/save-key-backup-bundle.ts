@@ -24,16 +24,13 @@ async function saveKeyBackupBundleHandler(
     throw new Error("Unauthorized: can only update your own backup");
   }
 
-  // Validate share2 is valid hex before encrypting
-  const hexPattern = /^[0-9a-fA-F]+$/;
-  if (!data.share2 || data.share2.length % 2 !== 0 || !hexPattern.test(data.share2)) {
-    throw new Error("Invalid share2: must be a valid hex string");
+  // Validate share2 is a non-empty string
+  if (!data.share2 || typeof data.share2 !== "string") {
+    throw new Error("Invalid share2: must be a non-empty string");
   }
 
-  const shareBytes = new Uint8Array(data.share2.length / 2);
-  for (let i = 0; i < shareBytes.length; i++) {
-    shareBytes[i] = Number.parseInt(data.share2.slice(i * 2, i * 2 + 2), 16);
-  }
+  // Encode share2 as UTF-8 bytes (secrets.js-grempe shares are opaque strings)
+  const shareBytes = new TextEncoder().encode(data.share2);
 
   const encrypted = await encryptShareForServer(shareBytes);
 

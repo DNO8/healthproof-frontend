@@ -1099,21 +1099,18 @@ export function useSyncKeys() {
       const [share1, share2, share3] = shares;
 
       // Diagnostic logging for share2 before sending to server
-      const hexPattern = /^[0-9a-fA-F]+$/;
       logFlow("regenerate:share2-check", {
         type: typeof share2,
         length: share2?.length,
         isString: typeof share2 === "string",
-        isHex: typeof share2 === "string" && hexPattern.test(share2),
-        evenLength: typeof share2 === "string" && share2.length % 2 === 0,
         prefix: typeof share2 === "string" ? share2.slice(0, 16) : null,
       });
 
-      if (!share2 || typeof share2 !== "string" || !hexPattern.test(share2) || share2.length % 2 !== 0) {
-        console.error("[useSyncKeys] regenerateKeys aborted: share2 is not a valid hex string", {
+      if (!share2 || typeof share2 !== "string") {
+        console.error("[useSyncKeys] regenerateKeys aborted: share2 is missing or not a string", {
           share2: typeof share2 === "string" ? `${share2.slice(0, 20)}...` : share2,
         });
-        throw new Error("Generated share2 is not a valid hex string. This is a bug; please report it.");
+        throw new Error("Generated share2 is missing or invalid. This is a bug; please report it.");
       }
 
       const masterHash = await hashMasterSecret(masterSecret);
