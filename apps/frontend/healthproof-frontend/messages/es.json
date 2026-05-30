@@ -388,7 +388,22 @@
       "backToDashboard": "Volver al Panel",
       "errorTitle": "Error",
       "updated": "Perfil actualizado",
-      "updatedDesc": "Tu perfil se ha guardado exitosamente."
+      "updatedDesc": "Tu perfil se ha guardado exitosamente.",
+      "security": {
+        "title": "Claves de Cifrado",
+        "checking": "Verificando estado de claves...",
+        "keysOk": "Tus claves de cifrado están en buen estado.",
+        "keysMissing": "Tus claves locales de cifrado faltan. Es posible que necesites recuperarlas o regenerarlas.",
+        "keysMismatch": "Tus claves locales no coinciden con el respaldo del servidor. Por favor regenera o recupera.",
+        "localSharePresent": "Share local presente",
+        "localShareMissing": "Share local ausente",
+        "serverSharePresent": "Respaldo del servidor presente",
+        "serverShareMissing": "Sin respaldo del servidor",
+        "regenerateKeys": "Regenerar Claves",
+        "warningTitle": "Configuración crítica del sistema",
+        "warningBody": "Regenerar claves creará un nuevo par de cifrado. Cualquier documento cifrado con claves anteriores ya no será desencriptable a menos que tengas un recovery code funcional.",
+        "noBackupNote": "No se encontró respaldo del servidor. La recuperación multi-dispositivo no será posible hasta que completes el onboarding en un segundo dispositivo."
+      }
     },
     "nav": {
       "profile": "Perfil"

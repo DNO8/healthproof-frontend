@@ -11,6 +11,7 @@ import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { getEntityOnChain } from "@/actions/healthcare-networks/register-entity-onchain";
 import { ProfileForm } from "./ProfileForm";
+import { SecuritySection } from "@/components/profile/SecuritySection";
 import { TourTrigger } from "@/components/onboarding/TourTrigger";
 import { ROLE_ICONS } from "@/lib/icons";
 
@@ -101,6 +102,8 @@ export default function ProfilePage() {
           specialty={entity?.specialty ?? ""}
           institution={entity?.institution ?? ""}
         />
+
+        <SecuritySection userId={user.id} />
 
         <TourTrigger
           role={effectiveRole}
