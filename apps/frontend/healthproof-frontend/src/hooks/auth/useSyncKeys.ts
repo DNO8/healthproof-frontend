@@ -31,6 +31,7 @@ import {
 import {
   encodeRecoveryCode,
   hashRecoveryCode,
+  normalizeRecoveryCode,
 } from "@/services/encryption/recovery-code";
 import { saveServerShare } from "@/actions/auth/save-server-share";
 import { saveRecoveryHash } from "@/actions/auth/save-recovery-hash";
@@ -468,23 +469,33 @@ export function useSyncKeys() {
                   const encoder = new TextEncoder();
                   const masterSecret = encoder.encode(JSON.stringify(privJwk));
                   const shares = generateShares(masterSecret, 2, 3);
-                  const [share1, share2] = shares;
+                  const [share1, share2, share3] = shares;
                   const masterHash = await hashMasterSecret(masterSecret);
+                  const recoveryCode = encodeRecoveryCode(hexToBytes(share3));
+                  const recoveryHash = await hashRecoveryCode(recoveryCode);
                   await saveKeyPair(userId, { privateKey, publicKey }, {
                     share1,
                     masterSecretHash: masterHash,
                     schemeVersion: 2,
                   });
                   assertOk(await saveServerShare(await withPrivyToken({ userId, share2 })), "saveServerShare");
+                  assertOk(await saveRecoveryHash(await withPrivyToken({ userId, recoveryCodeHash: recoveryHash })), "saveRecoveryHash");
                   assertOk(await saveMasterSecretHash(await withPrivyToken({ userId, masterSecretHash: masterHash })), "saveMasterSecretHash");
                   sessionStorage.setItem(SYNCED_KEY, userId);
                   clearConflict();
+                  // Prompt user to save the NEW recovery code (old one is now invalid)
+                  setRecoveryState({
+                    needsRecoveryCode: true,
+                    needsRegeneration: false,
+                    recoveryCode,
+                    step: "show_recovery_code",
+                  });
                   try {
                     const { sileo } = await import("sileo");
                     sileo.success({
-                      title: t("recoverySuccess"),
-                      description: t("recoverySuccessDesc"),
-                      duration: 5000,
+                      title: t("recoveryCodeUpdated"),
+                      description: t("recoveryCodeUpdatedDesc"),
+                      duration: 8000,
                     });
                   } catch { /* sileo not available in tests */ }
                   return;
@@ -732,6 +743,21 @@ export function useSyncKeys() {
             sessionStorage.setItem(SYNCED_KEY, userId);
             clearDbUserCache();
             clearConflict();
+            // Show the new recovery code — old one is now invalid
+            setRecoveryState({
+              needsRecoveryCode: true,
+              needsRegeneration: false,
+              recoveryCode,
+              step: "show_recovery_code",
+            });
+            try {
+              const { sileo } = await import("sileo");
+              sileo.success({
+                title: t("recoveryCodeUpdated"),
+                description: t("recoveryCodeUpdatedDesc"),
+                duration: 8000,
+              });
+            } catch { /* sileo not available in tests */ }
             return;
           }
 
@@ -826,6 +852,24 @@ export function useSyncKeys() {
       const share3 = Array.from(share3Bytes)
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
+
+      // Diagnose: check if recovery code matches the stored recovery hash
+      const enteredRecoveryHash = await hashRecoveryCode(normalizeRecoveryCode(code));
+      if (userWithBackup.recovery_code_hash && enteredRecoveryHash !== userWithBackup.recovery_code_hash) {
+        console.error("[useSyncKeys] Recovery code hash mismatch — code may be from an older generation", {
+          expectedRecoveryHashPrefix: userWithBackup.recovery_code_hash.slice(0, 16),
+          enteredRecoveryHashPrefix: enteredRecoveryHash.slice(0, 16),
+        });
+        try {
+          const { sileo } = await import("sileo");
+          sileo.error({
+            title: t("recoveryCodeExpired"),
+            description: t("recoveryCodeExpiredDesc"),
+            duration: 8000,
+          });
+        } catch { /* sileo not available in tests */ }
+        return false;
+      }
 
       const result = await reconstructFromShares(
         share2,
