@@ -388,7 +388,22 @@
       "backToDashboard": "Back to Dashboard",
       "errorTitle": "Error",
       "updated": "Profile updated",
-      "updatedDesc": "Your profile has been saved successfully."
+      "updatedDesc": "Your profile has been saved successfully.",
+      "security": {
+        "title": "Encryption Keys",
+        "checking": "Checking key status...",
+        "keysOk": "Your encryption keys are healthy.",
+        "keysMissing": "Your local encryption keys are missing. You may need to recover or regenerate them.",
+        "keysMismatch": "Your local keys do not match the server backup. Please regenerate or recover.",
+        "localSharePresent": "Local share present",
+        "localShareMissing": "Local share missing",
+        "serverSharePresent": "Server backup present",
+        "serverShareMissing": "No server backup",
+        "regenerateKeys": "Regenerate Keys",
+        "warningTitle": "Critical system setting",
+        "warningBody": "Regenerating keys will create a brand new encryption pair. Any documents encrypted with previous keys will no longer be decryptable unless you have a working recovery code.",
+        "noBackupNote": "No server backup was found. Cross-device recovery will not be possible until you complete onboarding on a second device."
+      }
     },
     "nav": {
       "profile": "Profile"
