@@ -24,7 +24,7 @@ function getKmsKeyId(): string {
   return keyId;
 }
 
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
+function arrayBufferToBase64(buffer: ArrayBuffer | Uint8Array): string {
   const bytes = new Uint8Array(buffer);
   let binary = "";
   for (let i = 0; i < bytes.byteLength; i++) {
@@ -77,7 +77,7 @@ export async function encryptShareForServer(
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const dekKey = await crypto.subtle.importKey(
     "raw",
-    dek.buffer as ArrayBuffer,
+    dek as BufferSource,
     { name: "AES-GCM", length: 256 },
     false,
     ["encrypt"],
@@ -86,7 +86,7 @@ export async function encryptShareForServer(
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     dekKey,
-    share.buffer as ArrayBuffer,
+    share as BufferSource,
   );
 
   // 3. Wipe DEK from memory (best effort in JS)
@@ -98,8 +98,8 @@ export async function encryptShareForServer(
   combined.set(new Uint8Array(ciphertext), iv.length);
 
   return {
-    encryptedShare: arrayBufferToBase64(combined.buffer),
-    encryptedDek: arrayBufferToBase64(encryptedDek.buffer),
+    encryptedShare: arrayBufferToBase64(combined),
+    encryptedDek: arrayBufferToBase64(encryptedDek),
     kmsKeyId: keyId,
   };
 }
@@ -135,7 +135,7 @@ export async function decryptShareForServer(
 
   const dekKey = await crypto.subtle.importKey(
     "raw",
-    dek.buffer as ArrayBuffer,
+    dek as BufferSource,
     { name: "AES-GCM", length: 256 },
     false,
     ["decrypt"],
@@ -144,7 +144,7 @@ export async function decryptShareForServer(
   const plaintext = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv },
     dekKey,
-    ciphertext.buffer as ArrayBuffer,
+    ciphertext as BufferSource,
   );
 
   // 3. Wipe DEK

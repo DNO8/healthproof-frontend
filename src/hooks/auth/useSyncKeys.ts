@@ -208,7 +208,13 @@ export function useSyncKeys() {
       const reconstructed = reconstructSecret([shareA, shareB]);
       const reconstructedHash = await hashMasterSecret(reconstructed);
       if (reconstructedHash !== expectedHash) {
-        console.error("[useSyncKeys] Master secret hash mismatch");
+        console.error("[useSyncKeys] Master secret hash mismatch", {
+          expectedHashPrefix: expectedHash.slice(0, 16),
+          reconstructedHashPrefix: reconstructedHash.slice(0, 16),
+          shareAPrefix: shareA.slice(0, 16),
+          shareBPrefix: shareB.slice(0, 16),
+          reconstructedLength: reconstructed.length,
+        });
         return null;
       }
       return await importKeyPairFromMasterSecret(reconstructed);
@@ -787,12 +793,32 @@ export function useSyncKeys() {
       setRecoveryState((s) => ({ ...s, step: "recovering" }));
 
       const userWithBackup = await getUserWithBackup(userId);
-      if (!userWithBackup?.master_secret_hash) return false;
+      if (!userWithBackup?.master_secret_hash) {
+        try {
+          const { sileo } = await import("sileo");
+          sileo.error({
+            title: t("noBackup"),
+            description: t("noBackupDesc"),
+            duration: 5000,
+          });
+        } catch { /* sileo not available in tests */ }
+        return false;
+      }
 
       serverShareAttemptedRef.current = false;
       try { sessionStorage.removeItem("hp_server_share_attempted"); } catch { /* ignore */ }
       const share2 = await fetchServerShare();
-      if (!share2) return false;
+      if (!share2) {
+        try {
+          const { sileo } = await import("sileo");
+          sileo.error({
+            title: t("noServerShare"),
+            description: t("noServerShareDesc"),
+            duration: 5000,
+          });
+        } catch { /* sileo not available in tests */ }
+        return false;
+      }
 
       // Decode recovery code to share3 bytes, then to hex string
       const { decodeRecoveryCode } = await import("@/services/encryption/recovery-code");
@@ -806,7 +832,17 @@ export function useSyncKeys() {
         share3,
         userWithBackup.master_secret_hash
       );
-      if (!result) return false;
+      if (!result) {
+        try {
+          const { sileo } = await import("sileo");
+          sileo.error({
+            title: t("reconstructFailed"),
+            description: t("reconstructFailedDesc"),
+            duration: 5000,
+          });
+        } catch { /* sileo not available in tests */ }
+        return false;
+      }
 
       // Generate new share1 for this device
       const { generateShares } = await import("@/services/encryption/sss");
@@ -899,6 +935,14 @@ export function useSyncKeys() {
         recoveryCode,
         step: "show_recovery_code",
       });
+      try {
+        const { sileo } = await import("sileo");
+        sileo.success({
+          title: t("regenerateSuccess"),
+          description: t("regenerateSuccessDesc"),
+          duration: 5000,
+        });
+      } catch { /* sileo not available in tests */ }
       return true;
     } catch (e) {
       console.error("[useSyncKeys] regenerateKeys failed:", e);
@@ -910,6 +954,14 @@ export function useSyncKeys() {
       try {
         await deleteKeyPair(userId);
       } catch { /* ignore */ }
+      try {
+        const { sileo } = await import("sileo");
+        sileo.error({
+          title: t("regenerateFailed"),
+          description: t("regenerateFailedDesc"),
+          duration: 5000,
+        });
+      } catch { /* sileo not available in tests */ }
       return false;
     }
   };

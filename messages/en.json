@@ -1018,7 +1018,15 @@
     "recoverySuccess": "Keys restored successfully",
     "recoverySuccessDesc": "Your encryption keys have been restored. You can now access your encrypted documents.",
     "recoveryFailed": "Failed to restore keys",
-    "recoveryFailedDesc": "An error occurred while restoring your keys. Please try again or contact support."
+    "recoveryFailedDesc": "An error occurred while restoring your keys. Please try again or contact support.",
+    "noServerShare": "Server backup not found",
+    "noServerShareDesc": "No server-side share was found for your account. You may need to generate new keys.",
+    "reconstructFailed": "Recovery verification failed",
+    "reconstructFailedDesc": "The recovery code could not verify your keys. Please check the code and try again.",
+    "regenerateSuccess": "New keys generated",
+    "regenerateSuccessDesc": "Your new encryption keys have been created. Save your recovery code to avoid losing access.",
+    "regenerateFailed": "Failed to generate keys",
+    "regenerateFailedDesc": "An error occurred while generating new keys. Please try again."
   },
   "onboardingTour": {
     "buttons": {

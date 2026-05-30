@@ -1018,7 +1018,15 @@
     "recoverySuccess": "Claves restauradas exitosamente",
     "recoverySuccessDesc": "Tus claves de cifrado han sido restauradas. Ahora puedes acceder a tus documentos cifrados.",
     "recoveryFailed": "Error al restaurar claves",
-    "recoveryFailedDesc": "Ocurrió un error al restaurar tus claves. Por favor intenta de nuevo o contacta a soporte."
+    "recoveryFailedDesc": "Ocurrió un error al restaurar tus claves. Por favor intenta de nuevo o contacta a soporte.",
+    "noServerShare": "Respaldo del servidor no encontrado",
+    "noServerShareDesc": "No se encontró un share del lado del servidor para tu cuenta. Es posible que necesites generar nuevas claves.",
+    "reconstructFailed": "Verificación de recuperación fallida",
+    "reconstructFailedDesc": "El código de recuperación no pudo verificar tus claves. Por favor revisa el código e intenta de nuevo.",
+    "regenerateSuccess": "Nuevas claves generadas",
+    "regenerateSuccessDesc": "Tus nuevas claves de cifrado han sido creadas. Guarda tu código de recuperación para evitar perder el acceso.",
+    "regenerateFailed": "Error al generar claves",
+    "regenerateFailedDesc": "Ocurrió un error al generar nuevas claves. Por favor intenta de nuevo."
   },
   "onboardingTour": {
     "buttons": {
