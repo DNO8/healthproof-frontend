@@ -46,32 +46,17 @@ export async function saveKeyPair(
     schemeVersion?: number;
   },
 ): Promise<void> {
+  // Pre-encrypt share1 so the IndexedDB transaction and its put()
+  // happen synchronously inside the same execution block.
+  let encryptedShare1: string | undefined;
+  if (opts?.share1) {
+    encryptedShare1 = await encryptShare1(opts.share1, userId);
+  }
+
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
-
-    let share1 = opts?.share1;
-    if (share1) {
-      // Encrypt share1 before storing (async, but we can fire-and-forget
-      // inside the promise chain). To keep the IndexedDB API sync-friendly,
-      // we encrypt upfront.
-      encryptShare1(share1, userId).then((encrypted) => {
-        const record: StoredKeyPair = {
-          userId,
-          privateKey: keyPair.privateKey,
-          publicKey: keyPair.publicKey,
-          createdAt: new Date().toISOString(),
-          ...opts,
-          share1: encrypted,
-        };
-        const putReq = store.put(record);
-        putReq.onsuccess = () => resolve();
-        putReq.onerror = () => reject(putReq.error);
-        tx.oncomplete = () => db.close();
-      }).catch(reject);
-      return;
-    }
 
     const record: StoredKeyPair = {
       userId,
@@ -79,12 +64,14 @@ export async function saveKeyPair(
       publicKey: keyPair.publicKey,
       createdAt: new Date().toISOString(),
       ...opts,
+      share1: encryptedShare1,
     };
 
     const request = store.put(record);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
     tx.oncomplete = () => db.close();
+    tx.onabort = () => reject(tx.error ?? new Error("Transaction aborted"));
   });
 }
 
