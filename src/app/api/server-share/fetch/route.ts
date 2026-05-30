@@ -91,12 +91,10 @@ export async function POST(request: Request) {
       /* ignore audit log failures */
     }
 
-    // Convert bytes to hex string (secrets.js-grempe format)
-    const shareHex = Array.from(shareBytes)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    // Decode bytes back to the original secrets.js-grempe share string
+    const share = new TextDecoder().decode(shareBytes);
 
-    return NextResponse.json({ share: shareHex });
+    return NextResponse.json({ share });
   } catch (error) {
     console.error("[server-share/fetch] Error:", error);
     return NextResponse.json(

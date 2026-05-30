@@ -12,21 +12,13 @@ async function saveServerShareHandler(
     throw new Error("Unauthorized: userId mismatch");
   }
 
-  // Validate share2 is a valid hex string
-  const hexPattern = /^[0-9a-fA-F]+$/;
-  if (!data.share2 || data.share2.length % 2 !== 0 || !hexPattern.test(data.share2)) {
-    throw new Error("Invalid share2: must be a valid hex string");
+  // Validate share2 is a non-empty string
+  if (!data.share2 || typeof data.share2 !== "string") {
+    throw new Error("Invalid share2: must be a non-empty string");
   }
 
-  // Convert hex string share to actual bytes before encryption
-  const hexToBytes = (hex: string): Uint8Array => {
-    const bytes = new Uint8Array(hex.length / 2);
-    for (let i = 0; i < bytes.length; i++) {
-      bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-    }
-    return bytes;
-  };
-  const shareBytes = hexToBytes(data.share2);
+  // Encode share2 as UTF-8 bytes (secrets.js-grempe shares are opaque strings)
+  const shareBytes = new TextEncoder().encode(data.share2);
 
   const encrypted = await encryptShareForServer(shareBytes);
 
