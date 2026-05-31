@@ -85,8 +85,12 @@ export async function batchRewrapForGrantee(opts: {
       });
 
       results.push({ documentId: secret.document_id, rewrapped });
-    } catch {
-      // Skip documents that can't be rewrapped
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `[batchRewrapForGrantee] skipping document ${secret.document_id}:`,
+        msg
+      );
       continue;
     }
   }

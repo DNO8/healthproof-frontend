@@ -15,24 +15,36 @@ const GATEWAY_URL = PINATA_GATEWAY.startsWith("http")
   ? PINATA_GATEWAY
   : `https://${PINATA_GATEWAY}`;
 
-async function fetchFromGateway(cid: string, timeoutMs = 30000): Promise<ArrayBuffer> {
-  const url = `${GATEWAY_URL}/ipfs/${cid}`;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) {
-      throw new Error(`Failed to fetch from IPFS: ${response.statusText}`);
+const FALLBACK_GATEWAYS = [
+  GATEWAY_URL,
+  "https://ipfs.io",
+  "https://cloudflare-ipfs.com",
+];
+
+async function fetchFromGateway(cid: string, timeoutMs = 15000): Promise<ArrayBuffer> {
+  const errors: string[] = [];
+
+  for (const gateway of FALLBACK_GATEWAYS) {
+    const url = `${gateway}/ipfs/${cid}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (response.ok) {
+        return await response.arrayBuffer();
+      }
+      errors.push(`${gateway}: HTTP ${response.status}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.push(`${gateway}: ${msg}`);
+    } finally {
+      clearTimeout(timer);
     }
-    return response.arrayBuffer();
-  } catch (err) {
-    if (err instanceof Error && err.name === "AbortError") {
-      throw new Error("IPFS fetch timed out. The file may no longer be available on the gateway.");
-    }
-    throw err;
-  } finally {
-    clearTimeout(timer);
   }
+
+  throw new Error(
+    `Failed to fetch from IPFS after ${FALLBACK_GATEWAYS.length} gateways. Errors: ${errors.join("; ")}`
+  );
 }
 
 export interface DecryptedResult {

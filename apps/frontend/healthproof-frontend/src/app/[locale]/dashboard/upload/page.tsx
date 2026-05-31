@@ -14,7 +14,6 @@ import { uploadHybridEncryptedFile } from "@/services/storage/upload";
 import { getKeyPair } from "@/services/encryption/keystore";
 import { exportPublicKey } from "@/services/encryption/ecdh";
 import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
-import { getDbUser } from "@/actions/auth/get-user";
 import { saveDocumentSecret } from "@/actions/documents/save-document-secret";
 import { registerDocumentOnChain } from "@/actions/documents/register-document-onchain";
 import { updateOrderStatusOnChain } from "@/actions/medical-orders/medical-orders-onchain";
@@ -81,29 +80,35 @@ export default function UploadPage() {
         file,
         labKeys.privateKey,
         [
-          { userId: labId, publicKeyJwk: labPubKeyJwk },
+          { userId: walletAddress!, publicKeyJwk: labPubKeyJwk },
           { userId: patientId.trim(), publicKeyJwk: patientPubKeyJwk },
         ],
       );
 
-      const labResult = await getDbUser({ idOrWallet: labId });
-      const labWallet = (labResult.success && labResult.data?.wallet_address) ? labResult.data.wallet_address : "";
+      // Normalize encrypted_keys to use lowercase wallet addresses
+      const normalizedEncryptedKeys: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(uploadResult.encryptedKeys)) {
+        const normalizedKey = key.startsWith("0x") ? key.toLowerCase() : key;
+        normalizedEncryptedKeys[normalizedKey] = value;
+      }
 
-      await saveDocumentSecret({
-        document_id: uploadResult.ipfs.cid,
-        file_name: file.name,
-        uploader_wallet: labWallet,
-        patient_wallet: patientId.trim(),
-        iv: uploadResult.iv,
-        encrypted_keys: uploadResult.encryptedKeys as Record<string, unknown>,
-        uploader_public_key: labPubKeyJwk,
-      });
-
+      // 1. Register on-chain FIRST — if this fails, no DB record is created
       await registerDocumentOnChain({
         cid: uploadResult.ipfs.cid,
         fileHash: uploadResult.fileHash,
         documentType: "MEDICAL_RESULT",
         patientWallet: patientId.trim(),
+      });
+
+      // 2. Save to DB only after on-chain success
+      await saveDocumentSecret({
+        document_id: uploadResult.ipfs.cid,
+        file_name: file.name,
+        uploader_wallet: walletAddress!,
+        patient_wallet: patientId.trim(),
+        iv: uploadResult.iv,
+        encrypted_keys: normalizedEncryptedKeys,
+        uploader_public_key: labPubKeyJwk,
       });
 
       // If linked to an order, update its status to COMPLETED (2) via meta-tx

@@ -48,12 +48,13 @@ export default function ScanPage() {
       if (isExpired(data)) {
         throw new Error(t("expiredQR"));
       }
-      // Warn if current wallet doesn't match QR grantee (cross-device wallet mismatch)
+      // Block if current wallet doesn't match QR grantee
       if (walletAddress && walletAddress.toLowerCase() !== data.payload.grantee_wallet.toLowerCase()) {
-        console.warn("[ScanPage] Wallet mismatch:", {
+        console.error("[ScanPage] Wallet mismatch:", {
           current: walletAddress,
           qrGrantee: data.payload.grantee_wallet,
         });
+        throw new Error(t("walletMismatch") ?? "This QR code is not intended for your wallet.");
       }
       console.log("[ScanPage] checking on-chain access...");
       const access = await checkAccessOnChain({
