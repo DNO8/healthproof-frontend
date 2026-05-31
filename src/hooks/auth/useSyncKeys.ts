@@ -366,8 +366,12 @@ export function useSyncKeys() {
 
     (async () => {
       try {
+        // Pass explicit token to bypass stale cookie when switching accounts
+        const rawToken = await getAccessToken().catch(() => undefined);
+        const privyToken = rawToken ?? undefined;
+
         const localExists = await hasKeyPair(userId);
-        const dbPk = await getUserPublicKey(userId);
+        const dbPk = await getUserPublicKey(userId, privyToken);
         const alreadySynced = sessionStorage.getItem(SYNCED_KEY);
 
         logFlow("sync:start", {
@@ -382,7 +386,7 @@ export function useSyncKeys() {
           return;
         }
 
-        const userWithBackup = await getUserWithBackup(userId);
+        const userWithBackup = await getUserWithBackup(userId, privyToken);
         const schemeVersion = userWithBackup?.scheme_version ?? 0;
         const wallet = userWithBackup?.wallet_address;
 
@@ -488,7 +492,7 @@ export function useSyncKeys() {
             // for cross-device support — but ONLY if they have no encrypted data.
             if (!userWithBackup?.server_share_ciphertext && walletAddress) {
               try {
-                const hasData = await hasEncryptedData(walletAddress);
+                const hasData = await hasEncryptedData(walletAddress, privyToken);
                 if (!hasData) {
                   console.warn("[useSyncKeys] No server share and no encrypted data — safe to regenerate");
                   setRecoveryState({
@@ -512,7 +516,7 @@ export function useSyncKeys() {
             logFlow("sync:case-B:key-mismatch", {
               hasEncryptedBackup: !!userWithBackup?.encrypted_private_key,
             });
-            const userWithBackupMismatch = await getUserWithBackup(userId);
+            const userWithBackupMismatch = await getUserWithBackup(userId, privyToken);
 
             // Step 1: Try silent auto-recovery from encrypted_private_key backup
             if (userWithBackupMismatch?.encrypted_private_key && userWithBackupMismatch?.public_key) {
@@ -876,7 +880,7 @@ export function useSyncKeys() {
 
         // ── Case E: No keys anywhere but data exists ──
         if (wallet) {
-          const hasData = await hasEncryptedData(wallet);
+          const hasData = await hasEncryptedData(wallet, privyToken);
           if (hasData) {
             setConflict("missing_local_keys");
             return;

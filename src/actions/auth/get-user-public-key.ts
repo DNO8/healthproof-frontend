@@ -5,9 +5,10 @@ import { requireAuth } from "@/lib/auth/privy-verify";
 
 export async function getUserPublicKey(
   idOrWallet: string,
+  _privyToken?: string,
 ): Promise<string | null> {
   try {
-    await requireAuth();
+    await requireAuth(_privyToken);
     const supabase = createAdminClient();
 
   // Try lookup by user ID first

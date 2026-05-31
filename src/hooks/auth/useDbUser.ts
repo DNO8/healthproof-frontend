@@ -46,7 +46,7 @@ export function clearDbUserCache() {
 }
 
 export function useDbUser() {
-  const { ready, authenticated, user } = usePrivy();
+  const { ready, authenticated, user, getAccessToken } = usePrivy();
   const userId = user?.id;
   const fetchedForRef = useRef<string | null>(null);
 
@@ -62,7 +62,14 @@ export function useDbUser() {
     inFlightRef.current = true;
     setLoading(true);
     try {
-      const result = await getDbUser({ idOrWallet: userId });
+      // Inject explicit token to bypass stale cookie when switching accounts
+      let payload: { idOrWallet: string; _privyToken?: string } = { idOrWallet: userId };
+      try {
+        const token = await getAccessToken();
+        if (token) payload = { ...payload, _privyToken: token };
+      } catch { /* ignore token errors */ }
+
+      const result = await getDbUser(payload);
       if (result.success && result.data) {
         setDbUser(result.data as unknown as DbUser);
         setCache(result.data as unknown as DbUser);
@@ -73,7 +80,7 @@ export function useDbUser() {
       inFlightRef.current = false;
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, getAccessToken]);
 
   useEffect(() => {
     if (!ready || !authenticated || !userId) {

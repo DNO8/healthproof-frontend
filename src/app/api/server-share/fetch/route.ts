@@ -31,10 +31,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify JWT signature against Privy JWKS
+    // Verify JWT signature against Privy JWKS (use header token, not cookie)
     let payload: JWTPayload;
     try {
-      payload = await verifyPrivyToken();
+      payload = await verifyPrivyToken(privyToken);
     } catch (verifyErr) {
       console.error("[server-share/fetch] JWT verification failed");
       return NextResponse.json(
