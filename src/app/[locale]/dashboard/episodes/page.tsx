@@ -192,10 +192,36 @@ export default function EpisodesPage() {
       const doctorAddress = (await viemWallet.getAddresses())[0];
       if (!doctorAddress) throw new Error("No wallet address");
 
+      // Pre-validate: fetch episode on-chain before sending meta-tx
       const episodeIdBytes =
         id.startsWith("0x") && id.length === 66
           ? (id as `0x${string}`)
           : keccak256(toHex(id));
+
+      const lookupRes = await getEpisodeOnChain({ episodeId: id });
+      console.log("[handleClose] Pre-validation lookup:", lookupRes);
+
+      if (!lookupRes.success || !lookupRes.data) {
+        sileo.error({ title: t("closeError"), description: t("notFound") });
+        setLoading(false);
+        return;
+      }
+
+      const ep = lookupRes.data;
+      if (!ep.active) {
+        sileo.error({ title: t("closeError"), description: t("alreadyClosed") });
+        setLoading(false);
+        return;
+      }
+
+      if (ep.openedBy.toLowerCase() !== doctorAddress.toLowerCase()) {
+        sileo.error({
+          title: t("closeError"),
+          description: t("notOwner", { openedBy: truncateAddress(ep.openedBy) }),
+        });
+        setLoading(false);
+        return;
+      }
 
       const request = await signGatewayMetaTx(
         viemWallet,
