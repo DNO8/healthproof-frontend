@@ -686,40 +686,22 @@ export function useSyncKeys() {
                   true,
                   []
                 );
-                // Reconstruct SSS shares for this device so recovery code remains valid
-                const masterSecret = encoder.encode(JSON.stringify(privJwk));
-                const shares = generateShares(masterSecret, 2, 3);
-                const [share1, share2, share3] = shares;
-                const masterHash = await hashMasterSecret(masterSecret);
-                const recoveryCode = encodeRecoveryCode(hexToBytes(share3));
-                const recoveryHash = await hashRecoveryCode(recoveryCode);
+                // Auto-recovery: just import the keypair from backup.
+                // Do NOT regenerate SSS shares or call saveKeyBackupBundle —
+                // the user's existing recovery code and server share2 remain valid.
                 await saveKeyPair(userId, { privateKey, publicKey }, {
-                  share1,
-                  masterSecretHash: masterHash,
+                  masterSecretHash: userWithBackup.master_secret_hash ?? undefined,
                   schemeVersion: 2,
                 });
-                assertOk(await saveKeyBackupBundle(await withPrivyToken({
-                  userId,
-                  share2,
-                  recoveryCodeHash: recoveryHash,
-                  masterSecretHash: masterHash,
-                  publicKey: JSON.stringify(pubJwk),
-                })), "saveKeyBackupBundle");
                 sessionStorage.setItem(SYNCED_KEY, userId);
                 clearConflict();
-                setRecoveryState({
-                  needsRecoveryCode: true,
-                  needsRegeneration: false,
-                  recoveryCode,
-                  step: "show_recovery_code",
-                });
-                logFlow("sync:case-C:auto-recovery:success", { source: "encrypted-private-key", hasNewRecoveryCode: true });
+                logFlow("sync:case-C:auto-recovery:success", { source: "encrypted-private-key" });
                 try {
                   const { sileo } = await import("sileo");
                   sileo.success({
                     title: t("recoverySuccess"),
-                    description: t("recoveryCodeUpdatedDesc"),
-                    duration: 8000,
+                    description: t("recoverySuccess"),
+                    duration: 5000,
                   });
                 } catch {
                   /* sileo not available in tests */
