@@ -659,6 +659,19 @@ export function useSyncKeys() {
               try {
                 const privJwk = JSON.parse(decrypted) as JsonWebKey;
                 const pubJwk = JSON.parse(userWithBackup.public_key) as JsonWebKey;
+
+                // Defensive: verify encrypted_private_key matches current master_secret_hash
+                const encoder = new TextEncoder();
+                const backupMasterSecret = encoder.encode(JSON.stringify(privJwk));
+                const backupHash = await hashMasterSecret(backupMasterSecret);
+                if (backupHash !== userWithBackup.master_secret_hash) {
+                  logFlow("sync:case-C:auto-recovery:hash-mismatch", {
+                    backupHashPrefix: backupHash.slice(0, 16),
+                    dbHashPrefix: userWithBackup.master_secret_hash?.slice(0, 16),
+                  });
+                  throw new Error("encrypted_private_key does not match current master_secret_hash");
+                }
+
                 const privateKey = await crypto.subtle.importKey(
                   "jwk",
                   privJwk,
@@ -674,7 +687,6 @@ export function useSyncKeys() {
                   []
                 );
                 // Reconstruct SSS shares for this device so recovery code remains valid
-                const encoder = new TextEncoder();
                 const masterSecret = encoder.encode(JSON.stringify(privJwk));
                 const shares = generateShares(masterSecret, 2, 3);
                 const [share1, share2, share3] = shares;
@@ -1130,6 +1142,11 @@ export function useSyncKeys() {
         masterSecretHash: masterHash,
         publicKey: publicKeyJwk,
       })), "saveKeyBackupBundle");
+
+      // Update encrypted_private_key backup so cross-device recovery stays in sync
+      const privJwkStr = new TextDecoder().decode(masterSecret);
+      const encryptedPriv = await encryptPrivateKeyV2(privJwkStr, userId);
+      assertOk(await saveEncryptedPrivateKey(await withPrivyToken({ id: userId, encrypted_private_key: encryptedPriv })), "saveEncryptedPrivateKey");
 
       sessionStorage.setItem(SYNCED_KEY, userId);
       clearConflict();
