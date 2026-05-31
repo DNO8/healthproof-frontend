@@ -27,11 +27,20 @@ export interface UserWithBackup {
  * Get user data including encrypted private key backup.
  * Used for key recovery when IndexedDB is empty.
  * Restricted to the authenticated user only (HIPAA access control).
+ *
+ * @param idOrWallet - User ID or wallet address to look up.
+ * @param _privyToken - Optional explicit Privy token (bypasses stale cookie issues).
  */
 export async function getUserWithBackup(
   idOrWallet: string,
+  _privyToken?: string,
 ): Promise<UserWithBackup | null> {
-  await verifySelf(idOrWallet);
+  try {
+    await verifySelf(idOrWallet, _privyToken);
+  } catch (authErr) {
+    console.warn("[getUserWithBackup] auth failed:", authErr instanceof Error ? authErr.message : authErr);
+    return null;
+  }
 
   try {
   const supabase = createAdminClient();

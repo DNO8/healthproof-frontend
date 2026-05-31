@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { usePrivy } from "@privy-io/react-auth";
 import { getRoleOnChain } from "@/actions/healthcare-networks/register-entity-onchain";
 import { CONTRACT_TO_ROLE, type UserRole } from "@/types/domain.types";
 
@@ -48,6 +49,7 @@ export function useOnChainRole(walletAddress: string | null | undefined) {
   const [loading, setLoading] = useState(true);
   const inFlightRef = useRef(false);
   const fetchedForRef = useRef<Set<string>>(new Set());
+  const { getAccessToken } = usePrivy();
 
   const refetch = useCallback(async () => {
     if (!walletAddress) {
@@ -74,7 +76,11 @@ export function useOnChainRole(walletAddress: string | null | undefined) {
 
     setLoading(true);
     try {
-      const result = await getRoleOnChain({ wallet: walletAddress });
+      const token = await getAccessToken().catch(() => null);
+      const result = await getRoleOnChain({
+        wallet: walletAddress,
+        ...(token ? { _privyToken: token } : {}),
+      });
       if (result.success) {
         const contractRole = result.data;
         const resolved =
@@ -93,7 +99,7 @@ export function useOnChainRole(walletAddress: string | null | undefined) {
       inFlightRef.current = false;
       setLoading(false);
     }
-  }, [walletAddress]);
+  }, [walletAddress, getAccessToken]);
 
   useEffect(() => {
     refetch();

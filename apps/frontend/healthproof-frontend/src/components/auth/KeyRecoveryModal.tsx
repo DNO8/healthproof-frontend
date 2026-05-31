@@ -26,7 +26,7 @@ export function KeyRecoveryModal({
   onSuccess,
 }: KeyRecoveryModalProps) {
   const t = useTranslations("keyRecovery");
-  const { user } = usePrivy();
+  const { user, getAccessToken } = usePrivy();
   const clearConflict = useKeyConflictStore((s) => s.clearConflict);
 
   const [password, setPassword] = useState("");
@@ -66,7 +66,8 @@ export function KeyRecoveryModal({
     setLoading(true);
 
     try {
-      const userWithBackup = await getUserWithBackup(userId!);
+      const token = (await getAccessToken().catch(() => null)) ?? undefined;
+      const userWithBackup = await getUserWithBackup(userId!, token);
 
       if (!userWithBackup?.encrypted_private_key) {
         sileo.error({
