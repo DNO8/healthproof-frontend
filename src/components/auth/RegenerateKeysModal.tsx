@@ -22,12 +22,16 @@ export function RegenerateKeysModal({ onRegenerate, onDismiss, onSwitchToRecover
     if (!canRegenerate) return;
     setLoading(true);
     setError(null);
-    const ok = await onRegenerate();
-    if (!ok) {
+    try {
+      const ok = await onRegenerate();
+      if (!ok) {
+        setError(t("error"));
+      }
+    } catch {
       setError(t("error"));
+    } finally {
       setLoading(false);
     }
-    // If ok, useSyncKeys will show the recovery code modal automatically
   };
 
   return (
