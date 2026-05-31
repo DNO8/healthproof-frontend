@@ -241,6 +241,11 @@
         "internalType": "address",
         "name": "lab",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "patient",
+        "type": "address"
       }
     ],
     "name": "assignLab",
@@ -736,6 +741,11 @@
         "internalType": "enum MedicalOrderRegistry.OrderStatus",
         "name": "status",
         "type": "uint8"
+      },
+      {
+        "internalType": "address",
+        "name": "updater",
+        "type": "address"
       }
     ],
     "name": "updateStatus",
