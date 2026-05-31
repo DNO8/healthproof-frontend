@@ -17,8 +17,7 @@ export function SecuritySection({ userId }: SecuritySectionProps) {
   const [hasServerShare, setHasServerShare] = useState(false);
   const [hasBackup, setHasBackup] = useState(false);
   const [hasLocalShare1, setHasLocalShare1] = useState(false);
-  const [regenerating, setRegenerating] = useState(false);
-
+  const requestRegenerate = useKeyConflictStore((s) => s.requestRegenerate);
   const setRequestRegenerate = useKeyConflictStore((s) => s.setRequestRegenerate);
 
   useEffect(() => {
@@ -57,7 +56,6 @@ export function SecuritySection({ userId }: SecuritySectionProps) {
   }, [userId]);
 
   const handleRegenerate = () => {
-    setRegenerating(true);
     setRequestRegenerate(true);
     // The RegenerateKeysModal in providers.tsx will pick this up automatically
   };
@@ -111,10 +109,10 @@ export function SecuritySection({ userId }: SecuritySectionProps) {
           <button
             type="button"
             onClick={handleRegenerate}
-            disabled={regenerating}
+            disabled={requestRegenerate}
             className="flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-50"
           >
-            {regenerating ? (
+            {requestRegenerate ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <RefreshCw className="h-4 w-4" />

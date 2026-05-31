@@ -39,11 +39,19 @@ function PrivyTokenSync({ children }: { children: React.ReactNode }) {
   const setRequestRegenerate = useKeyConflictStore((s) => s.setRequestRegenerate);
 
   const showRecoveryInput = recoveryState.step === "needs_input" || forceRecoveryInput;
-  const showRegenerate = (recoveryState.needsRegeneration || requestRegenerate) && !forceRecoveryInput;
+  const showRegenerate = (recoveryState.needsRegeneration || requestRegenerate) && !forceRecoveryInput && recoveryState.step !== "show_recovery_code";
 
   const handleDismissRegenerate = () => {
     setRequestRegenerate(false);
     dismissRecoveryCode();
+  };
+
+  const handleRegenerate = async () => {
+    const ok = await regenerateKeys();
+    if (ok) {
+      setRequestRegenerate(false);
+    }
+    return ok;
   };
 
   return (
@@ -67,7 +75,7 @@ function PrivyTokenSync({ children }: { children: React.ReactNode }) {
       )}
       {showRegenerate && (
         <RegenerateKeysModal
-          onRegenerate={regenerateKeys}
+          onRegenerate={handleRegenerate}
           onDismiss={handleDismissRegenerate}
           onSwitchToRecovery={() => setForceRecoveryInput(true)}
         />
