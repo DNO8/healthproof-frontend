@@ -684,6 +684,8 @@
       "openError": "Failed to open episode",
       "closeSuccess": "Episode closed",
       "closeError": "Failed to close episode",
+      "alreadyClosed": "This episode is already closed",
+      "notOwner": "Only the doctor who opened this episode can close it (opened by {openedBy})",
       "lookupError": "Lookup failed",
       "notFound": "Episode not found",
       "notFoundDesc": "No episode found with that ID.",

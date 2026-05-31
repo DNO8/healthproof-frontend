@@ -683,6 +683,8 @@
       "openError": "Error al abrir episodio",
       "closeSuccess": "Episodio cerrado",
       "closeError": "Error al cerrar episodio",
+      "alreadyClosed": "Este episodio ya está cerrado",
+      "notOwner": "Solo el doctor que abrió este episodio puede cerrarlo (abierto por {openedBy})",
       "createAnother": "Crear Otro",
       "lookupError": "Error en la consulta",
       "notFound": "Episodio no encontrado",
