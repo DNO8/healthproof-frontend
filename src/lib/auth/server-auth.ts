@@ -1,4 +1,5 @@
 import { decodeJwt } from "jose";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const PRIVY_TOKEN_COOKIE = "privy-token";
 
@@ -6,6 +7,39 @@ export interface AuthContext {
   userId: string;
   wallet: string;
   token: string;
+}
+
+function extractWalletFromJwt(decoded: Record<string, unknown>): string | undefined {
+  // 1. Custom claim (configured in Privy dashboard)
+  const custom = (decoded.custom as Record<string, unknown>) ?? {};
+  const fromCustom = custom.wallet_address as string | undefined;
+  if (fromCustom) return fromCustom;
+
+  // 2. Top-level claim
+  const fromTop = decoded.wallet_address as string | undefined;
+  if (fromTop) return fromTop;
+
+  // 3. linked_accounts array (Privy embeds wallets here)
+  const linked = decoded.linked_accounts as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(linked)) {
+    for (const acc of linked) {
+      if (acc.type === "wallet" && typeof acc.address === "string" && acc.address) {
+        return acc.address as string;
+      }
+      // Some Privy tokens nest address under "wallet" or "embedded_wallet"
+      if (typeof acc.address === "string" && acc.address.startsWith("0x")) {
+        return acc.address;
+      }
+    }
+  }
+
+  // 4. embedded_wallet claim
+  const embedded = decoded.embedded_wallet as Record<string, unknown> | undefined;
+  if (embedded && typeof embedded.address === "string") {
+    return embedded.address;
+  }
+
+  return undefined;
 }
 
 /**
@@ -49,16 +83,34 @@ export async function verifyPrivyAuth(privyToken?: string): Promise<AuthContext>
     throw new AuthError("Invalid or expired authentication", 401);
   }
 
-  // Extract wallet from custom metadata or fallback
-  const custom = (decoded.custom as Record<string, unknown>) ?? {};
-  const walletAddress =
-    (custom.wallet_address as string) ??
-    (decoded.wallet_address as string) ??
-    "";
+  // Extract wallet from JWT claims
+  let walletAddress = extractWalletFromJwt(decoded);
+
+  // Fallback: lookup wallet from Supabase if not present in token
+  if (!walletAddress) {
+    try {
+      const supabase = createAdminClient();
+      const { data, error } = await supabase
+        .from("users")
+        .select("wallet_address")
+        .eq("id", userId)
+        .single();
+      if (!error && data?.wallet_address) {
+        walletAddress = data.wallet_address as string;
+        console.log("[server-auth] Wallet resolved from Supabase for", userId);
+      }
+    } catch (lookupErr) {
+      console.warn("[server-auth] Supabase wallet lookup failed:", lookupErr);
+    }
+  }
+
+  if (!walletAddress) {
+    console.warn("[server-auth] No wallet found in token or DB for user", userId);
+  }
 
   return {
     userId,
-    wallet: typeof walletAddress === "string" ? walletAddress.toLowerCase() : "",
+    wallet: walletAddress ? walletAddress.toLowerCase() : "",
     token,
   };
 }
