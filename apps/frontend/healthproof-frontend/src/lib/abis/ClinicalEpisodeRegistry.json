@@ -211,6 +211,11 @@
         "internalType": "bytes32",
         "name": "episodeId",
         "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "doctor",
+        "type": "address"
       }
     ],
     "name": "closeEpisode",

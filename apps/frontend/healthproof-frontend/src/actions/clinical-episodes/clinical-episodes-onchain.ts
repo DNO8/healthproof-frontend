@@ -83,6 +83,48 @@ async function closeEpisodeHandler(
     throw new Error("Signer mismatch: request.from != authenticated wallet");
   }
 
+  // Pre-check: log episode state on-chain before attempting close
+  const publicClient = createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() });
+  const episodeIdBytes =
+    data.episodeId.startsWith("0x") && data.episodeId.length === 66
+      ? (data.episodeId as `0x${string}`)
+      : keccak256(toHex(data.episodeId));
+
+  try {
+    const epResult = await publicClient.readContract({
+      address: CONTRACT_ADDRESSES.ClinicalEpisodeRegistry as `0x${string}`,
+      abi: ClinicalEpisodeRegistryAbi,
+      functionName: "getEpisode",
+      args: [episodeIdBytes],
+    });
+    const ep = epResult as {
+      patient: string;
+      openedBy: string;
+      institution: string;
+      episodeType: `0x${string}`;
+      classification: `0x${string}`;
+      openedAt: bigint;
+      active: boolean;
+    };
+    console.log("[closeEpisodeHandler] On-chain episode state:", {
+      openedAt: Number(ep.openedAt),
+      active: ep.active,
+      openedBy: ep.openedBy,
+      patient: ep.patient,
+    });
+    if (Number(ep.openedAt) === 0) {
+      console.error("[closeEpisodeHandler] Episode does not exist on-chain (openedAt === 0)");
+    } else if (!ep.active) {
+      console.error("[closeEpisodeHandler] Episode already closed (active === false)");
+    } else if (ep.openedBy.toLowerCase() !== auth.wallet.toLowerCase()) {
+      console.error(
+        "[closeEpisodeHandler] Caller is not the episode opener. openedBy:", ep.openedBy, "caller:", auth.wallet
+      );
+    }
+  } catch (preErr) {
+    console.error("[closeEpisodeHandler] Pre-check getEpisode failed:", preErr);
+  }
+
   const result = await executeForwardRequest(data.request);
   console.log("[closeEpisodeHandler] executeForwardRequest result:", result);
   if (!result.success) {

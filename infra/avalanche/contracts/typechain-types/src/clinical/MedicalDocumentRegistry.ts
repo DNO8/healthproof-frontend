@@ -28,6 +28,7 @@ export interface MedicalDocumentRegistryInterface extends Interface {
     nameOrSignature:
       | "UPGRADE_INTERFACE_VERSION"
       | "documents"
+      | "gateway"
       | "identityRegistry"
       | "initialize"
       | "isTrustedForwarder"
@@ -35,6 +36,7 @@ export interface MedicalDocumentRegistryInterface extends Interface {
       | "proxiableUUID"
       | "registerDocument"
       | "renounceOwnership"
+      | "setGateway"
       | "transferOwnership"
       | "trustedForwarder"
       | "upgradeToAndCall"
@@ -56,6 +58,7 @@ export interface MedicalDocumentRegistryInterface extends Interface {
     functionFragment: "documents",
     values: [BytesLike]
   ): string;
+  encodeFunctionData(functionFragment: "gateway", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "identityRegistry",
     values?: undefined
@@ -84,12 +87,17 @@ export interface MedicalDocumentRegistryInterface extends Interface {
       BytesLike,
       string,
       BytesLike,
-      BytesLike
+      BytesLike,
+      AddressLike
     ]
   ): string;
   encodeFunctionData(
     functionFragment: "renounceOwnership",
     values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setGateway",
+    values: [AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "transferOwnership",
@@ -109,6 +117,7 @@ export interface MedicalDocumentRegistryInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "documents", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "gateway", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "identityRegistry",
     data: BytesLike
@@ -131,6 +140,7 @@ export interface MedicalDocumentRegistryInterface extends Interface {
     functionFragment: "renounceOwnership",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "setGateway", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "transferOwnership",
     data: BytesLike
@@ -279,6 +289,8 @@ export interface MedicalDocumentRegistry extends BaseContract {
     "view"
   >;
 
+  gateway: TypedContractMethod<[], [string], "view">;
+
   identityRegistry: TypedContractMethod<[], [string], "view">;
 
   initialize: TypedContractMethod<
@@ -307,13 +319,20 @@ export interface MedicalDocumentRegistry extends BaseContract {
       episodeId: BytesLike,
       cid: string,
       standard: BytesLike,
-      classification: BytesLike
+      classification: BytesLike,
+      issuer: AddressLike
     ],
     [void],
     "nonpayable"
   >;
 
   renounceOwnership: TypedContractMethod<[], [void], "nonpayable">;
+
+  setGateway: TypedContractMethod<
+    [_gateway: AddressLike],
+    [void],
+    "nonpayable"
+  >;
 
   transferOwnership: TypedContractMethod<
     [newOwner: AddressLike],
@@ -368,6 +387,9 @@ export interface MedicalDocumentRegistry extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "gateway"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
     nameOrSignature: "identityRegistry"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
@@ -398,7 +420,8 @@ export interface MedicalDocumentRegistry extends BaseContract {
       episodeId: BytesLike,
       cid: string,
       standard: BytesLike,
-      classification: BytesLike
+      classification: BytesLike,
+      issuer: AddressLike
     ],
     [void],
     "nonpayable"
@@ -406,6 +429,9 @@ export interface MedicalDocumentRegistry extends BaseContract {
   getFunction(
     nameOrSignature: "renounceOwnership"
   ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "setGateway"
+  ): TypedContractMethod<[_gateway: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "transferOwnership"
   ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;

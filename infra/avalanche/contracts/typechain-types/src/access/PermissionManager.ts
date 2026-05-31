@@ -52,6 +52,7 @@ export interface PermissionManagerInterface extends Interface {
     nameOrSignature:
       | "UPGRADE_INTERFACE_VERSION"
       | "emergencyManager"
+      | "gateway"
       | "getPermissions"
       | "grantPermission"
       | "guardianRegistry"
@@ -64,6 +65,7 @@ export interface PermissionManagerInterface extends Interface {
       | "renounceOwnership"
       | "revokePermission"
       | "setEmergencyAccessManager"
+      | "setGateway"
       | "transferOwnership"
       | "trustedForwarder"
       | "upgradeToAndCall"
@@ -86,13 +88,21 @@ export interface PermissionManagerInterface extends Interface {
     functionFragment: "emergencyManager",
     values?: undefined
   ): string;
+  encodeFunctionData(functionFragment: "gateway", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "getPermissions",
     values: [AddressLike, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "grantPermission",
-    values: [AddressLike, AddressLike, BigNumberish, BytesLike, BigNumberish]
+    values: [
+      AddressLike,
+      AddressLike,
+      BigNumberish,
+      BytesLike,
+      BigNumberish,
+      AddressLike
+    ]
   ): string;
   encodeFunctionData(
     functionFragment: "guardianRegistry",
@@ -125,10 +135,14 @@ export interface PermissionManagerInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "revokePermission",
-    values: [AddressLike, AddressLike]
+    values: [AddressLike, AddressLike, AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "setEmergencyAccessManager",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setGateway",
     values: [AddressLike]
   ): string;
   encodeFunctionData(
@@ -152,6 +166,7 @@ export interface PermissionManagerInterface extends Interface {
     functionFragment: "emergencyManager",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "gateway", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getPermissions",
     data: BytesLike
@@ -191,6 +206,7 @@ export interface PermissionManagerInterface extends Interface {
     functionFragment: "setEmergencyAccessManager",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "setGateway", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "transferOwnership",
     data: BytesLike
@@ -320,6 +336,8 @@ export interface PermissionManager extends BaseContract {
 
   emergencyManager: TypedContractMethod<[], [string], "view">;
 
+  gateway: TypedContractMethod<[], [string], "view">;
+
   getPermissions: TypedContractMethod<
     [patient: AddressLike, offset: BigNumberish, limit: BigNumberish],
     [
@@ -337,7 +355,8 @@ export interface PermissionManager extends BaseContract {
       grantee: AddressLike,
       scope: BigNumberish,
       resourceId: BytesLike,
-      expiresAt: BigNumberish
+      expiresAt: BigNumberish,
+      actor: AddressLike
     ],
     [void],
     "nonpayable"
@@ -382,13 +401,19 @@ export interface PermissionManager extends BaseContract {
   renounceOwnership: TypedContractMethod<[], [void], "nonpayable">;
 
   revokePermission: TypedContractMethod<
-    [patient: AddressLike, grantee: AddressLike],
+    [patient: AddressLike, grantee: AddressLike, actor: AddressLike],
     [void],
     "nonpayable"
   >;
 
   setEmergencyAccessManager: TypedContractMethod<
     [emergencyAddress: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  setGateway: TypedContractMethod<
+    [_gateway: AddressLike],
     [void],
     "nonpayable"
   >;
@@ -418,6 +443,9 @@ export interface PermissionManager extends BaseContract {
     nameOrSignature: "emergencyManager"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
+    nameOrSignature: "gateway"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
     nameOrSignature: "getPermissions"
   ): TypedContractMethod<
     [patient: AddressLike, offset: BigNumberish, limit: BigNumberish],
@@ -437,7 +465,8 @@ export interface PermissionManager extends BaseContract {
       grantee: AddressLike,
       scope: BigNumberish,
       resourceId: BytesLike,
-      expiresAt: BigNumberish
+      expiresAt: BigNumberish,
+      actor: AddressLike
     ],
     [void],
     "nonpayable"
@@ -487,13 +516,16 @@ export interface PermissionManager extends BaseContract {
   getFunction(
     nameOrSignature: "revokePermission"
   ): TypedContractMethod<
-    [patient: AddressLike, grantee: AddressLike],
+    [patient: AddressLike, grantee: AddressLike, actor: AddressLike],
     [void],
     "nonpayable"
   >;
   getFunction(
     nameOrSignature: "setEmergencyAccessManager"
   ): TypedContractMethod<[emergencyAddress: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "setGateway"
+  ): TypedContractMethod<[_gateway: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "transferOwnership"
   ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;

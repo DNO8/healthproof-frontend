@@ -11,6 +11,8 @@
     "deploy:healthproof:local": "hardhat run scripts/deployHealthProof.ts --network localhost",
     "deploy:hygieia": "hardhat run deploy/deploy.ts --network hygieia",
     "deploy:local": "hardhat run deploy/deploy.ts --network localhost",
+    "upgrade:hardening": "hardhat run scripts/upgradeHardened.ts",
+    "upgrade:hardening:hygieia": "hardhat run scripts/upgradeHardened.ts --network hygieia",
     "clean": "hardhat clean"
   },
   "devDependencies": {

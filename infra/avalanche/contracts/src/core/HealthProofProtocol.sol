@@ -51,7 +51,8 @@ contract HealthProofProtocol {
             bytes32(0),
             cid,
             standard,
-            classification
+            classification,
+            msg.sender
         );
 
         /// registrar evento en auditoría
@@ -79,7 +80,8 @@ contract HealthProofProtocol {
             grantee,
             scope,
             resourceId,
-            expiresAt
+            expiresAt,
+            msg.sender
         );
         auditTrail.logEvent(
             patient,
@@ -98,7 +100,8 @@ contract HealthProofProtocol {
     ) external {
         permissionManager.revokePermission(
             patient,
-            grantee
+            grantee,
+            msg.sender
         );
         auditTrail.logEvent(
             patient,

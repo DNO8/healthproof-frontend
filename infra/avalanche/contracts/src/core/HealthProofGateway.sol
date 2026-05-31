@@ -76,6 +76,25 @@ contract HealthProofGateway is ERC2771Context {
         _;
     }
 
+    modifier onlyVerifiedIssuer() {
+        address caller = _msgSender();
+        require(identityRegistry.isVerified(caller), "Caller not verified");
+        IdentityRegistry.Role r = identityRegistry.getRole(caller);
+        require(
+            r == IdentityRegistry.Role.LAB ||
+            r == IdentityRegistry.Role.DOCTOR ||
+            r == IdentityRegistry.Role.INSTITUTION,
+            "Caller must be LAB/DOCTOR/INSTITUTION"
+        );
+        _;
+    }
+
+    modifier onlyVerifiedActor(address actor) {
+        require(actor == _msgSender(), "Actor must be caller");
+        require(identityRegistry.isVerified(actor), "Actor not verified");
+        _;
+    }
+
     modifier authorizedForPatient(address patient) {
         address caller = _msgSender();
         require(
@@ -162,6 +181,7 @@ contract HealthProofGateway is ERC2771Context {
     )
         external
         notPaused
+        onlyVerifiedIssuer
     {
 
         address module = kernel.getModule(DOCUMENT_MODULE);
@@ -175,7 +195,8 @@ contract HealthProofGateway is ERC2771Context {
             episodeId,
             cid,
             standard,
-            classification
+            classification,
+            _msgSender()
         );
 
         emit MedicalDocumentRegistered(
@@ -196,6 +217,7 @@ contract HealthProofGateway is ERC2771Context {
     )
         external
         notPaused
+        authorizedForPatient(patient)
     {
 
         address module = kernel.getModule(PERMISSION_MODULE);
@@ -205,7 +227,8 @@ contract HealthProofGateway is ERC2771Context {
             grantee,
             PermissionManager.Scope(scope),
             resourceId,
-            expiresAt
+            expiresAt,
+            _msgSender()
         );
 
         emit AccessGranted(
@@ -214,6 +237,33 @@ contract HealthProofGateway is ERC2771Context {
             resourceId
         );
     }
+
+    function revokeAccess(
+        address patient,
+        address grantee
+    )
+        external
+        notPaused
+        authorizedForPatient(patient)
+    {
+        address module = kernel.getModule(PERMISSION_MODULE);
+
+        PermissionManager(module).revokePermission(
+            patient,
+            grantee,
+            _msgSender()
+        );
+
+        emit AccessRevoked(
+            patient,
+            grantee
+        );
+    }
+
+    event AccessRevoked(
+        address indexed patient,
+        address indexed grantee
+    );
 
     // ==========================================
     // PROXY FUNCTIONS for Issue 2.2 (previously inaccessible)
@@ -255,7 +305,7 @@ contract HealthProofGateway is ERC2771Context {
             "Destino no es laboratorio"
         );
 
-        MedicalOrderRegistry(module).assignLab(orderId, lab);
+        MedicalOrderRegistry(module).assignLab(orderId, lab, patient);
 
         emit LabAssignedViaGateway(orderId, lab, patient);
     }
@@ -269,6 +319,7 @@ contract HealthProofGateway is ERC2771Context {
     )
         external
         notPaused
+        onlyVerifiedActor(updater)
     {
         require(updater == _msgSender(), "Updater must be caller");
         
@@ -289,7 +340,8 @@ contract HealthProofGateway is ERC2771Context {
 
         MedicalOrderRegistry(module).updateStatus(
             orderId, 
-            MedicalOrderRegistry.OrderStatus(status)
+            MedicalOrderRegistry.OrderStatus(status),
+            updater
         );
 
         emit OrderStatusUpdatedViaGateway(orderId, status, updater);
@@ -303,6 +355,7 @@ contract HealthProofGateway is ERC2771Context {
     )
         external
         notPaused
+        onlyVerifiedDoctor(doctor)
     {
         require(doctor == _msgSender(), "Doctor must be caller");
         
@@ -318,7 +371,7 @@ contract HealthProofGateway is ERC2771Context {
             "Solo doctor creador puede cerrar"
         );
 
-        ClinicalEpisodeRegistry(module).closeEpisode(episodeId);
+        ClinicalEpisodeRegistry(module).closeEpisode(episodeId, doctor);
 
         emit EpisodeClosedViaGateway(episodeId, doctor);
     }

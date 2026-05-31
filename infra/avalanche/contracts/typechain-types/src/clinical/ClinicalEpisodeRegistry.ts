@@ -93,7 +93,7 @@ export interface ClinicalEpisodeRegistryInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "closeEpisode",
-    values: [BytesLike]
+    values: [BytesLike, AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "doctorEpisodes",
@@ -366,7 +366,7 @@ export interface ClinicalEpisodeRegistry extends BaseContract {
   UPGRADE_INTERFACE_VERSION: TypedContractMethod<[], [string], "view">;
 
   closeEpisode: TypedContractMethod<
-    [episodeId: BytesLike],
+    [episodeId: BytesLike, doctor: AddressLike],
     [void],
     "nonpayable"
   >;
@@ -481,7 +481,11 @@ export interface ClinicalEpisodeRegistry extends BaseContract {
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "closeEpisode"
-  ): TypedContractMethod<[episodeId: BytesLike], [void], "nonpayable">;
+  ): TypedContractMethod<
+    [episodeId: BytesLike, doctor: AddressLike],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "doctorEpisodes"
   ): TypedContractMethod<

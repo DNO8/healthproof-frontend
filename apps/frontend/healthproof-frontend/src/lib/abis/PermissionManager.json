@@ -285,6 +285,11 @@
           "internalType": "uint64",
           "name": "expiresAt",
           "type": "uint64"
+        },
+        {
+          "internalType": "address",
+          "name": "actor",
+          "type": "address"
         }
       ],
       "name": "grantPermission",
@@ -442,6 +447,11 @@
         {
           "internalType": "address",
           "name": "grantee",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "actor",
           "type": "address"
         }
       ],

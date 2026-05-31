@@ -15,11 +15,17 @@ contract MedicalDocumentRegistry is
 {
 
     IdentityRegistry public identityRegistry;
+    address public gateway;
 
     function initialize(address identityAddress, address forwarder) public initializer {
         __Ownable_init(msg.sender);
         __ERC2771Context_init(forwarder);
         identityRegistry = IdentityRegistry(identityAddress);
+    }
+
+    function setGateway(address _gateway) external onlyOwner {
+        require(_gateway != address(0), "Invalid gateway");
+        gateway = _gateway;
     }
 
     /// @dev Override _msgSender() to support ERC2771 meta-transactions
@@ -53,6 +59,21 @@ contract MedicalDocumentRegistry is
         address issuer
     );
 
+    /// @dev When called via Gateway, verifies the provided issuer has a medical role.
+    ///      When called directly, verifies the caller has a medical role.
+    modifier onlyMedicalIssuerOrGatewayActor(address issuer) {
+        address actor = (_msgSender() == gateway) ? issuer : _msgSender();
+        require(identityRegistry.isVerified(actor), "Issuer not verified");
+        IdentityRegistry.Role r = identityRegistry.getRole(actor);
+        require(
+            r == IdentityRegistry.Role.LAB ||
+            r == IdentityRegistry.Role.DOCTOR ||
+            r == IdentityRegistry.Role.INSTITUTION,
+            "Invalid issuer role"
+        );
+        _;
+    }
+
     function registerDocument(
         bytes32 documentId,
         address patient,
@@ -62,17 +83,13 @@ contract MedicalDocumentRegistry is
         bytes32 episodeId,
         string calldata cid,
         bytes32 standard,
-        bytes32 classification
-    ) external {
-
-        require(
-            identityRegistry.isVerified(_msgSender()),
-            "Emitter not verified"
-        );
+        bytes32 classification,
+        address issuer
+    ) external onlyMedicalIssuerOrGatewayActor(issuer) {
 
         documents[documentId] = MedicalDocument({
             patient: patient,
-            issuer: _msgSender(),
+            issuer: issuer,
             institution: institution,
             documentType: documentType,
             clinicalHash: clinicalHash,
@@ -86,7 +103,7 @@ contract MedicalDocumentRegistry is
         emit DocumentRegistered(
             documentId,
             patient,
-            _msgSender()
+            issuer
         );
     }
 

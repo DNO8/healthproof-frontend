@@ -36,10 +36,8 @@ contract MedicalOrderRegistry is
         return _erc2771MsgData();
     }
 
-    function setGateway(address _gateway) external {
-        require(gateway == address(0), "Gateway already set");
-        require(identityRegistry.getRole(_gateway) == IdentityRegistry.Role.DOCTOR || 
-                identityRegistry.isVerified(_gateway), "Invalid gateway");
+    function setGateway(address _gateway) external onlyOwner {
+        require(_gateway != address(0), "Invalid gateway");
         gateway = _gateway;
     }
 
@@ -107,6 +105,14 @@ contract MedicalOrderRegistry is
         _;
     }
 
+    modifier onlyVerifiedOrGateway() {
+        require(
+            identityRegistry.isVerified(_msgSender()) || _msgSender() == gateway,
+            "Entidad no verificada"
+        );
+        _;
+    }
+
     modifier onlyDoctor() {
         require(
             identityRegistry.getRole(_msgSender())
@@ -116,20 +122,49 @@ contract MedicalOrderRegistry is
         _;
     }
 
-    modifier onlyGatewayOrDoctor(address doctor) {
-        address caller = _msgSender();
-        if (caller == gateway) {
-            // Gateway already validated the doctor, trust it
+    /// @dev When called via Gateway, verifies the provided doctor is real.
+    ///      When called directly, verifies the caller is a doctor.
+    modifier onlyDoctorOrGatewayActor(address doctor) {
+        if (_msgSender() == gateway) {
             require(
                 identityRegistry.getRole(doctor) == IdentityRegistry.Role.DOCTOR,
                 "Invalid doctor"
             );
+            require(identityRegistry.isVerified(doctor), "Doctor not verified");
         } else {
-            // Direct call: doctor must be the caller
             require(
-                doctor == caller &&
-                identityRegistry.getRole(doctor) == IdentityRegistry.Role.DOCTOR,
-                "Must be called by doctor or gateway"
+                identityRegistry.getRole(_msgSender()) == IdentityRegistry.Role.DOCTOR,
+                "Solo doctores"
+            );
+        }
+        _;
+    }
+
+    /// @dev When called via Gateway, verifies the provided patient is real.
+    ///      When called directly, verifies the caller is the patient.
+    modifier onlyPatientOrGatewayActor(address patient) {
+        if (_msgSender() == gateway) {
+            // Gateway validated patient; nothing extra to check on-chain
+        } else {
+            require(_msgSender() == patient, "Solo paciente puede asignar laboratorio");
+        }
+        _;
+    }
+
+    /// @dev When called via Gateway, verifies the provided updater is order doctor or lab.
+    ///      When called directly, verifies the caller is order doctor or lab.
+    modifier onlyUpdaterOrGatewayActor(bytes32 orderId, address updater) {
+        if (_msgSender() == gateway) {
+            MedicalOrder storage order = orders[orderId];
+            require(
+                updater == order.doctor || updater == order.assignedLab,
+                "Updater must be order doctor or assigned lab"
+            );
+        } else {
+            MedicalOrder storage order = orders[orderId];
+            require(
+                _msgSender() == order.doctor || _msgSender() == order.assignedLab,
+                "No autorizado"
             );
         }
         _;
@@ -157,8 +192,8 @@ contract MedicalOrderRegistry is
         address doctor
     )
         external
-        onlyVerified
-        onlyGatewayOrDoctor(doctor)
+        onlyVerifiedOrGateway
+        onlyDoctorOrGatewayActor(doctor)
     {
 
         require(
@@ -197,19 +232,16 @@ contract MedicalOrderRegistry is
 
     function assignLab(
         bytes32 orderId,
-        address lab
+        address lab,
+        address patient
     )
         external
         orderExists(orderId)
-        onlyVerified
+        onlyVerifiedOrGateway
+        onlyPatientOrGatewayActor(patient)
     {
 
         MedicalOrder storage order = orders[orderId];
-
-        require(
-            _msgSender() == order.patient,
-            "Solo el paciente puede asignar laboratorio"
-        );
 
         require(
             identityRegistry.getRole(lab)
@@ -233,21 +265,16 @@ contract MedicalOrderRegistry is
 
     function updateStatus(
         bytes32 orderId,
-        OrderStatus status
+        OrderStatus status,
+        address updater
     )
         external
         orderExists(orderId)
-        onlyVerified
+        onlyVerifiedOrGateway
+        onlyUpdaterOrGatewayActor(orderId, updater)
     {
 
         MedicalOrder storage order = orders[orderId];
-
-        /// solo laboratorio asignado o doctor
-        require(
-            _msgSender() == order.assignedLab ||
-            _msgSender() == order.doctor,
-            "No autorizado"
-        );
 
         order.status = status;
 

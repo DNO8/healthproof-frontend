@@ -33,9 +33,8 @@ contract ClinicalEpisodeRegistry is
         return _erc2771MsgData();
     }
 
-    function setGateway(address _gateway) external {
-        require(gateway == address(0), "Gateway already set");
-        require(identityRegistry.isVerified(_gateway), "Invalid gateway");
+    function setGateway(address _gateway) external onlyOwner {
+        require(_gateway != address(0), "Invalid gateway");
         gateway = _gateway;
     }
 
@@ -78,6 +77,14 @@ contract ClinicalEpisodeRegistry is
         _;
     }
 
+    modifier onlyVerifiedOrGateway() {
+        require(
+            identityRegistry.isVerified(_msgSender()) || _msgSender() == gateway,
+            "Entidad no verificada"
+        );
+        _;
+    }
+
     modifier onlyDoctor() {
         require(
             identityRegistry.getRole(_msgSender())
@@ -87,11 +94,22 @@ contract ClinicalEpisodeRegistry is
         _;
     }
 
-    modifier onlyGatewayOrDoctor(address doctor) {
-        require(
-            _msgSender() == gateway || _msgSender() == doctor,
-            "Solo gateway o doctor"
-        );
+    /// @dev When called via Gateway, verifies the provided actor is a real doctor.
+    ///      When called directly, verifies the caller is a real doctor.
+    modifier onlyDoctorOrGatewayActor(address doctor) {
+        if (_msgSender() == gateway) {
+            require(
+                identityRegistry.getRole(doctor) == IdentityRegistry.Role.DOCTOR,
+                "Invalid doctor"
+            );
+            require(identityRegistry.isVerified(doctor), "Doctor not verified");
+        } else {
+            require(
+                identityRegistry.getRole(_msgSender())
+                    == IdentityRegistry.Role.DOCTOR,
+                "Solo doctor"
+            );
+        }
         _;
     }
 
@@ -104,9 +122,8 @@ contract ClinicalEpisodeRegistry is
         address doctor
     )
         external
-        onlyVerified
-        onlyDoctor
-        onlyGatewayOrDoctor(doctor)
+        onlyVerifiedOrGateway
+        onlyDoctorOrGatewayActor(doctor)
     {
         require(
             episodes[episodeId].openedAt == 0,
@@ -137,11 +154,12 @@ contract ClinicalEpisodeRegistry is
     }
 
     function closeEpisode(
-        bytes32 episodeId
+        bytes32 episodeId,
+        address doctor
     )
         external
-        onlyVerified
-        onlyDoctor
+        onlyVerifiedOrGateway
+        onlyDoctorOrGatewayActor(doctor)
     {
         require(
             episodes[episodeId].active,
@@ -149,7 +167,7 @@ contract ClinicalEpisodeRegistry is
         );
 
         require(
-            episodes[episodeId].openedBy == _msgSender(),
+            episodes[episodeId].openedBy == doctor,
             "Solo doctor creador puede cerrar"
         );
 

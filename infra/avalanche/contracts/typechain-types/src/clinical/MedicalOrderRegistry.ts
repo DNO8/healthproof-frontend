@@ -103,7 +103,7 @@ export interface MedicalOrderRegistryInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "assignLab",
-    values: [BytesLike, AddressLike]
+    values: [BytesLike, AddressLike, AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "createOrder",
@@ -179,7 +179,7 @@ export interface MedicalOrderRegistryInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "updateStatus",
-    values: [BytesLike, BigNumberish]
+    values: [BytesLike, BigNumberish, AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "upgradeToAndCall",
@@ -410,7 +410,7 @@ export interface MedicalOrderRegistry extends BaseContract {
   UPGRADE_INTERFACE_VERSION: TypedContractMethod<[], [string], "view">;
 
   assignLab: TypedContractMethod<
-    [orderId: BytesLike, lab: AddressLike],
+    [orderId: BytesLike, lab: AddressLike, patient: AddressLike],
     [void],
     "nonpayable"
   >;
@@ -536,7 +536,7 @@ export interface MedicalOrderRegistry extends BaseContract {
   trustedForwarder: TypedContractMethod<[], [string], "view">;
 
   updateStatus: TypedContractMethod<
-    [orderId: BytesLike, status: BigNumberish],
+    [orderId: BytesLike, status: BigNumberish, updater: AddressLike],
     [void],
     "nonpayable"
   >;
@@ -557,7 +557,7 @@ export interface MedicalOrderRegistry extends BaseContract {
   getFunction(
     nameOrSignature: "assignLab"
   ): TypedContractMethod<
-    [orderId: BytesLike, lab: AddressLike],
+    [orderId: BytesLike, lab: AddressLike, patient: AddressLike],
     [void],
     "nonpayable"
   >;
@@ -691,7 +691,7 @@ export interface MedicalOrderRegistry extends BaseContract {
   getFunction(
     nameOrSignature: "updateStatus"
   ): TypedContractMethod<
-    [orderId: BytesLike, status: BigNumberish],
+    [orderId: BytesLike, status: BigNumberish, updater: AddressLike],
     [void],
     "nonpayable"
   >;

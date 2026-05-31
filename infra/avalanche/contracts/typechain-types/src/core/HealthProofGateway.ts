@@ -36,6 +36,7 @@ export interface HealthProofGatewayInterface extends Interface {
       | "isTrustedForwarder"
       | "kernel"
       | "registerMedicalDocument"
+      | "revokeAccess"
       | "trustedForwarder"
       | "updateOrderStatusViaGateway"
   ): FunctionFragment;
@@ -43,6 +44,7 @@ export interface HealthProofGatewayInterface extends Interface {
   getEvent(
     nameOrSignatureOrTopic:
       | "AccessGranted"
+      | "AccessRevoked"
       | "EpisodeClosedViaGateway"
       | "EpisodeCreated"
       | "LabAssignedViaGateway"
@@ -114,6 +116,10 @@ export interface HealthProofGatewayInterface extends Interface {
     ]
   ): string;
   encodeFunctionData(
+    functionFragment: "revokeAccess",
+    values: [AddressLike, AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "trustedForwarder",
     values?: undefined
   ): string;
@@ -160,6 +166,10 @@ export interface HealthProofGatewayInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "revokeAccess",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "trustedForwarder",
     data: BytesLike
   ): Result;
@@ -184,6 +194,19 @@ export namespace AccessGrantedEvent {
     patient: string;
     grantee: string;
     resourceId: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace AccessRevokedEvent {
+  export type InputTuple = [patient: AddressLike, grantee: AddressLike];
+  export type OutputTuple = [patient: string, grantee: string];
+  export interface OutputObject {
+    patient: string;
+    grantee: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -431,6 +454,12 @@ export interface HealthProofGateway extends BaseContract {
     "nonpayable"
   >;
 
+  revokeAccess: TypedContractMethod<
+    [patient: AddressLike, grantee: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
   trustedForwarder: TypedContractMethod<[], [string], "view">;
 
   updateOrderStatusViaGateway: TypedContractMethod<
@@ -529,6 +558,13 @@ export interface HealthProofGateway extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "revokeAccess"
+  ): TypedContractMethod<
+    [patient: AddressLike, grantee: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
     nameOrSignature: "trustedForwarder"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
@@ -545,6 +581,13 @@ export interface HealthProofGateway extends BaseContract {
     AccessGrantedEvent.InputTuple,
     AccessGrantedEvent.OutputTuple,
     AccessGrantedEvent.OutputObject
+  >;
+  getEvent(
+    key: "AccessRevoked"
+  ): TypedContractEvent<
+    AccessRevokedEvent.InputTuple,
+    AccessRevokedEvent.OutputTuple,
+    AccessRevokedEvent.OutputObject
   >;
   getEvent(
     key: "EpisodeClosedViaGateway"
@@ -599,6 +642,17 @@ export interface HealthProofGateway extends BaseContract {
       AccessGrantedEvent.InputTuple,
       AccessGrantedEvent.OutputTuple,
       AccessGrantedEvent.OutputObject
+    >;
+
+    "AccessRevoked(address,address)": TypedContractEvent<
+      AccessRevokedEvent.InputTuple,
+      AccessRevokedEvent.OutputTuple,
+      AccessRevokedEvent.OutputObject
+    >;
+    AccessRevoked: TypedContractEvent<
+      AccessRevokedEvent.InputTuple,
+      AccessRevokedEvent.OutputTuple,
+      AccessRevokedEvent.OutputObject
     >;
 
     "EpisodeClosedViaGateway(bytes32,address)": TypedContractEvent<

@@ -19,6 +19,7 @@ contract PermissionManager is
     IdentityRegistry public identityRegistry;
     GuardianRegistry public guardianRegistry;
     EmergencyAccessManager public emergencyManager;
+    address public gateway;
 
     function setEmergencyAccessManager(address emergencyAddress) external onlyOwner {
         emergencyManager = EmergencyAccessManager(emergencyAddress);
@@ -33,6 +34,11 @@ contract PermissionManager is
         __ERC2771Context_init(forwarder);
         identityRegistry = IdentityRegistry(identityAddress);
         guardianRegistry = GuardianRegistry(guardianAddress);
+    }
+
+    function setGateway(address _gateway) external onlyOwner {
+        require(_gateway != address(0), "Invalid gateway");
+        gateway = _gateway;
     }
 
     /// @dev Override _msgSender() to support ERC2771 meta-transactions
@@ -85,15 +91,35 @@ contract PermissionManager is
         _;
     }
 
+    /// @dev When called via Gateway, verifies the provided actor is patient or guardian.
+    ///      When called directly, verifies the caller is patient or guardian.
+    modifier authorizedOrGatewayActor(address patient, address actor) {
+        if (_msgSender() == gateway) {
+            require(
+                actor == patient ||
+                guardianRegistry.isGuardian(patient, actor),
+                "No autorizado"
+            );
+        } else {
+            require(
+                _msgSender() == patient ||
+                guardianRegistry.isGuardian(patient, _msgSender()),
+                "No autorizado"
+            );
+        }
+        _;
+    }
+
     function grantPermission(
         address patient,
         address grantee,
         Scope scope,
         bytes32 resourceId,
-        uint64 expiresAt
+        uint64 expiresAt,
+        address actor
     )
         external
-        authorized(patient)
+        authorizedOrGatewayActor(patient, actor)
     {
 
         require(
@@ -117,10 +143,11 @@ contract PermissionManager is
 
     function revokePermission(
         address patient,
-        address grantee
+        address grantee,
+        address actor
     )
         external
-        authorized(patient)
+        authorizedOrGatewayActor(patient, actor)
     {
 
         // O(1): invalidate lookup entry

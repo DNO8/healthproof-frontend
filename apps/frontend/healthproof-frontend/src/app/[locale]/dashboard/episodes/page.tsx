@@ -5,7 +5,7 @@ import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { useWallets } from "@privy-io/react-auth";
 import { createWalletClient, custom, keccak256, toHex, stringToHex } from "viem";
-import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import {
   openEpisodeOnChain,
   closeEpisodeOnChain,
