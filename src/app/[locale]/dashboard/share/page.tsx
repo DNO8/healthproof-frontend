@@ -192,9 +192,19 @@ export default function SharePage() {
         });
         if (!permSave.success) {
           console.warn("[share/page] savePermissionKey:", permSave.error);
+          sileo.warning({
+            title: t("savePermissionWarning") ?? "Access saved locally",
+            description: t("savePermissionWarningDesc") ?? "The recipient may need to scan the QR code to access this document.",
+            duration: 5000,
+          });
         }
       } catch (e) {
         console.warn("[share/page] savePermissionKey failed:", e);
+        sileo.warning({
+          title: t("savePermissionWarning") ?? "Access saved locally",
+          description: t("savePermissionWarningDesc") ?? "The recipient may need to scan the QR code to access this document.",
+          duration: 5000,
+        });
       }
 
       const qr: EncryptedQRData = {

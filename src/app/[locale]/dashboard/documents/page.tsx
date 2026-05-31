@@ -32,8 +32,31 @@ export default function DocumentsPage() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [viewError, setViewError] = useState<string | null>(null);
+  const [keyMismatch, setKeyMismatch] = useState<boolean>(false);
 
   const { decrypt, decryptedFile, loading: decryptLoading, error: decryptError, clear } = useDocumentDecrypt();
+
+  // One-time key diagnostic: check local keys match DB public key
+  useEffect(() => {
+    if (!userId || !walletAddress) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const myKeys = await getKeyPair(userId);
+        if (!myKeys?.publicKey) return;
+        const localPubJwk = await exportPublicKey(myKeys.publicKey);
+        const dbPubJwk = await getUserPublicKey(userId) ?? await getUserPublicKey(walletAddress);
+        if (cancelled) return;
+        if (dbPubJwk && localPubJwk !== dbPubJwk) {
+          console.error("[DocumentsPage] KEY MISMATCH detected at mount");
+          setKeyMismatch(true);
+        }
+      } catch (err) {
+        console.warn("[DocumentsPage] key diagnostic error:", err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [userId, walletAddress]);
 
   const fetchDocs = useCallback(async () => {
     if (!walletAddress) return;
@@ -146,26 +169,14 @@ export default function DocumentsPage() {
       return null;
     }
 
-    // Diagnostic: verify local keys match the registered public key in DB
-    try {
-      const myKeys = await getKeyPair(userId);
-      if (myKeys?.publicKey) {
-        const localPubJwk = await exportPublicKey(myKeys.publicKey);
-        const dbPubJwk = await getUserPublicKey(userId) ?? await getUserPublicKey(walletAddress);
-        console.log("[performDecrypt] localPubJwk:", localPubJwk.slice(0, 80) + "...");
-        console.log("[performDecrypt] dbPubJwk:   ", dbPubJwk ? dbPubJwk.slice(0, 80) + "..." : "null");
-        if (dbPubJwk && localPubJwk !== dbPubJwk) {
-          console.error("[performDecrypt] KEY MISMATCH: local keys do not match DB public_key");
-          if (!silent) {
-            const msg = t("keyMismatch") ?? "Your local encryption keys do not match your account. You may need to recover your keys using your recovery codes.";
-            setViewError(msg);
-            sileo.error({ title: t("decryptError"), description: msg });
-          }
-          return null;
-        }
+    // Check cached key mismatch from mount diagnostic
+    if (keyMismatch) {
+      if (!silent) {
+        const msg = t("keyMismatch") ?? "Your local encryption keys do not match your account. You may need to recover your keys using your recovery codes.";
+        setViewError(msg);
+        sileo.error({ title: t("decryptError"), description: msg });
       }
-    } catch (diagErr) {
-      console.warn("[performDecrypt] key diagnostic error:", diagErr);
+      return null;
     }
 
     try {
