@@ -540,42 +540,21 @@ export function useSyncKeys() {
                     true,
                     []
                   );
-                  // Reconstruct SSS shares for this device so recovery code remains valid
-                  const encoder = new TextEncoder();
-                  const masterSecret = encoder.encode(JSON.stringify(privJwk));
-                  const shares = generateShares(masterSecret, 2, 3);
-                  const [share1, share2, share3] = shares;
-                  const masterHash = await hashMasterSecret(masterSecret);
-                  const recoveryCode = encodeRecoveryCode(hexToBytes(share3));
-                  const recoveryHash = await hashRecoveryCode(recoveryCode);
+                  // Auto-recovery: just import the keypair from backup.
+                  // Do NOT regenerate SSS shares — existing recovery code and server share2 remain valid.
                   await saveKeyPair(userId, { privateKey, publicKey }, {
-                    share1,
-                    masterSecretHash: masterHash,
+                    masterSecretHash: userWithBackupMismatch.master_secret_hash ?? undefined,
                     schemeVersion: 2,
                   });
-                  assertOk(await saveKeyBackupBundle(await withPrivyToken({
-                    userId,
-                    share2,
-                    recoveryCodeHash: recoveryHash,
-                    masterSecretHash: masterHash,
-                    publicKey: JSON.stringify(pubJwk),
-                  })), "saveKeyBackupBundle");
-                  logFlow("sync:auto-recovery:success", { source: "encrypted-private-key", hasNewRecoveryCode: true });
+                  logFlow("sync:auto-recovery:success", { source: "encrypted-private-key" });
                   sessionStorage.setItem(SYNCED_KEY, userId);
                   clearConflict();
-                  // Prompt user to save the NEW recovery code (old one is now invalid)
-                  setRecoveryState({
-                    needsRecoveryCode: true,
-                    needsRegeneration: false,
-                    recoveryCode,
-                    step: "show_recovery_code",
-                  });
                   try {
                     const { sileo } = await import("sileo");
                     sileo.success({
-                      title: t("recoveryCodeUpdated"),
-                      description: t("recoveryCodeUpdatedDesc"),
-                      duration: 8000,
+                      title: t("recoverySuccess"),
+                      description: t("recoverySuccess"),
+                      duration: 5000,
                     });
                   } catch { /* sileo not available in tests */ }
                   return;
