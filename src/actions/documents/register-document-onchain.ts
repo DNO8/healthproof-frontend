@@ -1,26 +1,16 @@
 "use server";
 
-import {
-  createPublicClient,
-  createWalletClient,
-  http,
-  keccak256,
-  toHex,
-  stringToHex,
-} from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import MedicalDocumentRegistryAbi from "@/lib/abis/MedicalDocumentRegistry.json";
-import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth";
+import { keccak256, toHex } from "viem";
+import { withAuth, auditLog } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { isVerifiedDoctor, isVerifiedLab } from "@/lib/auth/permissions";
 import { logAuditEvent } from "@/lib/audit-onchain";
 import { AuditAction } from "@/lib/medical-constants";
-
-const ZERO_BYTES32 =
-  "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as `0x${string}`;
+import { executeForwardRequest } from "../relay/relay-core";
+import type { SignedForwardRequest } from "@/lib/metatx/types";
 
 interface RegisterDocumentData {
+  request: SignedForwardRequest;
   cid: string;
   fileHash: string;
   patientWallet: string;
@@ -28,56 +18,27 @@ interface RegisterDocumentData {
 }
 
 /**
- * Register a medical document on-chain using the deployer key.
- * Requires authentication. Caller must be the patient or a guardian.
+ * Register a medical document on-chain via EIP-2771 meta-transaction.
+ * The verified doctor/lab signs the ForwardRequest in the frontend;
+ * the deployer relays it through the TrustedForwarder targeting
+ * HealthProofGateway.registerMedicalDocument, which injects _msgSender()
+ * as the issuer and delegates to MedicalDocumentRegistry.
  */
 async function registerDocumentHandler(
   data: RegisterDocumentData,
   auth: AuthContext
 ): Promise<{ txHash: string; documentId: string }> {
-  const pk = await getDeployerPrivateKey();
-  if (!pk) throw new Error("DEPLOYER_PRIVATE_KEY not set");
+  if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
+    throw new Error("Signer mismatch: request.from != authenticated wallet");
+  }
 
-  const account = privateKeyToAccount(`0x${pk.replace(/^0x/, "")}`);
+  const result = await executeForwardRequest(data.request);
+  if (!result.success) {
+    throw new Error("Meta-transaction failed on-chain");
+  }
 
-  const publicClient = createPublicClient({
-    chain: HEALTHPROOF_CHAIN,
-    transport: http(),
-  });
-
-  const walletClient = createWalletClient({
-    account,
-    chain: HEALTHPROOF_CHAIN,
-    transport: http(),
-  });
-
-  // documentId = keccak256(cid)
   const documentId = keccak256(toHex(data.cid));
-  // clinicalHash = keccak256(fileHash)
   const clinicalHash = keccak256(toHex(data.fileHash));
-  // documentType as bytes32 (or zero)
-  const documentType = data.documentType
-    ? stringToHex(data.documentType, { size: 32 })
-    : ZERO_BYTES32;
-
-  const txHash = await walletClient.writeContract({
-    address: CONTRACT_ADDRESSES.MedicalDocumentRegistry as `0x${string}`,
-    abi: MedicalDocumentRegistryAbi,
-    functionName: "registerDocument",
-    args: [
-      documentId,
-      data.patientWallet as `0x${string}`,
-      ZERO_ADDRESS, // institution — not used for MVP
-      documentType,
-      clinicalHash,
-      ZERO_BYTES32, // episodeId — not used for MVP
-      data.cid,
-      ZERO_BYTES32, // standard
-      ZERO_BYTES32, // classification
-    ],
-  });
-
-  await publicClient.waitForTransactionReceipt({ hash: txHash });
 
   try {
     await logAuditEvent(data.patientWallet, documentId, AuditAction.DOCUMENT_REGISTERED);
@@ -89,12 +50,24 @@ async function registerDocumentHandler(
     patientWallet: data.patientWallet,
     documentId,
     cid: data.cid,
+    clinicalHash,
+    documentType: data.documentType,
   });
 
-  return { txHash, documentId };
+  return { txHash: result.txHash, documentId };
+}
+
+async function validateRegisterDocument(
+  data: RegisterDocumentData,
+  auth: AuthContext
+): Promise<boolean> {
+  const isDoctor = await isVerifiedDoctor(auth.wallet);
+  const isLab = await isVerifiedLab(auth.wallet);
+  return isDoctor || isLab;
 }
 
 export const registerDocumentOnChain = withAuth(registerDocumentHandler, {
   rateLimit: { windowMs: 60000, maxRequests: 5 },
+  requireOnChainPermission: validateRegisterDocument,
 });
 

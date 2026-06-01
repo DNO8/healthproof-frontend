@@ -22,10 +22,8 @@ import { EmptyState, SkeletonList } from "@/components/ui";
 import { ShieldOff } from "lucide-react";
 import { batchRewrapForGrantee } from "@/services/encryption/rewrap";
 import { signMetaTransaction } from "@/lib/metatx/forwarder";
-import PermissionManagerArtifact from "@/lib/abis/PermissionManager.json";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import type { OnChainPermission } from "@/lib/medical-constants";
-
-const PermissionManagerAbi = PermissionManagerArtifact.abi;
 const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
 
 async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
@@ -140,8 +138,8 @@ export default function PermissionsPage() {
 
         const request = await signMetaTransaction(
           viemWallet,
-          CONTRACT_ADDRESSES.PermissionManager as `0x${string}`,
-          "grantPermission",
+          CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
+          "grantAccess",
           [
             walletAddress.toLowerCase(),
             grantee,
@@ -149,7 +147,7 @@ export default function PermissionsPage() {
             resourceId,
             expiresAt,
           ],
-          PermissionManagerAbi,
+          HealthProofGatewayAbi,
         );
         signedRequests.push(request);
       }
@@ -233,10 +231,10 @@ export default function PermissionsPage() {
 
       const request = await signMetaTransaction(
         viemWallet,
-        CONTRACT_ADDRESSES.PermissionManager as `0x${string}`,
-        "revokePermission",
+        CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
+        "revokeAccess",
         [walletAddress.toLowerCase(), grantee.toLowerCase()],
-        PermissionManagerAbi,
+        HealthProofGatewayAbi,
       );
 
       const res = await revokePermissionOnChain({

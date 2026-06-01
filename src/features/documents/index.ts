@@ -1,4 +1,4 @@
-// Documents — on-chain registration via MedicalDocumentRegistry + off-chain secrets
+// Documents — on-chain registration via HealthProofGateway (EIP-2771 meta-tx) + off-chain secrets
 
 export {
   registerDocumentOnChain as registerDocument,

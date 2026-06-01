@@ -25,9 +25,7 @@ import { useKeyConflictStore } from "@/state/key-conflict.store";
 import { Stethoscope, FlaskConical, Building2 } from "lucide-react";
 import { savePermissionKey } from "@/actions/permissions/save-permission-key";
 import { signMetaTransaction } from "@/lib/metatx/forwarder";
-import PermissionManagerArtifact from "@/lib/abis/PermissionManager.json";
-
-const PermissionManagerAbi = PermissionManagerArtifact.abi;
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
 
 async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
@@ -159,8 +157,8 @@ export default function SharePage() {
 
       const request = await signMetaTransaction(
         viemWallet,
-        CONTRACT_ADDRESSES.PermissionManager as `0x${string}`,
-        "grantPermission",
+        CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
+        "grantAccess",
         [
           resolvedWalletAddress.toLowerCase(),
           trimmedRecipient.toLowerCase(),
@@ -168,7 +166,7 @@ export default function SharePage() {
           resourceId,
           BigInt(0), // no expiry
         ],
-        PermissionManagerAbi,
+        HealthProofGatewayAbi,
       );
 
       const grantResult = await grantPermissionOnChain({
