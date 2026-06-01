@@ -1,5 +1,11 @@
 "use server";
 
+/**
+ * @deprecated This action file is deprecated. All permission and document
+ * flows now use HealthProofGateway via EIP-2771 meta-transactions.
+ * No consumers import from this file.
+ */
+
 import { createPublicClient, createWalletClient, http, keccak256, toHex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";

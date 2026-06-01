@@ -3,6 +3,11 @@
 import { useRef, useState } from "react";
 import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
+import { useWallets } from "@privy-io/react-auth";
+import { createWalletClient, custom, keccak256, toHex, stringToHex } from "viem";
+import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { signMetaTransaction } from "@/lib/metatx/forwarder";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import { uploadHybridEncryptedFile } from "@/services/storage/upload";
 import { getKeyPair } from "@/services/encryption/keystore";
 import { exportPublicKey } from "@/services/encryption/ecdh";
@@ -13,6 +18,13 @@ import { registerDocumentOnChain } from "@/actions/documents/register-document-o
 import { UserSelect } from "@/components/forms/UserSelect";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
 import { isPdfFile } from "@/lib/validate-file";
+
+const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
+
+async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<unknown> }) {
+  const provider = await wallet.getEthereumProvider() as { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
+  return createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+}
 
 type UploadResultsModalProps = {
   onClose: () => void;
@@ -50,6 +62,7 @@ export function UploadResultsModal({
   labId,
 }: UploadResultsModalProps) {
   const t = useTranslations("uploadModal");
+  const { wallets } = useWallets();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [patientId, setPatientId] = useState("");
@@ -164,8 +177,35 @@ export function UploadResultsModal({
         uploader_public_key: labPubKeyJwk,
       });
 
+      // Sign meta-tx for on-chain document registration via Gateway
+      const activeWallet = wallets.find((w) => w.address);
+      if (!activeWallet) throw new Error("No active wallet");
+
+      const viemWallet = await getViemWalletClient(activeWallet);
+      const documentId = keccak256(toHex(uploadResult.ipfs.cid));
+      const clinicalHash = keccak256(toHex(uploadResult.fileHash));
+
+      const registerRequest = await signMetaTransaction(
+        viemWallet,
+        CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
+        "registerMedicalDocument",
+        [
+          documentId,
+          patientWallet as `0x${string}`,
+          "0x0000000000000000000000000000000000000000" as `0x${string}`, // institution
+          ZERO_BYTES32, // documentType
+          clinicalHash,
+          ZERO_BYTES32, // episodeId
+          uploadResult.ipfs.cid,
+          ZERO_BYTES32, // standard
+          ZERO_BYTES32, // classification
+        ],
+        HealthProofGatewayAbi,
+      );
+
       // Register document on-chain
       const onChainResult = await registerDocumentOnChain({
+        request: registerRequest,
         cid: uploadResult.ipfs.cid,
         fileHash: uploadResult.fileHash,
         patientWallet: patientWallet,

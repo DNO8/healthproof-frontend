@@ -6,10 +6,12 @@ import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { createWalletClient, custom, keccak256, toHex } from "viem";
+import { createWalletClient, custom, keccak256, toHex, stringToHex } from "viem";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import { signMetaTransaction } from "@/lib/metatx/forwarder";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
+
 import { uploadHybridEncryptedFile } from "@/services/storage/upload";
 import { getKeyPair } from "@/services/encryption/keystore";
 import { exportPublicKey } from "@/services/encryption/ecdh";
@@ -21,6 +23,13 @@ import { UserSelect } from "@/components/forms/UserSelect";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
 import { Upload } from "lucide-react";
 import { isPdfFile } from "@/lib/validate-file";
+
+const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
+
+async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<unknown> }) {
+  const provider = await wallet.getEthereumProvider() as { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
+  return createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+}
 
 export default function UploadPage() {
   const t = useTranslations("dashboard.upload");
@@ -92,15 +101,43 @@ export default function UploadPage() {
         normalizedEncryptedKeys[normalizedKey] = value;
       }
 
-      // 1. Register on-chain FIRST — if this fails, no DB record is created
+      // 1. Sign meta-tx for on-chain document registration via Gateway
+      const activeWallet = wallets.find((w) => w.address);
+      if (!activeWallet) throw new Error("No active wallet");
+
+      const viemWallet = await getViemWalletClient(activeWallet);
+      const documentId = keccak256(toHex(uploadResult.ipfs.cid));
+      const clinicalHash = keccak256(toHex(uploadResult.fileHash));
+      const documentType = stringToHex("MEDICAL_RESULT", { size: 32 });
+
+      const registerRequest = await signMetaTransaction(
+        viemWallet,
+        CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
+        "registerMedicalDocument",
+        [
+          documentId,
+          patientId.trim() as `0x${string}`,
+          "0x0000000000000000000000000000000000000000" as `0x${string}`, // institution
+          documentType,
+          clinicalHash,
+          ZERO_BYTES32, // episodeId
+          uploadResult.ipfs.cid,
+          ZERO_BYTES32, // standard
+          ZERO_BYTES32, // classification
+        ],
+        HealthProofGatewayAbi,
+      );
+
+      // 2. Register on-chain FIRST — if this fails, no DB record is created
       await registerDocumentOnChain({
+        request: registerRequest,
         cid: uploadResult.ipfs.cid,
         fileHash: uploadResult.fileHash,
         documentType: "MEDICAL_RESULT",
         patientWallet: patientId.trim(),
       });
 
-      // 2. Save to DB only after on-chain success
+      // 3. Save to DB only after on-chain success
       await saveDocumentSecret({
         document_id: uploadResult.ipfs.cid,
         file_name: file.name,

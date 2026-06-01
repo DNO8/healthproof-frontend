@@ -1,9 +1,6 @@
 "use server";
 
 import { keccak256, toHex } from "viem";
-import { CONTRACT_ADDRESSES } from "@/lib/contracts";
-import PermissionManagerArtifact from "@/lib/abis/PermissionManager.json";
-const PermissionManagerAbi = PermissionManagerArtifact.abi;
 import { withAuth, auditLog } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
 import { validatePatientAccess } from "@/lib/auth/permissions";

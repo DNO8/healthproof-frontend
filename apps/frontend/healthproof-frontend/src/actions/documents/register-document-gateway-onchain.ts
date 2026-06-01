@@ -1,5 +1,11 @@
 "use server";
 
+/**
+ * @deprecated This action is deprecated. Use registerDocumentOnChain
+ * from @/actions/documents/register-document-onchain instead,
+ * which uses EIP-2771 meta-transactions signed by the verified doctor/lab.
+ */
+
 import { createPublicClient, createWalletClient, http, keccak256, toHex, stringToHex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
