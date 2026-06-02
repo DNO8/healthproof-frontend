@@ -504,7 +504,15 @@
       "cancelSuccess": "Invitación cancelada",
       "cancelSuccessDesc": "La invitación ha sido cancelada.",
       "cancelError": "Error al cancelar",
-      "loadSentError": "Error al cargar invitaciones enviadas"
+      "loadSentError": "Error al cargar invitaciones enviadas",
+      "scopeByDocument": "Tipo de alcance",
+      "modeDocument": "Documento(s)",
+      "modeEpisode": "Episodio",
+      "selectEpisode": "Selecciona un episodio",
+      "selectEpisodeDesc": "Elige qué episodio clínico compartir.",
+      "noEpisodes": "No se encontraron episodios.",
+      "documentsInEpisode": "Documentos del episodio",
+      "noDocumentsInEpisode": "Este episodio no tiene documentos."
     },
     "invitations": {
       "title": "Invitaciones",
@@ -965,6 +973,16 @@
     "noLabPublicKey": "No se encontró la clave de cifrado del laboratorio.",
     "noWrappedKey": "No se encontró tu clave de acceso cifrada para este documento.",
     "noPatientKeys": "No se encontraron tus claves de cifrado. Por favor cierra sesión y vuelve a iniciar.",
+    "shareMode": "Modo de compartir",
+    "modeDocument": "Documento",
+    "modeEpisode": "Episodio",
+    "selectEpisode": "Selecciona un episodio",
+    "selectEpisodeDesc": "Elige qué episodio clínico compartir.",
+    "noEpisodes": "No se encontraron episodios.",
+    "documentsInEpisode": "Documentos del episodio",
+    "noDocumentsInEpisode": "Este episodio no tiene documentos.",
+    "nSignaturesRequired": "Firmas múltiples",
+    "nDocsWillBeShared": "Se compartirán {count} documentos. Firmando {count} transacciones…",
     "keyConflictMissing": "Las claves de cifrado no están en este navegador. Compartir está deshabilitado.",
     "keyConflictMismatch": "Las claves de cifrado de este navegador no coinciden con tus documentos. Compartir está deshabilitado."
   },

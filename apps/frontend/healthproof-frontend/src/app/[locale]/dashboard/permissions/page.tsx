@@ -13,17 +13,21 @@ import { listPermissionInvitations } from "@/actions/permissions/list-permission
 import { respondPermissionInvitation } from "@/actions/permissions/respond-permission-invitation";
 import { listDocumentSecretsForWallet } from "@/actions/documents/get-document-secret";
 import type { DocumentSecretRow } from "@/actions/documents/get-document-secret";
+import { listDocumentsByEpisode } from "@/actions/documents/list-documents-by-episode";
+import { listEpisodesByPatient } from "@/actions/clinical-episodes/list-episodes-by-patient";
 import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
 import { savePermissionKey } from "@/actions/permissions/save-permission-key";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { usePrivy } from "@privy-io/react-auth";
 import { UserSelect } from "@/components/forms/UserSelect";
 import { EmptyState, SkeletonList } from "@/components/ui";
-import { ShieldOff } from "lucide-react";
+import { ShieldOff, FileText, FolderOpen } from "lucide-react";
 import { batchRewrapForGrantee } from "@/services/encryption/rewrap";
 import { signMetaTransaction } from "@/lib/metatx/forwarder";
 import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import type { OnChainPermission } from "@/lib/medical-constants";
+import type { OnChainEpisode } from "@/lib/medical-constants";
+import { isAuthSuccess } from "@/lib/auth/with-auth";
 const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
 
 async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
@@ -52,6 +56,14 @@ export default function PermissionsPage() {
   const [sentInvitations, setSentInvitations] = useState<import("@/actions/permissions/list-permission-invitations").PermissionInvitation[]>([]);
   const [loadingSent, setLoadingSent] = useState(false);
 
+  // Episode sharing in "grant" tab
+  const [grantMode, setGrantMode] = useState<"document" | "episode">("document");
+  const [episodes, setEpisodes] = useState<OnChainEpisode[]>([]);
+  const [selectedEpisode, setSelectedEpisode] = useState<OnChainEpisode | null>(null);
+  const [episodeDocs, setEpisodeDocs] = useState<DocumentSecretRow[]>([]);
+  const [loadingEpisodes, setLoadingEpisodes] = useState(false);
+  const [loadingEpisodeDocs, setLoadingEpisodeDocs] = useState(false);
+
   async function load() {
     if (!walletAddress) return;
     setLoading(true);
@@ -76,8 +88,58 @@ export default function PermissionsPage() {
   useEffect(() => {
     load();
     loadUserDocs();
+    loadEpisodes();
     if (activeTab === "sent") loadSentInvitations();
   }, [walletAddress, activeTab]);
+
+  // Load episode docs when selectedEpisode changes
+  useEffect(() => {
+    async function loadEpisodeDocs() {
+      if (!selectedEpisode || !walletAddress) {
+        setEpisodeDocs([]);
+        return;
+      }
+      setLoadingEpisodeDocs(true);
+      try {
+        const response = await listDocumentsByEpisode({
+          patientWallet: walletAddress,
+          episodeId: selectedEpisode.episodeId,
+        });
+        if (isAuthSuccess(response)) {
+          setEpisodeDocs(response.data.documents);
+        } else {
+          setEpisodeDocs([]);
+        }
+      } catch (err) {
+        console.error("[PermissionsPage] Error loading episode docs:", err);
+        setEpisodeDocs([]);
+      } finally {
+        setLoadingEpisodeDocs(false);
+      }
+    }
+    loadEpisodeDocs();
+  }, [selectedEpisode, walletAddress]);
+
+  async function loadEpisodes() {
+    if (!walletAddress) {
+      setEpisodes([]);
+      return;
+    }
+    setLoadingEpisodes(true);
+    try {
+      const response = await listEpisodesByPatient({ patientWallet: walletAddress });
+      if (isAuthSuccess(response)) {
+        setEpisodes(response.data.episodes);
+      } else {
+        setEpisodes([]);
+      }
+    } catch (err) {
+      console.error("[PermissionsPage] Error fetching episodes:", err);
+      setEpisodes([]);
+    } finally {
+      setLoadingEpisodes(false);
+    }
+  }
 
   async function loadUserDocs() {
     if (!walletAddress) return;
@@ -111,6 +173,10 @@ export default function PermissionsPage() {
 
   async function handleSendInvitation() {
     if (!walletAddress || !granteeWallet.trim()) return;
+    if (grantMode === "episode" && !selectedEpisode) {
+      sileo.warning({ title: t("selectEpisode") ?? "Selecciona un episodio", description: t("selectEpisodeDesc") ?? "Elige qué episodio clínico compartir." });
+      return;
+    }
 
     const activeWallet = wallets.find((w) => w.address);
     if (!activeWallet) {
@@ -118,7 +184,12 @@ export default function PermissionsPage() {
       return;
     }
 
-    const docsToGrant = selectedDocs.length > 0 ? selectedDocs : ["all"];
+    let docsToGrant: string[];
+    if (grantMode === "episode") {
+      docsToGrant = episodeDocs.length > 0 ? episodeDocs.map((d) => d.document_id) : ["all"];
+    } else {
+      docsToGrant = selectedDocs.length > 0 ? selectedDocs : ["all"];
+    }
 
     setGrantLoading(true);
     try {
@@ -303,14 +374,16 @@ export default function PermissionsPage() {
             />
           ) : (
             <div className="space-y-3">
-              {permissions.map((p) => (
+              {Array.from(
+                new Map(permissions.map((p) => [`${p.grantee.toLowerCase()}-${p.resourceId.toLowerCase()}`, p])).values()
+              ).map((p) => (
                 <div key={p.grantee + p.resourceId} className="neu-inset rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-800 truncate">
                       {p.grantee.slice(0, 10)}…{p.grantee.slice(-4)}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {t("scope")}: {p.scope} · {t("resource")}: {p.resourceId.slice(0, 10)}…
+                      {t("scope")}: {p.scope === 0 ? t("scopeDocument") ?? "Documento" : p.scope === 1 ? t("scopeEpisode") ?? "Episodio" : p.scope === 2 ? t("scopeFull") ?? "Completo" : p.scope} · {t("resource")}: {p.resourceId.slice(0, 10)}…
                     </p>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {p.expiresAt > 0
@@ -352,7 +425,7 @@ export default function PermissionsPage() {
                       {t("to") ?? "To"}: {inv.grantee_wallet.slice(0, 10)}…{inv.grantee_wallet.slice(-4)}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {t("scope")}: {inv.scope} · {inv.document_ids.length} {t("documents") ?? "docs"}
+                      {t("scope")}: {inv.scope === 0 ? t("scopeDocument") ?? "Documento" : inv.scope === 1 ? t("scopeEpisode") ?? "Episodio" : inv.scope === 2 ? t("scopeFull") ?? "Completo" : inv.scope} · {inv.document_ids.length} {t("documents") ?? "docs"}
                     </p>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {inv.status === "pending" && <span className="text-amber-600">{t("pending") ?? "Pending"}</span>}
@@ -393,60 +466,150 @@ export default function PermissionsPage() {
               excludeWallet={walletAddress ?? undefined}
             />
           </div>
+          {/* Grant mode toggle */}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("documentLabel")}</label>
-            {loadingDocs ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="neu-pressed h-10 w-full animate-pulse rounded-xl bg-slate-200" />
-                ))}
-              </div>
-            ) : userDocs.length === 0 ? (
-              <p className="py-4 text-center text-xs text-slate-400">{t("noDocuments")}</p>
-            ) : (
-              <div className="neu-inset rounded-xl p-4 space-y-2 max-h-56 overflow-y-auto">
-                <label className="flex items-center gap-2 cursor-pointer pb-2 border-b border-slate-200/50">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-200"
-                    checked={selectAllDocs}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setSelectAllDocs(checked);
-                      if (checked) {
-                        setSelectedDocs(["all"]);
-                      } else {
-                        setSelectedDocs([]);
-                      }
-                    }}
-                  />
-                  <span className="text-sm font-medium text-slate-700">{t("allDocuments")}</span>
-                </label>
-                {userDocs.map((doc) => (
-                  <label key={doc.document_id} className="flex items-center gap-2 cursor-pointer py-1">
+            <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("scopeByDocument") ?? "Tipo de alcance"}</label>
+            <div className="flex gap-2">
+              <button
+                className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium transition-all ${
+                  grantMode === "document"
+                    ? "neu-pressed text-slate-800 border-l-4 border-l-sky-500"
+                    : "neu-surface text-slate-500 hover:neu-pressed"
+                }`}
+                onClick={() => setGrantMode("document")}
+                type="button"
+              >
+                <FileText className="mr-1 h-4 w-4 inline" />
+                {t("modeDocument") ?? "Documento(s)"}
+              </button>
+              <button
+                className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium transition-all ${
+                  grantMode === "episode"
+                    ? "neu-pressed text-slate-800 border-l-4 border-l-sky-500"
+                    : "neu-surface text-slate-500 hover:neu-pressed"
+                }`}
+                onClick={() => setGrantMode("episode")}
+                type="button"
+              >
+                <FolderOpen className="mr-1 h-4 w-4 inline" />
+                {t("modeEpisode") ?? "Episodio"}
+              </button>
+            </div>
+          </div>
+
+          {/* Document selector */}
+          {grantMode === "document" && (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("documentLabel")}</label>
+              {loadingDocs ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="neu-pressed h-10 w-full animate-pulse rounded-xl bg-slate-200" />
+                  ))}
+                </div>
+              ) : userDocs.length === 0 ? (
+                <p className="py-4 text-center text-xs text-slate-400">{t("noDocuments")}</p>
+              ) : (
+                <div className="neu-inset rounded-xl p-4 space-y-2 max-h-56 overflow-y-auto">
+                  <label className="flex items-center gap-2 cursor-pointer pb-2 border-b border-slate-200/50">
                     <input
                       type="checkbox"
                       className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-200"
-                      checked={selectedDocs.includes(doc.document_id) || selectedDocs.includes("all")}
-                      disabled={selectAllDocs}
+                      checked={selectAllDocs}
                       onChange={(e) => {
-                        if (selectAllDocs) return;
                         const checked = e.target.checked;
-                        setSelectedDocs((prev) =>
-                          checked
-                            ? [...prev, doc.document_id]
-                            : prev.filter((id) => id !== doc.document_id),
-                        );
+                        setSelectAllDocs(checked);
+                        if (checked) {
+                          setSelectedDocs(["all"]);
+                        } else {
+                          setSelectedDocs([]);
+                        }
                       }}
                     />
-                    <span className="text-sm text-slate-700 truncate">
-                      {doc.file_name ?? doc.document_id.slice(0, 24) + "…"}
-                    </span>
+                    <span className="text-sm font-medium text-slate-700">{t("allDocuments")}</span>
                   </label>
-                ))}
+                  {userDocs.map((doc) => (
+                    <label key={doc.document_id} className="flex items-center gap-2 cursor-pointer py-1">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-200"
+                        checked={selectedDocs.includes(doc.document_id) || selectedDocs.includes("all")}
+                        disabled={selectAllDocs}
+                        onChange={(e) => {
+                          if (selectAllDocs) return;
+                          const checked = e.target.checked;
+                          setSelectedDocs((prev) =>
+                            checked
+                              ? [...prev, doc.document_id]
+                              : prev.filter((id) => id !== doc.document_id),
+                          );
+                        }}
+                      />
+                      <span className="text-sm text-slate-700 truncate">
+                        {doc.file_name ?? doc.document_id.slice(0, 24) + "…"}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Episode selector */}
+          {grantMode === "episode" && (
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("selectEpisode") ?? "Selecciona un episodio"}</label>
+                {loadingEpisodes ? (
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="neu-pressed h-10 w-full animate-pulse rounded-xl bg-slate-200" />
+                    ))}
+                  </div>
+                ) : episodes.length === 0 ? (
+                  <p className="py-4 text-center text-xs text-slate-400">{t("noEpisodes") ?? "No se encontraron episodios."}</p>
+                ) : (
+                  <div className="neu-inset rounded-xl p-4 space-y-2 max-h-40 overflow-y-auto">
+                    {episodes.map((ep) => (
+                      <button
+                        key={ep.episodeId}
+                        className={`w-full text-left rounded-xl px-3 py-2 text-sm transition-all ${
+                          selectedEpisode?.episodeId === ep.episodeId
+                            ? "neu-pressed border-l-4 border-l-sky-500"
+                            : "neu-surface hover:neu-pressed"
+                        }`}
+                        onClick={() => setSelectedEpisode(ep)}
+                        type="button"
+                      >
+                        <span className="font-semibold text-slate-700">{ep.episodeType} — {ep.classification}</span>
+                        <span className="ml-2 text-xs text-slate-400">{new Date(ep.openedAt * 1000).toLocaleDateString()}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+
+              {selectedEpisode && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("documentsInEpisode") ?? "Documentos del episodio"}</label>
+                  {loadingEpisodeDocs ? (
+                    <p className="text-sm text-slate-400 py-2">{t("loading") ?? "Cargando…"}</p>
+                  ) : episodeDocs.length === 0 ? (
+                    <p className="text-sm text-slate-400 py-2">{t("noDocumentsInEpisode") ?? "Este episodio no tiene documentos."}</p>
+                  ) : (
+                    <div className="neu-inset rounded-xl p-4 space-y-2 max-h-40 overflow-y-auto">
+                      {episodeDocs.map((d) => (
+                        <div key={d.id} className="flex items-center justify-between text-sm">
+                          <span className="text-slate-700 truncate">{d.file_name ?? d.document_id.slice(0, 24) + "…"}</span>
+                          <span className="text-xs text-slate-400">{new Date(d.created_at).toLocaleDateString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("scopeLabel")}</label>
@@ -473,7 +636,11 @@ export default function PermissionsPage() {
           </div>
           <button
             className="neu-surface hover:neu-pressed w-full rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition-all disabled:opacity-50"
-            disabled={grantLoading || !granteeWallet.trim()}
+            disabled={
+              grantLoading ||
+              !granteeWallet.trim() ||
+              (grantMode === "episode" ? !selectedEpisode : false)
+            }
             onClick={handleSendInvitation}
             type="button"
           >

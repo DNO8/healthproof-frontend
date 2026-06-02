@@ -12,6 +12,17 @@ import { QRScanner } from "@/components/scanner/QRScanner";
 import { sileo } from "sileo";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 
+interface QRV2 {
+  type: "healthproof_permission_v2";
+  scope: "document" | "episode";
+  patient_wallet: string;
+  grantee_wallet: string;
+  expires_at: number;
+  nonce: string;
+  document_id?: string;
+  episode_id?: string;
+}
+
 function isValidWallet(addr: unknown): boolean {
   return typeof addr === "string" && addr.startsWith("0x") && addr.length === 42;
 }
@@ -50,7 +61,51 @@ export default function ScanPage() {
     setScanning(true);
     setError(null);
     try {
-      const data = JSON.parse(payload.trim()) as EncryptedQRData;
+      const parsed = JSON.parse(payload.trim());
+
+      // ─── QR v2 (lightweight) ───
+      if (parsed?.type === "healthproof_permission_v2") {
+        const data = parsed as QRV2;
+        if (!data.patient_wallet || !data.grantee_wallet || !data.scope) {
+          throw new Error(t("invalidQR"));
+        }
+        if (!isValidWallet(data.patient_wallet) || !isValidWallet(data.grantee_wallet)) {
+          throw new Error(t("invalidQR"));
+        }
+        const now = Math.floor(Date.now() / 1000);
+        if (data.expires_at && data.expires_at < now) {
+          throw new Error(t("expiredQR"));
+        }
+        if (walletAddress && walletAddress.toLowerCase() !== data.grantee_wallet.toLowerCase()) {
+          console.error("[ScanPage] Wallet mismatch:", {
+            current: walletAddress,
+            qrGrantee: data.grantee_wallet,
+          });
+          throw new Error(t("walletMismatch") ?? "This QR code is not intended for your wallet.");
+        }
+
+        const params = new URLSearchParams();
+        params.set("patient", data.patient_wallet);
+        if (data.scope === "episode") {
+          if (!data.episode_id) throw new Error(t("invalidQR"));
+          params.set("episode", data.episode_id);
+          sileo.success({ title: t("accessGranted"), description: t("redirecting") });
+          console.log("[ScanPage] redirecting to shared with episode:", data.episode_id);
+          router.push(`/dashboard/shared?${params.toString()}`);
+          return;
+        } else {
+          // document scope
+          if (!data.document_id) throw new Error(t("invalidQR"));
+          params.set("doc", data.document_id);
+          sileo.success({ title: t("accessGranted"), description: t("redirecting") });
+          console.log("[ScanPage] redirecting to shared with doc:", data.document_id);
+          router.push(`/dashboard/shared?${params.toString()}`);
+          return;
+        }
+      }
+
+      // ─── Legacy v1 QR (heavy, with crypto keys) ───
+      const data = parsed as EncryptedQRData;
       console.log("[ScanPage] QR parsed, docId:", data.crypto?.document_id, "patient:", data.payload?.patient_wallet, "grantee:", data.payload?.grantee_wallet);
       const crypto = data.crypto;
       if (!crypto?.document_id || !crypto.cid || !crypto.encrypted_key || !crypto.patient_public_key) {
@@ -101,6 +156,7 @@ export default function ScanPage() {
       params.set("pk", crypto.patient_public_key);
       console.log("[ScanPage] redirecting to shared with doc:", crypto.document_id);
       router.push(`/dashboard/shared?${params.toString()}`);
+      return;
     } catch (e) {
       const msg = String(e).slice(0, 200);
       console.error("[ScanPage] processPayload error:", msg, e);

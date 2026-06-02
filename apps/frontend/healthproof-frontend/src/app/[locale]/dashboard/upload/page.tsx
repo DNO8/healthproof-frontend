@@ -17,7 +17,8 @@ import { exportPublicKey } from "@/services/encryption/ecdh";
 import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
 import { saveDocumentSecret } from "@/actions/documents/save-document-secret";
 import { registerDocumentOnChain } from "@/actions/documents/register-document-onchain";
-import { updateOrderStatusOnChain } from "@/actions/medical-orders/medical-orders-onchain";
+import { updateOrderStatusOnChain, getOrderOnChain } from "@/actions/medical-orders/medical-orders-onchain";
+import { isAuthSuccess } from "@/lib/auth/with-auth";
 import { UserSelect } from "@/components/forms/UserSelect";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
 import { Upload } from "lucide-react";
@@ -125,6 +126,23 @@ export default function UploadPage() {
         normalizedEncryptedKeys[normalizedKey] = value;
       }
 
+      // Resolve episodeId from linked order (if any)
+      let resolvedEpisodeId: `0x${string}` = ZERO_BYTES32;
+      if (linkedOrderId) {
+        try {
+          const orderResponse = await getOrderOnChain({ orderId: linkedOrderId });
+          if (isAuthSuccess(orderResponse)) {
+            const order = orderResponse.data;
+            if (order && order.episodeId && order.episodeId !== ZERO_BYTES32) {
+              resolvedEpisodeId = order.episodeId as `0x${string}`;
+            }
+          }
+        } catch (err) {
+          console.warn("[upload] Could not resolve episodeId from order:", err);
+          // fallback: keep ZERO_BYTES32, do not block upload
+        }
+      }
+
       // 1. Sign meta-tx for on-chain document registration via Gateway
       const activeWallet = wallets.find((w) => w.address);
       if (!activeWallet) throw new Error("No active wallet");
@@ -144,7 +162,7 @@ export default function UploadPage() {
           "0x0000000000000000000000000000000000000000" as `0x${string}`, // institution
           documentType,
           clinicalHash,
-          ZERO_BYTES32, // episodeId
+          resolvedEpisodeId, // episodeId (real if linked to order)
           uploadResult.ipfs.cid,
           ZERO_BYTES32, // standard
           ZERO_BYTES32, // classification
@@ -170,6 +188,7 @@ export default function UploadPage() {
         iv: uploadResult.iv,
         encrypted_keys: normalizedEncryptedKeys,
         uploader_public_key: labPubKeyJwk,
+        episode_id: resolvedEpisodeId,
       });
 
       // If linked to an order, update its status to COMPLETED (2) via meta-tx

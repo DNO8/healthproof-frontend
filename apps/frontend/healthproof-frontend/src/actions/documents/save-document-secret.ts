@@ -2,6 +2,8 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
+const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
 function isValidAddress(addr: string): boolean {
   return typeof addr === "string" && addr.startsWith("0x") && addr.length === 42;
 }
@@ -14,6 +16,7 @@ export async function saveDocumentSecret(data: {
   iv: string;
   encrypted_keys: Record<string, unknown>;
   uploader_public_key: string;
+  episode_id?: string | null;
 }) {
   // Validation
   if (!data.document_id?.trim()) {
@@ -37,7 +40,7 @@ export async function saveDocumentSecret(data: {
 
   const supabase = createAdminClient();
 
-  const { error } = await supabase.from("document_secrets").insert({
+  const insertPayload: Record<string, unknown> = {
     document_id: data.document_id,
     file_name: data.file_name ?? null,
     uploader_wallet: data.uploader_wallet.toLowerCase(),
@@ -45,7 +48,12 @@ export async function saveDocumentSecret(data: {
     iv: data.iv,
     encrypted_keys: data.encrypted_keys,
     uploader_public_key: data.uploader_public_key,
-  });
+  };
+  if (data.episode_id && data.episode_id !== ZERO_BYTES32) {
+    insertPayload.episode_id = data.episode_id.toLowerCase();
+  }
+
+  const { error } = await supabase.from("document_secrets").insert(insertPayload);
 
   if (error) {
     console.error("saveDocumentSecret error:", error);
