@@ -22,11 +22,17 @@ import { exportPublicKey } from "@/services/encryption/ecdh";
 import { getKeyPair } from "@/services/encryption/keystore";
 import { UserSelect } from "@/components/forms/UserSelect";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
-import { Stethoscope, FlaskConical, Building2 } from "lucide-react";
+import { Stethoscope, FlaskConical, Building2, FileText, FolderOpen } from "lucide-react";
 import { savePermissionKey } from "@/actions/permissions/save-permission-key";
 import { signMetaTransaction } from "@/lib/metatx/forwarder";
 import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
+import { listEpisodesByPatient } from "@/actions/clinical-episodes/list-episodes-by-patient";
+import { listDocumentsByEpisode } from "@/actions/documents/list-documents-by-episode";
+import { isAuthSuccess } from "@/lib/auth/with-auth";
+import type { OnChainEpisode } from "@/lib/medical-constants";
 const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
+
+type ShareMode = "document" | "episode";
 
 async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
   const provider = await wallet.getEthereumProvider();
@@ -52,9 +58,15 @@ export default function SharePage() {
   const userId = user?.id ?? "";
   const [grantedTo, setGrantedTo] = useState<GrantedToRole | null>(null);
   const [recipientId, setRecipientId] = useState("");
+  const [shareMode, setShareMode] = useState<ShareMode>("document");
   const [results, setResults] = useState<DocumentSecretRow[]>([]);
   const [selectedResult, setSelectedResult] = useState<DocumentSecretRow | null>(null);
   const [loadingResults, setLoadingResults] = useState(true);
+  const [episodes, setEpisodes] = useState<OnChainEpisode[]>([]);
+  const [selectedEpisode, setSelectedEpisode] = useState<OnChainEpisode | null>(null);
+  const [episodeDocs, setEpisodeDocs] = useState<DocumentSecretRow[]>([]);
+  const [loadingEpisodes, setLoadingEpisodes] = useState(false);
+  const [loadingEpisodeDocs, setLoadingEpisodeDocs] = useState(false);
   const [qrData, setQrData] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
 
@@ -76,13 +88,67 @@ export default function SharePage() {
     }
   }, [walletAddress]);
 
+  const fetchEpisodes = useCallback(async () => {
+    setLoadingEpisodes(true);
+    try {
+      if (!walletAddress) {
+        setEpisodes([]);
+        return;
+      }
+      const response = await listEpisodesByPatient({ patientWallet: walletAddress });
+      if (isAuthSuccess(response)) {
+        setEpisodes(response.data.episodes);
+      } else {
+        setEpisodes([]);
+      }
+    } catch (err) {
+      console.error("[SharePage] Error fetching episodes:", err);
+      setEpisodes([]);
+    } finally {
+      setLoadingEpisodes(false);
+    }
+  }, [walletAddress]);
+
   useEffect(() => {
     fetchResults();
-  }, [fetchResults]);
+    fetchEpisodes();
+  }, [fetchResults, fetchEpisodes]);
+
+  // Load documents for selected episode
+  useEffect(() => {
+    async function loadEpisodeDocs() {
+      if (!selectedEpisode || !walletAddress) {
+        setEpisodeDocs([]);
+        return;
+      }
+      setLoadingEpisodeDocs(true);
+      try {
+        const response = await listDocumentsByEpisode({
+          patientWallet: walletAddress,
+          episodeId: selectedEpisode.episodeId,
+        });
+        if (isAuthSuccess(response)) {
+          setEpisodeDocs(response.data.documents);
+        } else {
+          setEpisodeDocs([]);
+        }
+      } catch (err) {
+        console.error("[SharePage] Error loading episode docs:", err);
+        setEpisodeDocs([]);
+      } finally {
+        setLoadingEpisodeDocs(false);
+      }
+    }
+    loadEpisodeDocs();
+  }, [selectedEpisode, walletAddress]);
 
   async function handleGenerate() {
-    if (!selectedResult) {
+    if (shareMode === "document" && !selectedResult) {
       sileo.warning({ title: t("selectResultTitle"), description: t("selectResultDesc") });
+      return;
+    }
+    if (shareMode === "episode" && !selectedEpisode) {
+      sileo.warning({ title: t("selectEpisode") ?? "Selecciona un episodio", description: t("selectEpisodeDesc") ?? "Elige qué episodio clínico compartir." });
       return;
     }
     if (!grantedTo) {
@@ -105,131 +171,158 @@ export default function SharePage() {
     setGenerating(true);
 
     try {
-      const recipientPubKeyJwk = await getUserPublicKey(trimmedRecipient);
-      if (!recipientPubKeyJwk) {
-        throw new Error(t("noRecipientKey"));
-      }
-
-      let senderPublicKeyJwk = selectedResult.uploader_public_key;
-      if (!senderPublicKeyJwk) {
-        senderPublicKeyJwk = await getUserPublicKey(selectedResult.uploader_wallet);
-      }
-      if (!senderPublicKeyJwk) {
-        throw new Error(t("noLabPublicKey"));
-      }
-
-      const myWrappedKey =
-        selectedResult.encrypted_keys[walletAddress.toLowerCase()] ??
-        selectedResult.encrypted_keys[userId];
-      if (!myWrappedKey) {
-        throw new Error(t("noWrappedKey"));
-      }
-
-      const rewrapped = await rewrapKeyForRecipient({
-        myUserId: userId,
-        myWrappedKey,
-        senderPublicKeyJwk,
-        recipientPublicKeyJwk: recipientPubKeyJwk,
-      });
-
-      const myKeys = await getKeyPair(userId);
-      if (!myKeys?.publicKey) {
-        throw new Error(t("noPatientKeys"));
-      }
-      const myPublicKeyJwk = await exportPublicKey(myKeys.publicKey);
-
-      const resolvedWalletAddress = walletAddress ?? userId;
-      const documentId = selectedResult.document_id;
-
-      const payload = buildPermissionPayload({
-        patientWallet: resolvedWalletAddress,
-        granteeWallet: trimmedRecipient,
-        grantedToRole: grantedTo,
-        documentId,
-      });
-
-      // Sign on-chain permission grant via EIP-2771 meta-transaction
-      const viemWallet = await getViemWalletClient(activeWallet);
-      const resourceId =
-        documentId.startsWith("0x") && documentId.length === 66
-          ? (documentId as `0x${string}`)
-          : keccak256(toHex(documentId));
-
-      const request = await signMetaTransaction(
-        viemWallet,
-        CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
-        "grantAccess",
-        [
-          resolvedWalletAddress.toLowerCase(),
-          trimmedRecipient.toLowerCase(),
-          0, // Scope.DOCUMENT
-          resourceId,
-          BigInt(0), // no expiry
-        ],
-        HealthProofGatewayAbi,
-      );
-
-      const grantResult = await grantPermissionOnChain({
-        request,
-        patientWallet: resolvedWalletAddress,
-        granteeWallet: trimmedRecipient,
-        documentId,
-        scope: 0,
-      });
-      if (!grantResult.success) {
-        throw new Error(grantResult.error ?? "On-chain grant failed");
-      }
-
-      // Persist rewrapped key so grantee can access without QR scan
-      try {
-        const permSave = await savePermissionKey({
-          document_id: documentId,
+      if (shareMode === "document") {
+        // ─── Document mode ───
+        if (!selectedResult) throw new Error("No document selected");
+        await shareDocument(selectedResult, trimmedRecipient, activeWallet);
+      } else {
+        // ─── Episode mode ───
+        if (!selectedEpisode) throw new Error("No episode selected");
+        const docsToShare = episodeDocs;
+        if (docsToShare.length === 0) {
+          throw new Error(t("noDocumentsInEpisode") ?? "Este episodio no tiene documentos.");
+        }
+        // Warn user about N signatures
+        sileo.info({
+          title: t("nSignaturesRequired") ?? "Firmas múltiples",
+          description: t("nDocsWillBeShared", { count: docsToShare.length }) ?? `Se compartirán ${docsToShare.length} documentos. Firmando ${docsToShare.length} transacciones…`,
+          duration: 4000,
+        });
+        for (const doc of docsToShare) {
+          await shareDocument(doc, trimmedRecipient, activeWallet);
+        }
+        // Light QR v2 for episode
+        const resolvedWalletAddress = walletAddress ?? userId;
+        const qrV2 = {
+          type: "healthproof_permission_v2",
+          scope: "episode",
           patient_wallet: resolvedWalletAddress,
           grantee_wallet: trimmedRecipient,
-          encrypted_key: JSON.stringify(rewrapped),
+          episode_id: selectedEpisode.episodeId,
+          expires_at: Date.now() / 1000 + (QR_EXPIRY_MINUTES * 60),
+          nonce: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        };
+        setQrData(JSON.stringify(qrV2));
+        sileo.success({
+          title: t("qrGenerated"),
+          description: t("qrGeneratedDesc", { role: grantedTo.replace("_", " "), minutes: QR_EXPIRY_MINUTES }),
+          duration: 4000,
         });
-        if (!permSave.success) {
-          console.warn("[share/page] savePermissionKey:", permSave.error);
-          sileo.warning({
-            title: t("savePermissionWarning") ?? "Access saved locally",
-            description: t("savePermissionWarningDesc") ?? "The recipient may need to scan the QR code to access this document.",
-            duration: 5000,
-          });
-        }
-      } catch (e) {
-        console.warn("[share/page] savePermissionKey failed:", e);
-        sileo.warning({
-          title: t("savePermissionWarning") ?? "Access saved locally",
-          description: t("savePermissionWarningDesc") ?? "The recipient may need to scan the QR code to access this document.",
-          duration: 5000,
-        });
+        setGenerating(false);
+        return;
       }
-
-      const qr: EncryptedQRData = {
-        type: "healthproof_permission",
-        payload,
-        signature: "unsigned",
-        wallet: resolvedWalletAddress,
-        crypto: {
-          document_id: documentId,
-          cid: documentId,
-          iv: selectedResult.iv,
-          encrypted_key: rewrapped,
-          patient_public_key: myPublicKeyJwk,
-        },
-      };
-
-      setQrData(JSON.stringify(qr));
-      sileo.success({
-        title: t("qrGenerated"),
-        description: t("qrGeneratedDesc", { role: grantedTo.replace("_", " "), minutes: QR_EXPIRY_MINUTES }),
-        duration: 4000,
-      });
     } catch (e) {
       sileo.error({ title: t("generateFailed"), description: String(e).slice(0, 120) });
     } finally {
       setGenerating(false);
     }
+  }
+
+  async function shareDocument(
+    doc: DocumentSecretRow,
+    trimmedRecipient: string,
+    activeWallet: { getEthereumProvider: () => Promise<any> }
+  ) {
+    const recipientPubKeyJwk = await getUserPublicKey(trimmedRecipient);
+    if (!recipientPubKeyJwk) {
+      throw new Error(t("noRecipientKey"));
+    }
+
+    let senderPublicKeyJwk = doc.uploader_public_key;
+    if (!senderPublicKeyJwk) {
+      senderPublicKeyJwk = await getUserPublicKey(doc.uploader_wallet);
+    }
+    if (!senderPublicKeyJwk) {
+      throw new Error(t("noLabPublicKey"));
+    }
+
+    const myWrappedKey =
+      doc.encrypted_keys[walletAddress!.toLowerCase()] ??
+      doc.encrypted_keys[userId];
+    if (!myWrappedKey) {
+      throw new Error(t("noWrappedKey"));
+    }
+
+    const rewrapped = await rewrapKeyForRecipient({
+      myUserId: userId,
+      myWrappedKey,
+      senderPublicKeyJwk,
+      recipientPublicKeyJwk: recipientPubKeyJwk,
+    });
+
+    const resolvedWalletAddress = walletAddress ?? userId;
+    const documentId = doc.document_id;
+
+    const payload = buildPermissionPayload({
+      patientWallet: resolvedWalletAddress,
+      granteeWallet: trimmedRecipient,
+      grantedToRole: grantedTo!,
+      documentId,
+    });
+
+    // Sign on-chain permission grant via EIP-2771 meta-transaction
+    const viemWallet = await getViemWalletClient(activeWallet);
+    const resourceId =
+      documentId.startsWith("0x") && documentId.length === 66
+        ? (documentId as `0x${string}`)
+        : keccak256(toHex(documentId));
+
+    const request = await signMetaTransaction(
+      viemWallet,
+      CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
+      "grantAccess",
+      [
+        resolvedWalletAddress.toLowerCase(),
+        trimmedRecipient.toLowerCase(),
+        0, // Scope.DOCUMENT
+        resourceId,
+        BigInt(0), // no expiry
+      ],
+      HealthProofGatewayAbi,
+    );
+
+    const grantResult = await grantPermissionOnChain({
+      request,
+      patientWallet: resolvedWalletAddress,
+      granteeWallet: trimmedRecipient,
+      documentId,
+      scope: 0,
+    });
+    if (!grantResult.success) {
+      throw new Error(grantResult.error ?? "On-chain grant failed");
+    }
+
+    // Persist rewrapped key so grantee can access without QR scan
+    try {
+      const permSave = await savePermissionKey({
+        document_id: documentId,
+        patient_wallet: resolvedWalletAddress,
+        grantee_wallet: trimmedRecipient,
+        encrypted_key: JSON.stringify(rewrapped),
+      });
+      if (!permSave.success) {
+        console.warn("[share/page] savePermissionKey:", permSave.error);
+      }
+    } catch (e) {
+      console.warn("[share/page] savePermissionKey failed:", e);
+    }
+
+    // Light QR v2 for single document
+    const qrV2 = {
+      type: "healthproof_permission_v2",
+      scope: "document",
+      patient_wallet: resolvedWalletAddress,
+      grantee_wallet: trimmedRecipient,
+      document_id: documentId,
+      expires_at: Date.now() / 1000 + (QR_EXPIRY_MINUTES * 60),
+      nonce: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    };
+    setQrData(JSON.stringify(qrV2));
+    sileo.success({
+      title: t("qrGenerated"),
+      description: t("qrGeneratedDesc", { role: grantedTo!.replace("_", " "), minutes: QR_EXPIRY_MINUTES }),
+      duration: 4000,
+    });
   }
 
   return (
@@ -243,33 +336,121 @@ export default function SharePage() {
       )}
 
       <div className="neu-shell border border-white/70 p-6 sm:p-8 space-y-5">
-        {/* Select document */}
+        {/* Toggle: Document / Episode */}
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("selectDocument")}</label>
-          {loadingResults ? (
-            <p className="text-sm text-slate-400 py-2">{t("loadingDocuments")}</p>
-          ) : results.length === 0 ? (
-            <p className="text-sm text-slate-400 py-2">{t("noDocuments")}</p>
-          ) : (
-            <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-              {results.map((r) => (
-                <button
-                  key={r.id}
-                  className={`w-full text-left rounded-xl px-3 py-2 text-sm transition-all ${
-                    selectedResult?.id === r.id
-                      ? "neu-pressed border-l-4 border-l-sky-500"
-                      : "neu-surface hover:neu-pressed"
-                  }`}
-                  onClick={() => setSelectedResult(r)}
-                  type="button"
-                >
-                  <span className="font-semibold text-slate-700">{r.file_name ?? r.document_id.slice(0, 20) + "…"}</span>
-                  <span className="ml-2 text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString()}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("shareMode") ?? "Modo de compartir"}</label>
+          <div className="flex gap-2">
+            <button
+              className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium transition-all ${
+                shareMode === "document"
+                  ? "neu-pressed text-slate-800 border-l-4 border-l-sky-500"
+                  : "neu-surface text-slate-500 hover:neu-pressed"
+              }`}
+              onClick={() => setShareMode("document")}
+              type="button"
+            >
+              <FileText className="mr-1 h-4 w-4 inline" />
+              {t("modeDocument") ?? "Documento"}
+            </button>
+            <button
+              className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium transition-all ${
+                shareMode === "episode"
+                  ? "neu-pressed text-slate-800 border-l-4 border-l-sky-500"
+                  : "neu-surface text-slate-500 hover:neu-pressed"
+              }`}
+              onClick={() => setShareMode("episode")}
+              type="button"
+            >
+              <FolderOpen className="mr-1 h-4 w-4 inline" />
+              {t("modeEpisode") ?? "Episodio"}
+            </button>
+          </div>
         </div>
+
+        {/* Document selector */}
+        {shareMode === "document" && (
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("selectDocument")}</label>
+            {loadingResults ? (
+              <p className="text-sm text-slate-400 py-2">{t("loadingDocuments")}</p>
+            ) : results.length === 0 ? (
+              <p className="text-sm text-slate-400 py-2">{t("noDocuments")}</p>
+            ) : (
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                {results.map((r) => (
+                  <button
+                    key={r.id}
+                    className={`w-full text-left rounded-xl px-3 py-2 text-sm transition-all ${
+                      selectedResult?.id === r.id
+                        ? "neu-pressed border-l-4 border-l-sky-500"
+                        : "neu-surface hover:neu-pressed"
+                    }`}
+                    onClick={() => setSelectedResult(r)}
+                    type="button"
+                  >
+                    <span className="font-semibold text-slate-700">{r.file_name ?? r.document_id.slice(0, 20) + "…"}</span>
+                    <span className="ml-2 text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString()}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Episode selector */}
+        {shareMode === "episode" && (
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("selectEpisode") ?? "Selecciona un episodio"}</label>
+              {loadingEpisodes ? (
+                <p className="text-sm text-slate-400 py-2">{t("loading") ?? "Cargando…"}</p>
+              ) : episodes.length === 0 ? (
+                <p className="text-sm text-slate-400 py-2">{t("noEpisodes") ?? "No se encontraron episodios."}</p>
+              ) : (
+                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                  {episodes.map((ep) => (
+                    <button
+                      key={ep.episodeId}
+                      className={`w-full text-left rounded-xl px-3 py-2 text-sm transition-all ${
+                        selectedEpisode?.episodeId === ep.episodeId
+                          ? "neu-pressed border-l-4 border-l-sky-500"
+                          : "neu-surface hover:neu-pressed"
+                      }`}
+                      onClick={() => setSelectedEpisode(ep)}
+                      type="button"
+                    >
+                      <span className="font-semibold text-slate-700">{ep.episodeType} — {ep.classification}</span>
+                      <span className="ml-2 text-xs text-slate-400">{new Date(ep.openedAt * 1000).toLocaleDateString()}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {selectedEpisode && (
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("documentsInEpisode") ?? "Documentos del episodio"}</label>
+                {loadingEpisodeDocs ? (
+                  <p className="text-sm text-slate-400 py-2">{t("loading") ?? "Cargando…"}</p>
+                ) : episodeDocs.length === 0 ? (
+                  <p className="text-sm text-slate-400 py-2">{t("noDocumentsInEpisode") ?? "Este episodio no tiene documentos."}</p>
+                ) : (
+                  <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                    {episodeDocs.map((d) => (
+                      <div
+                        key={d.id}
+                        className="neu-surface rounded-xl px-3 py-2 text-sm flex items-center justify-between"
+                      >
+                        <span className="font-medium text-slate-700">{d.file_name ?? d.document_id.slice(0, 20) + "…"}</span>
+                        <span className="text-xs text-slate-400">{new Date(d.created_at).toLocaleDateString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Select role */}
         <div>
@@ -309,7 +490,13 @@ export default function SharePage() {
         {/* Generate */}
         <button
           className="neu-surface hover:neu-pressed w-full rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition-all disabled:opacity-50"
-          disabled={generating || !selectedResult || !grantedTo || !recipientId.trim() || !!keyConflict}
+          disabled={
+            generating ||
+            !grantedTo ||
+            !recipientId.trim() ||
+            !!keyConflict ||
+            (shareMode === "document" ? !selectedResult : !selectedEpisode)
+          }
           onClick={handleGenerate}
           type="button"
         >

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { usePrivy } from "@privy-io/react-auth";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { listSharedDocuments } from "@/actions/documents/list-shared-documents";
+import { listSharedDocumentsByEpisode } from "@/actions/documents/list-shared-documents-by-episode";
 import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
 import { checkAccessOnChain } from "@/actions/permissions/check-access-onchain";
 import { useDocumentDecrypt } from "@/hooks/documents/useDocumentDecrypt";
@@ -30,6 +31,8 @@ export default function SharedDocumentsPage() {
   const userId = user?.id ?? "";
   const searchParams = useSearchParams();
   const highlightDocId = searchParams.get("doc");
+  const episodeId = searchParams.get("episode");
+  const patientWalletFromQR = searchParams.get("patient");
 
   const [docs, setDocs] = useState<SharedDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,36 +45,42 @@ export default function SharedDocumentsPage() {
 
   const fetchDocs = useCallback(async () => {
     if (!walletAddress) return;
-    console.log("[SharedPage] fetchDocs start, wallet:", walletAddress);
+    console.log("[SharedPage] fetchDocs start, wallet:", walletAddress, "episode:", episodeId);
     setLoading(true);
     try {
-      const res = await listSharedDocuments({ doctorWallet: walletAddress });
-      console.log("[SharedPage] listSharedDocuments result:", res.success, "count:", isAuthSuccess(res) ? res.data.documents.length : 0);
-      if (isAuthSuccess(res) && res.data) {
-        setDocs(res.data.documents);
-        // Pre-fetch patient public keys
-        const uniquePatients = [...new Set(res.data.documents.map((d) => d.patient_wallet))];
-        const keyMap: Record<string, string | null> = {};
-        await Promise.all(
-          uniquePatients.map(async (pw) => {
-            try {
-              keyMap[pw] = await getUserPublicKey(pw);
-            } catch {
-              keyMap[pw] = null;
-            }
-          })
-        );
-        setPatientKeys(keyMap);
-        if (uniquePatients.length > 0 && Object.values(keyMap).every((v) => v === null)) {
-          console.warn("[SharedPage] No patient public keys resolved");
-          sileo.warning({
-            title: "Claves de pacientes no disponibles",
-            description: "No se pudieron obtener las claves públicas de los pacientes. Es posible que las claves de cifrado aún se estén recuperando.",
-            duration: 5000,
-          });
+      let resultDocs: SharedDocument[] = [];
+      if (episodeId) {
+        const res = await listSharedDocumentsByEpisode({ episodeId });
+        if (isAuthSuccess(res) && res.data) {
+          resultDocs = res.data.documents;
         }
       } else {
-        setDocs([]);
+        const res = await listSharedDocuments({ doctorWallet: walletAddress });
+        if (isAuthSuccess(res) && res.data) {
+          resultDocs = res.data.documents;
+        }
+      }
+      setDocs(resultDocs);
+      // Pre-fetch patient public keys
+      const uniquePatients = [...new Set(resultDocs.map((d) => d.patient_wallet))];
+      const keyMap: Record<string, string | null> = {};
+      await Promise.all(
+        uniquePatients.map(async (pw) => {
+          try {
+            keyMap[pw] = await getUserPublicKey(pw);
+          } catch {
+            keyMap[pw] = null;
+          }
+        })
+      );
+      setPatientKeys(keyMap);
+      if (uniquePatients.length > 0 && Object.values(keyMap).every((v) => v === null)) {
+        console.warn("[SharedPage] No patient public keys resolved");
+        sileo.warning({
+          title: "Claves de pacientes no disponibles",
+          description: "No se pudieron obtener las claves públicas de los pacientes. Es posible que las claves de cifrado aún se estén recuperando.",
+          duration: 5000,
+        });
       }
     } catch (e) {
       console.error("[SharedPage] fetchDocs error:", e);
@@ -79,7 +88,7 @@ export default function SharedDocumentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [walletAddress, t]);
+  }, [walletAddress, t, episodeId]);
 
   useEffect(() => {
     fetchDocs();

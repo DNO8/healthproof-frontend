@@ -13,6 +13,7 @@ export interface DocumentSecretRow {
   encrypted_keys: Record<string, { data: string; iv: string }>;
   uploader_public_key: string | null;
   created_at: string;
+  episode_id?: string | null;
   uploader_name?: string | null;
 }
 
@@ -24,7 +25,7 @@ export async function getDocumentSecret(
   const { data, error } = await supabase
     .from("document_secrets")
     .select(
-      "id, document_id, file_name, uploader_wallet, patient_wallet, iv, encrypted_keys, uploader_public_key, created_at",
+      "id, document_id, file_name, uploader_wallet, patient_wallet, iv, encrypted_keys, uploader_public_key, created_at, episode_id",
     )
     .eq("document_id", documentId)
     .single();
@@ -48,7 +49,7 @@ export async function listDocumentSecretsForWallet(
   const { data, error } = await supabase
     .from("document_secrets")
     .select(
-      "id, document_id, file_name, uploader_wallet, patient_wallet, iv, encrypted_keys, uploader_public_key, created_at",
+      "id, document_id, file_name, uploader_wallet, patient_wallet, iv, encrypted_keys, uploader_public_key, created_at, episode_id",
     )
     .or(`patient_wallet.eq.${w},uploader_wallet.eq.${w}`)
     .order("created_at", { ascending: false });

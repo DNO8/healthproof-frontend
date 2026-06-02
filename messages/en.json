@@ -504,7 +504,15 @@
       "cancelSuccess": "Invitation cancelled",
       "cancelSuccessDesc": "The invitation has been cancelled.",
       "cancelError": "Failed to cancel",
-      "loadSentError": "Failed to load sent invitations"
+      "loadSentError": "Failed to load sent invitations",
+      "scopeByDocument": "Scope type",
+      "modeDocument": "Document(s)",
+      "modeEpisode": "Episode",
+      "selectEpisode": "Select an episode",
+      "selectEpisodeDesc": "Choose which clinical episode to share.",
+      "noEpisodes": "No episodes found.",
+      "documentsInEpisode": "Documents in episode",
+      "noDocumentsInEpisode": "This episode has no documents."
     },
     "invitations": {
       "title": "Invitations",
@@ -965,6 +973,16 @@
     "noLabPublicKey": "The lab's encryption key could not be found.",
     "noWrappedKey": "Your encrypted access key was not found for this document.",
     "noPatientKeys": "Your encryption keys were not found. Please log out and log back in.",
+    "shareMode": "Share mode",
+    "modeDocument": "Document",
+    "modeEpisode": "Episode",
+    "selectEpisode": "Select an episode",
+    "selectEpisodeDesc": "Choose which clinical episode to share.",
+    "noEpisodes": "No episodes found.",
+    "documentsInEpisode": "Documents in episode",
+    "noDocumentsInEpisode": "This episode has no documents.",
+    "nSignaturesRequired": "Multiple signatures",
+    "nDocsWillBeShared": "Sharing {count} documents. Signing {count} transactions…",
     "keyConflictMissing": "Encryption keys are missing from this browser. Sharing is disabled.",
     "keyConflictMismatch": "Encryption keys in this browser don't match your documents. Sharing is disabled."
   },
