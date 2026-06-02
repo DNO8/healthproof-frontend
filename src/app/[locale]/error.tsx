@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { DecorativeCross, DecorativeCircle } from "@/components/ui";
 
 export default function ErrorPage({
+  error,
   reset,
 }: {
   error: Error & { digest?: string };
@@ -56,11 +57,23 @@ export default function ErrorPage({
           </span>
         </Link>
 
-        {/* Error code — neumorphic badge */}
+        {/* Error icon — neumorphic badge */}
         <div className="neu-shell mb-8 inline-flex h-28 w-28 items-center justify-center">
-          <span className="bg-linear-to-br from-red-300 via-red-400 to-red-500 bg-clip-text text-5xl font-extrabold tracking-tight text-transparent">
-            {t("code")}
-          </span>
+          <svg
+            className="text-red-400"
+            fill="none"
+            height="48"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            width="48"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" x2="12" y1="8" y2="12" />
+            <line x1="12" x2="12.01" y1="16" y2="16" />
+          </svg>
         </div>
 
         {/* Main card */}
@@ -68,9 +81,14 @@ export default function ErrorPage({
           <h1 className="mb-3 text-2xl font-bold text-slate-800">
             {t("title")}
           </h1>
-          <p className="mb-8 text-sm leading-relaxed text-slate-500">
+          <p className="mb-4 text-sm leading-relaxed text-slate-500">
             {t("description")}
           </p>
+          {error?.message && (
+            <p className="mb-6 rounded-lg bg-red-50 px-3 py-2 text-xs font-mono text-red-600 break-all">
+              {error.message.slice(0, 200)}
+            </p>
+          )}
 
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button

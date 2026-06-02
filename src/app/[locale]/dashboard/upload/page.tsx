@@ -44,6 +44,7 @@ export default function UploadPage() {
   const [patientId, setPatientId] = useState(linkedPatientWallet ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [pendingCompletion, setPendingCompletion] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const keyConflict = useKeyConflictStore((s) => s.conflict);
 
@@ -60,6 +61,29 @@ export default function UploadPage() {
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
+  async function completeOrder(orderId: string) {
+    const activeWallet = wallets.find((w) => w.address);
+    if (!activeWallet) throw new Error("No active wallet");
+
+    const provider = await activeWallet.getEthereumProvider();
+    const viemWallet = createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+
+    const orderIdBytes =
+      orderId.startsWith("0x") && orderId.length === 66
+        ? (orderId as `0x${string}`)
+        : keccak256(toHex(orderId));
+
+    const request = await signMetaTransaction(
+      viemWallet,
+      CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
+      "updateOrderStatusViaGateway",
+      [orderIdBytes, 2, walletAddress],
+      HealthProofGatewayAbi,
+    );
+
+    await updateOrderStatusOnChain({ request, orderId, status: 2 });
+  }
+
   async function handleUpload() {
     if (!file || !walletAddress || !patientId.trim()) return;
     if (keyConflict) {
@@ -75,6 +99,7 @@ export default function UploadPage() {
       return;
     }
     setUploading(true);
+    setPendingCompletion(false);
     try {
       const labKeys = await getKeyPair(labId);
       if (!labKeys?.publicKey || !labKeys?.privateKey) throw new Error(tModal("noLabKeys"));
@@ -150,31 +175,13 @@ export default function UploadPage() {
       // If linked to an order, update its status to COMPLETED (2) via meta-tx
       if (linkedOrderId) {
         try {
-          const activeWallet = wallets.find((w) => w.address);
-          if (!activeWallet) throw new Error("No active wallet");
-
-          const provider = await activeWallet.getEthereumProvider();
-          const viemWallet = createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
-
-          const orderIdBytes =
-            linkedOrderId.startsWith("0x") && linkedOrderId.length === 66
-              ? (linkedOrderId as `0x${string}`)
-              : keccak256(toHex(linkedOrderId));
-
-          const request = await signMetaTransaction(
-            viemWallet,
-            CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
-            "updateOrderStatusViaGateway",
-            [orderIdBytes, 2, walletAddress],
-            HealthProofGatewayAbi,
-          );
-
-          await updateOrderStatusOnChain({ request, orderId: linkedOrderId, status: 2 });
+          await completeOrder(linkedOrderId);
           sileo.success({ title: t("uploadSuccess"), description: t("orderCompleted") });
           router.push("/dashboard/lab-orders");
           return;
         } catch (err) {
           console.error("[upload] Order status update failed:", err);
+          setPendingCompletion(true);
           sileo.warning({ title: t("uploadSuccess"), description: t("orderStatusFailed") });
         }
       } else {
@@ -195,12 +202,43 @@ export default function UploadPage() {
       <h1 className="mb-6 text-2xl font-bold text-slate-800">{t("title")}</h1>
 
       {linkedOrderId && (
-        <div className="mb-4 rounded-xl bg-sky-50 p-4 text-sm text-sky-700 border border-sky-200">
-          <p className="font-semibold">{t("linkedOrder")}</p>
-          <p className="font-mono text-xs mt-1">{linkedOrderId.slice(0, 20)}…{linkedOrderId.slice(-8)}</p>
+        <div className="neu-surface mb-4 rounded-xl p-4 text-sm border-l-4 border-l-[#93C5FD]">
+          <p className="font-semibold text-[#1F2937]">{t("linkedOrder")}</p>
+          <p className="font-mono text-xs mt-1 text-[#9CA3AF]">{linkedOrderId.slice(0, 20)}…{linkedOrderId.slice(-8)}</p>
           {linkedPatientWallet && (
-            <p className="text-xs mt-1">{t("patientLabel")}: {linkedPatientWallet.slice(0, 8)}…{linkedPatientWallet.slice(-4)}</p>
+            <p className="text-xs mt-1 text-[#9CA3AF]">{t("patientLabel")}: {linkedPatientWallet.slice(0, 8)}…{linkedPatientWallet.slice(-4)}</p>
           )}
+          <p className="text-xs mt-2 text-[#93C5FD] bg-[#93C5FD]/10 rounded-lg px-2 py-1 inline-block">
+            {t("twoSignaturesRequired")}
+          </p>
+        </div>
+      )}
+
+      {pendingCompletion && linkedOrderId && (
+        <div className="neu-surface mb-4 rounded-xl p-4 text-sm border-l-4 border-l-[#F59E0B] space-y-2">
+          <p className="font-semibold text-[#1F2937]">{t("orderCompletionPending")}</p>
+          <p className="text-xs text-[#9CA3AF]">{t("orderCompletionPendingDesc")}</p>
+          <button
+            className="neu-chip px-3 py-1.5 text-xs font-semibold text-[#B45309] transition hover:brightness-95 disabled:opacity-50"
+            disabled={uploading}
+            onClick={async () => {
+              setUploading(true);
+              try {
+                await completeOrder(linkedOrderId);
+                sileo.success({ title: t("orderCompleted"), description: "" });
+                setPendingCompletion(false);
+                router.push("/dashboard/lab-orders");
+              } catch (err) {
+                console.error("[upload] Retry order completion failed:", err);
+                sileo.error({ title: t("orderCompletionFailed"), description: String(err).slice(0, 120) });
+              } finally {
+                setUploading(false);
+              }
+            }}
+            type="button"
+          >
+            {uploading ? t("completing") : t("completeOrderButton")}
+          </button>
         </div>
       )}
 

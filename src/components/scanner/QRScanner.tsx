@@ -36,6 +36,7 @@ function getPermissionInstructions(t: (key: string, values?: Record<string, stri
 export function QRScanner({ onScan, onError, className = "" }: QRScannerProps) {
   const t = useTranslations("scanner");
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const isRunningRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"idle" | "starting" | "scanning" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +74,10 @@ export function QRScanner({ onScan, onError, className = "" }: QRScannerProps) {
         },
         () => {}
       )
-      .then(() => setStatus("scanning"))
+      .then(() => {
+        setStatus("scanning");
+        isRunningRef.current = true;
+      })
       .catch((err) => {
         const msg = String(err);
         setStatus("error");
@@ -85,10 +89,11 @@ export function QRScanner({ onScan, onError, className = "" }: QRScannerProps) {
   useEffect(() => {
     startScanner();
     return () => {
-      if (scannerRef.current) {
+      if (scannerRef.current && isRunningRef.current) {
         scannerRef.current.stop().catch(() => {});
-        scannerRef.current = null;
+        isRunningRef.current = false;
       }
+      scannerRef.current = null;
     };
   }, [startScanner]);
 
@@ -117,10 +122,11 @@ export function QRScanner({ onScan, onError, className = "" }: QRScannerProps) {
           <button
             type="button"
             onClick={() => {
-              if (scannerRef.current) {
+              if (scannerRef.current && isRunningRef.current) {
                 scannerRef.current.stop().catch(() => {});
-                scannerRef.current = null;
+                isRunningRef.current = false;
               }
+              scannerRef.current = null;
               startScanner();
             }}
             className="rounded-lg bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-200"
