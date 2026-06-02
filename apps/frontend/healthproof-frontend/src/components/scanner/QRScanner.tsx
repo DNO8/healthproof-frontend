@@ -37,25 +37,40 @@ export function QRScanner({ onScan, onError, className = "" }: QRScannerProps) {
   const t = useTranslations("scanner");
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isRunningRef = useRef(false);
+  const isStartingRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const onScanRef = useRef(onScan);
+  const onErrorRef = useRef(onError);
   const [status, setStatus] = useState<"idle" | "starting" | "scanning" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [isInsecure, setIsInsecure] = useState(false);
 
+  // Keep refs in sync without triggering re-creates
+  onScanRef.current = onScan;
+  onErrorRef.current = onError;
+
   const startScanner = useCallback(() => {
     if (!containerRef.current) return;
+    if (isStartingRef.current || isRunningRef.current) return;
 
     if (typeof window !== "undefined" && !window.isSecureContext) {
       setIsInsecure(true);
       setStatus("error");
       setError(t("insecureContext"));
-      onError?.("insecure context");
+      onErrorRef.current?.("insecure context");
       return;
     }
 
     setIsInsecure(false);
     setStatus("starting");
     setError(null);
+    isStartingRef.current = true;
+
+    // Clean up any stale DOM inside the root before creating a new scanner
+    const root = document.getElementById("qr-scanner-root");
+    if (root) {
+      root.innerHTML = "";
+    }
 
     const scanner = new Html5Qrcode("qr-scanner-root");
     scannerRef.current = scanner;
@@ -70,29 +85,36 @@ export function QRScanner({ onScan, onError, className = "" }: QRScannerProps) {
         { fps: 10, qrbox: { width: size, height: size } },
         (decodedText) => {
           setStatus("scanning");
-          onScan(decodedText);
+          onScanRef.current(decodedText);
         },
         () => {}
       )
       .then(() => {
         setStatus("scanning");
         isRunningRef.current = true;
+        isStartingRef.current = false;
       })
       .catch((err) => {
         const msg = String(err);
         setStatus("error");
         setError(msg);
-        onError?.(msg);
+        onErrorRef.current?.(msg);
+        isStartingRef.current = false;
       });
-  }, [onScan, onError]);
+  }, [t]);
 
   useEffect(() => {
-    startScanner();
+    // Small delay to avoid double-mount in Strict Mode
+    const timer = setTimeout(() => {
+      startScanner();
+    }, 100);
     return () => {
+      clearTimeout(timer);
       if (scannerRef.current && isRunningRef.current) {
         scannerRef.current.stop().catch(() => {});
         isRunningRef.current = false;
       }
+      isStartingRef.current = false;
       scannerRef.current = null;
     };
   }, [startScanner]);
@@ -126,7 +148,10 @@ export function QRScanner({ onScan, onError, className = "" }: QRScannerProps) {
                 scannerRef.current.stop().catch(() => {});
                 isRunningRef.current = false;
               }
+              isStartingRef.current = false;
               scannerRef.current = null;
+              const root = document.getElementById("qr-scanner-root");
+              if (root) root.innerHTML = "";
               startScanner();
             }}
             className="rounded-lg bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-200"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
 import { useTranslations } from "next-intl";
@@ -26,9 +26,26 @@ export default function ScanPage() {
   const [qrInput, setQrInput] = useState("");
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lastPayloadRef = useRef<string | null>(null);
+  const processingRef = useRef(false);
 
   async function processPayload(payload: string) {
     if (!myUserId) return;
+
+    // Dedupe: ignore the exact same payload processed recently
+    if (lastPayloadRef.current === payload) {
+      console.log("[ScanPage] duplicate payload ignored");
+      return;
+    }
+
+    // Guard: prevent concurrent processing
+    if (processingRef.current) {
+      console.log("[ScanPage] already processing, ignoring new scan");
+      return;
+    }
+
+    processingRef.current = true;
+    lastPayloadRef.current = payload;
     console.log("[ScanPage] processPayload start, userId:", myUserId);
     setScanning(true);
     setError(null);
@@ -87,10 +104,21 @@ export default function ScanPage() {
     } catch (e) {
       const msg = String(e).slice(0, 200);
       console.error("[ScanPage] processPayload error:", msg, e);
-      setError(msg);
-      sileo.error({ title: t("scanErrorTitle"), description: msg });
+
+      // Clear last payload on error so user can retry the same QR
+      lastPayloadRef.current = null;
+
+      // Show a friendlier message for rate limits
+      if (msg.includes("429") || msg.includes("Rate limit")) {
+        setError(t("rateLimitError") ?? "Demasiadas solicitudes. Espera un momento e intenta de nuevo.");
+        sileo.error({ title: t("scanErrorTitle"), description: t("rateLimitError") ?? "Espera unos segundos antes de reintentar." });
+      } else {
+        setError(msg);
+        sileo.error({ title: t("scanErrorTitle"), description: msg });
+      }
     } finally {
       setScanning(false);
+      processingRef.current = false;
     }
   }
 
