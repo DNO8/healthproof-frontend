@@ -213,14 +213,20 @@ export default function UploadPage() {
       <div className="neu-shell border border-white/70 p-6 sm:p-8 space-y-4">
         <div>
           <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("patientLabel")}</label>
-          <UserSelect
-            value={patientId}
-            onChange={setPatientId}
-            label=""
-            placeholder={t("patientPlaceholder")}
-            filterRole="patient"
-            excludeWallet={walletAddress ?? undefined}
-          />
+          {linkedPatientWallet ? (
+            <div className="neu-pressed w-full rounded-xl px-4 py-2.5 text-sm text-slate-500 opacity-60">
+              {linkedPatientWallet}
+            </div>
+          ) : (
+            <UserSelect
+              value={patientId}
+              onChange={setPatientId}
+              label=""
+              placeholder={t("patientPlaceholder")}
+              filterRole="patient"
+              excludeWallet={walletAddress ?? undefined}
+            />
+          )}
         </div>
 
         <div
