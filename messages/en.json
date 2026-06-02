@@ -786,6 +786,8 @@
       "invalidQR": "Invalid QR data",
       "expiredQR": "QR code has expired",
       "noAccess": "No on-chain access found",
+      "walletMismatch": "This QR code is not intended for your wallet.",
+      "rateLimitError": "Too many requests. Please wait a moment and try again.",
       "scanErrorTitle": "Scan failed",
       "accessGranted": "Access granted",
       "redirecting": "Redirecting to shared documents…",
