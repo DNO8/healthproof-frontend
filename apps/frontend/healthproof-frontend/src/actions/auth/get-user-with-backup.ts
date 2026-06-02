@@ -76,13 +76,14 @@ export async function getUserWithBackup(
     };
   }
 
-  // Fall back to wallet_address lookup
+  // Fall back to wallet_address lookup (normalize to lowercase for case-insensitive match)
+  const walletLower = idOrWallet.toLowerCase();
   const { data: byWallet, error: walletErr } = await supabase
     .from("users")
     .select(
       "id, email, wallet_address, full_name, created_at, public_key, encrypted_private_key, key_share, key_version, server_share_ciphertext, server_share_dek_ciphertext, server_share_kms_key_id, recovery_code_hash, recovery_code_used_at, master_secret_hash, scheme_version",
     )
-    .eq("wallet_address", idOrWallet)
+    .eq("wallet_address", walletLower)
     .single();
 
   if (walletErr || !byWallet) {

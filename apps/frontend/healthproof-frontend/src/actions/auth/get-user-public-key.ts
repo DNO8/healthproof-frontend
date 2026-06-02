@@ -11,7 +11,7 @@ export async function getUserPublicKey(
     await requireAuth(_privyToken);
     const supabase = createAdminClient();
 
-  // Try lookup by user ID first
+  // Try lookup by user ID first (Privy DID — case-sensitive)
   const { data, error } = await supabase
     .from("users")
     .select("public_key")
@@ -22,11 +22,12 @@ export async function getUserPublicKey(
     return data.public_key as string;
   }
 
-  // Fall back to wallet_address lookup
+  // Fall back to wallet_address lookup (normalize to lowercase for case-insensitive match)
+  const walletLower = idOrWallet.toLowerCase();
   const { data: byWallet, error: walletErr } = await supabase
     .from("users")
     .select("public_key")
-    .eq("wallet_address", idOrWallet)
+    .eq("wallet_address", walletLower)
     .single();
 
   if (walletErr || !byWallet) {

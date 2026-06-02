@@ -29,11 +29,12 @@ async function getDbUserHandler(
     };
   }
 
-  // Fall back to wallet_address lookup
+  // Fall back to wallet_address lookup (normalize to lowercase for case-insensitive match)
+  const walletLower = data.idOrWallet.toLowerCase();
   const { data: byWallet, error: walletErr } = await supabase
     .from("users")
     .select("id, email, wallet_address, full_name, created_at, public_key, onboarding_completed_at")
-    .eq("wallet_address", data.idOrWallet)
+    .eq("wallet_address", walletLower)
     .single();
 
   if (walletErr || !byWallet) {
