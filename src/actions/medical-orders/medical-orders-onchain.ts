@@ -1,20 +1,20 @@
 "use server";
 
 /**
- * ─── Gateway Proxy Architecture Note ───
+ * ─── Gateway Proxy Architecture ───
  *
- * HealthProofGateway exposes proxy functions (createOrderViaGateway,
+ * HealthProofGateway exposes proxy functions (createMedicalOrder,
  * assignLabViaGateway, updateOrderStatusViaGateway, closeEpisodeViaGateway)
- * designed as a unified entry point for external SDKs.
+ * designed as a unified entry point for all on-chain writes.
  *
  * Current frontend usage:
- * - Medical orders (this file) → Gateway proxies (historical, still active)
- * - Permissions (permissions/page.tsx) → Direct meta-tx against PermissionManager
- *   (less indirection, lower gas)
+ * - Medical orders (this file) → Gateway proxies
+ * - Permissions (permissions/page.tsx) → Gateway proxies (grantAccess / revokeAccess)
+ * - Documents (register-document-onchain.ts) → Gateway proxy (registerMedicalDocument)
  *
- * Both paths use EIP-2771 meta-transactions signed by the user and relayed
- * through the TrustedForwarder. The Gateway remains available for future
- * third-party integrations but is not required for internal flows.
+ * All paths use EIP-2771 meta-transactions signed by the user and relayed
+ * through the TrustedForwarder. The Gateway injects _msgSender() as
+ * actor/issuer for hardened contract compatibility.
  */
 
 import { createPublicClient, http, keccak256, toHex, fromHex } from "viem";

@@ -9,7 +9,7 @@ import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import { assignLabToOrder, getOrderOnChain } from "@/actions/medical-orders/medical-orders-onchain";
 import { listOrdersByPatient } from "@/actions/medical-orders/list-orders-by-patient";
 import { signMetaTransaction } from "@/lib/metatx/forwarder";
-import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import type { OrderRef } from "@/actions/medical-orders/list-orders-by-patient";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { LabSelect } from "@/components/forms/LabSelect";
@@ -109,10 +109,10 @@ export default function MyOrdersPage() {
 
       const request = await signMetaTransaction(
         viemWallet,
-        CONTRACT_ADDRESSES.MedicalOrderRegistry,
-        "assignLab",
-        [orderIdBytes, selectedLab.trim()],
-        MedicalOrderRegistryAbi,
+        CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
+        "assignLabViaGateway",
+        [orderIdBytes, selectedLab.trim(), patientAddress],
+        HealthProofGatewayAbi,
       );
 
       const res = await assignLabToOrder({
