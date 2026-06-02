@@ -10,7 +10,6 @@ import { createWalletClient, custom, keccak256, toHex, stringToHex } from "viem"
 import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import { signMetaTransaction } from "@/lib/metatx/forwarder";
 import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
-import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
 
 import { uploadHybridEncryptedFile } from "@/services/storage/upload";
 import { getKeyPair } from "@/services/encryption/keystore";
@@ -164,10 +163,10 @@ export default function UploadPage() {
 
           const request = await signMetaTransaction(
             viemWallet,
-            CONTRACT_ADDRESSES.MedicalOrderRegistry,
-            "updateStatus",
-            [orderIdBytes, 2],
-            MedicalOrderRegistryAbi,
+            CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
+            "updateOrderStatusViaGateway",
+            [orderIdBytes, 2, walletAddress],
+            HealthProofGatewayAbi,
           );
 
           await updateOrderStatusOnChain({ request, orderId: linkedOrderId, status: 2 });
