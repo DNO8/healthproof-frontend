@@ -6,6 +6,7 @@ export type DecryptedFile = {
   url: string;
   blob: Blob;
   mime: string;
+  name?: string;
 };
 
 const MIME_EXT: Record<string, string> = {
@@ -47,37 +48,56 @@ function PDFPreview({ file }: { file: DecryptedFile }) {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setFailed(true), 2000);
+    // Give the browser 8 seconds to render the PDF; blob URLs for large
+    // files can take a while, and Chrome extensions may delay onLoad.
+    const timer = setTimeout(() => setFailed(true), 8000);
     return () => clearTimeout(timer);
   }, []);
 
-  if (failed) {
-    return (
-      <div className="mt-4 flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-300 p-6">
-        <span className="text-2xl">📄</span>
-        <p className="text-xs text-slate-400">
-          Vista previa del PDF no disponible en este navegador.
-        </p>
+  const ext = getExtensionFromMime(file.mime);
+  const baseName = file.name ? file.name.replace(/\.[^.]+$/, "") : "document";
+  const downloadName = `${baseName}${ext}`;
+
+  const fallback = (
+    <div className="mt-4 flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-300 p-6">
+      <span className="text-2xl">📄</span>
+      <p className="text-xs text-slate-400">
+        Vista previa del PDF no disponible en este navegador.
+      </p>
+      <div className="flex gap-2">
         <a
           href={file.url}
-          download="document.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
           className="rounded-lg bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
+        >
+          Abrir PDF
+        </a>
+        <a
+          href={file.url}
+          download={downloadName}
+          className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
         >
           Descargar PDF
         </a>
       </div>
-    );
-  }
+    </div>
+  );
+
+  if (failed) return fallback;
 
   return (
     <div className="w-full" style={{ minHeight: 320 }}>
-      <iframe
-        src={file.url}
+      <object
+        data={file.url}
+        type="application/pdf"
         className="w-full rounded-xl border border-slate-200"
         style={{ minHeight: 320, height: 480 }}
-        title="Decrypted PDF"
         onLoad={() => setFailed(false)}
-      />
+        onError={() => setFailed(true)}
+      >
+        {fallback}
+      </object>
     </div>
   );
 }

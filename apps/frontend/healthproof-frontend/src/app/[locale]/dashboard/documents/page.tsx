@@ -105,10 +105,12 @@ export default function DocumentsPage() {
       const file = await performDecrypt(doc, true);
       if (file) {
         const ext = getExtensionFromMime(file.mime);
-        const name = `document-${doc.document_id.slice(0, 8)}${ext}`;
+        const rawName = file.name || doc.file_name || `document-${doc.document_id.slice(0, 8)}`;
+        const baseName = rawName.replace(/\.[^.]+$/, "");
+        const fullName = `${baseName}${ext}`;
         const a = document.createElement("a");
         a.href = file.url;
-        a.download = name;
+        a.download = fullName;
         a.click();
       }
     } catch (e) {
@@ -187,6 +189,9 @@ export default function DocumentsPage() {
         senderPublicKeyJwk,
         myUserId: userId,
       });
+      if (result) {
+        result.name = doc.file_name || undefined;
+      }
       console.log("[performDecrypt] decrypt result:", result ? "success" : "null");
       return result;
     } catch (e) {

@@ -6,10 +6,10 @@ import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
 import { useWallets } from "@privy-io/react-auth";
 import { createWalletClient, custom, keccak256, toHex } from "viem";
-import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
-import { assignLabToOrder, getOrderOnChain } from "@/actions/medical-orders/medical-orders-onchain";
+import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { assignLabToOrder, getOrderOnChain, updateOrderStatusOnChain } from "@/actions/medical-orders/medical-orders-onchain";
 import { listOrdersByLab } from "@/actions/medical-orders/list-orders-by-lab";
-import { signGatewayMetaTx } from "@/lib/metatx/forwarder";
+import { signGatewayMetaTx, signMetaTransaction } from "@/lib/metatx/forwarder";
 import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import type { OrderRef } from "@/actions/medical-orders/list-orders-by-lab";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
@@ -59,6 +59,7 @@ export default function LabOrdersPage() {
   const [order, setOrder] = useState<{ orderId: string; patient: string; doctor: string; examType: string; status: number; episodeId: string; assignedLab: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [completingOrderId, setCompletingOrderId] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
     if (!walletAddress) return;
@@ -171,6 +172,43 @@ export default function LabOrdersPage() {
     router.push(`/dashboard/upload?${params.toString()}`);
   }
 
+  async function handleCompleteOrder(order: OrderRef) {
+    const activeWallet = wallets.find((w) => w.address);
+    if (!activeWallet) {
+      sileo.error({ title: t("completeError"), description: "No active wallet found" });
+      return;
+    }
+
+    setCompletingOrderId(order.orderId);
+    try {
+      const viemWallet = await getViemWalletClient(activeWallet);
+      const orderIdBytes =
+        order.orderId.startsWith("0x") && order.orderId.length === 66
+          ? (order.orderId as `0x${string}`)
+          : keccak256(toHex(order.orderId));
+
+      const request = await signMetaTransaction(
+        viemWallet,
+        CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
+        "updateOrderStatusViaGateway",
+        [orderIdBytes, 2, walletAddress],
+        HealthProofGatewayAbi,
+      );
+
+      const res = await updateOrderStatusOnChain({ request, orderId: order.orderId, status: 2 });
+      if (!res.success) {
+        sileo.error({ title: t("completeError"), description: (res.error ?? "").slice(0, 120) });
+      } else {
+        sileo.success({ title: t("completeSuccess"), description: `TX: ${res.data?.txHash?.slice(0, 16)}…` });
+        fetchOrders();
+      }
+    } catch (e) {
+      sileo.error({ title: t("completeError"), description: String(e).slice(0, 120) });
+    } finally {
+      setCompletingOrderId(null);
+    }
+  }
+
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <h1 className="mb-6 text-2xl font-bold text-slate-800">{t("title")}</h1>
@@ -226,6 +264,16 @@ export default function LabOrdersPage() {
                     type="button"
                   >
                     {t("uploadResult")}
+                  </button>
+                )}
+                {o.status === 1 && (
+                  <button
+                    className="neu-chip mt-1 px-3 py-1.5 text-xs font-semibold text-[#047857] transition hover:brightness-95 disabled:opacity-50"
+                    disabled={completingOrderId === o.orderId}
+                    onClick={() => handleCompleteOrder(o)}
+                    type="button"
+                  >
+                    {completingOrderId === o.orderId ? t("completing") : t("completeOrder")}
                   </button>
                 )}
               </div>
