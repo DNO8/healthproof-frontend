@@ -4,11 +4,14 @@ import { requireAuth } from "@/lib/auth/privy-verify";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function getUserPublicKey(
-  idOrWallet: string,
+  input: string | { idOrWallet: string; _privyToken?: string },
   _privyToken?: string,
 ): Promise<string | null> {
+  const idOrWallet = typeof input === "string" ? input : input.idOrWallet;
+  const token = typeof input === "string" ? _privyToken : input._privyToken;
+
   try {
-    await requireAuth(_privyToken);
+    await requireAuth(token);
     const supabase = createAdminClient();
 
     // Try lookup by user ID first (Privy DID — case-sensitive)
