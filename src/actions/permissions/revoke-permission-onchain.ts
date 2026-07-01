@@ -1,12 +1,12 @@
 "use server";
 
-import { withAuth, auditLog } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
-import { validatePatientAccess } from "@/lib/auth/permissions";
 import { logAuditEvent } from "@/lib/audit-onchain";
+import { validatePatientAccess } from "@/lib/auth/permissions";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { auditLog, withAuth } from "@/lib/auth/with-auth";
 import { AuditAction } from "@/lib/medical-constants";
-import { executeForwardRequest } from "../relay/relay-core";
 import type { SignedForwardRequest } from "@/lib/metatx/types";
+import { executeForwardRequest } from "../relay/relay-core";
 
 interface RevokePermissionData {
   request: SignedForwardRequest;
@@ -22,7 +22,7 @@ interface RevokePermissionData {
  */
 async function revokePermissionHandler(
   data: RevokePermissionData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ txHash: string }> {
   if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
     throw new Error("Signer mismatch: request.from != authenticated wallet");
@@ -34,7 +34,11 @@ async function revokePermissionHandler(
   }
 
   try {
-    await logAuditEvent(data.patientWallet, data.granteeWallet, AuditAction.PERMISSION_REVOKED);
+    await logAuditEvent(
+      data.patientWallet,
+      data.granteeWallet,
+      AuditAction.PERMISSION_REVOKED,
+    );
   } catch {
     // On-chain audit logging is best-effort
   }
@@ -52,7 +56,7 @@ async function revokePermissionHandler(
  */
 async function validateRevokePermission(
   data: RevokePermissionData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<boolean> {
   return await validatePatientAccess(data.patientWallet, auth.wallet);
 }
@@ -61,4 +65,3 @@ export const revokePermissionOnChain = withAuth(revokePermissionHandler, {
   rateLimit: { windowMs: 60000, maxRequests: 5 },
   requireOnChainPermission: validateRevokePermission,
 });
-

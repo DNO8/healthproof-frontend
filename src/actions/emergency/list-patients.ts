@@ -1,8 +1,8 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { withAuth } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface PatientOption {
   id: string;
@@ -11,7 +11,10 @@ export interface PatientOption {
   email: string | null;
 }
 
-async function handler(_data: unknown, _auth: AuthContext): Promise<PatientOption[]> {
+async function handler(
+  _data: unknown,
+  _auth: AuthContext,
+): Promise<PatientOption[]> {
   const supabase = createAdminClient();
 
   const { data, error } = await supabase

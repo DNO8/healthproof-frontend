@@ -134,148 +134,148 @@ body {
 
 /* ── Driver.js Onboarding Popover — Neumorphism ── */
 .hp-driver-popover {
-  background: var(--hp-bg) !important;
-  border-radius: var(--hp-radius-xl) !important;
-  border: 1px solid var(--hp-border) !important;
-  box-shadow: var(--hp-shadow-elevated) !important;
-  color: var(--hp-text) !important;
-  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif !important;
-  padding: 1.25rem !important;
-  max-width: 360px !important;
+  background: var(--hp-bg);
+  border-radius: var(--hp-radius-xl);
+  border: 1px solid var(--hp-border);
+  box-shadow: var(--hp-shadow-elevated);
+  color: var(--hp-text);
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  padding: 1.25rem;
+  max-width: 360px;
 }
 
 .hp-driver-popover .driver-popover-title {
-  font-size: 1rem !important;
-  font-weight: 700 !important;
-  color: var(--hp-text) !important;
-  margin-bottom: 0.5rem !important;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--hp-text);
+  margin-bottom: 0.5rem;
 }
 
 .hp-driver-popover .driver-popover-description {
-  font-size: 0.875rem !important;
-  color: var(--hp-muted) !important;
-  line-height: 1.5 !important;
+  font-size: 0.875rem;
+  color: var(--hp-muted);
+  line-height: 1.5;
 }
 
 .hp-driver-popover .driver-popover-footer {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  margin-top: 1rem !important;
-  padding-top: 0.75rem !important;
-  border-top: 1px solid var(--hp-border) !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--hp-border);
 }
 
 .hp-driver-popover .driver-popover-progress-text {
-  font-size: 0.75rem !important;
-  font-weight: 600 !important;
-  color: var(--hp-muted) !important;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--hp-muted);
 }
 
 .hp-driver-popover .driver-popover-prev-btn,
 .hp-driver-popover .driver-popover-next-btn {
-  border-radius: var(--hp-radius-lg) !important;
-  font-size: 0.8125rem !important;
-  font-weight: 600 !important;
-  padding: 0.5rem 1rem !important;
-  border: 1px solid var(--hp-border) !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
+  border-radius: var(--hp-radius-lg);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--hp-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .hp-driver-popover .driver-popover-close-btn {
-  border-radius: var(--hp-radius-lg) !important;
-  font-size: 0.75rem !important;
-  font-weight: 600 !important;
-  padding: 0.35rem 0.65rem !important;
-  border: 1px solid var(--hp-border) !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
+  border-radius: var(--hp-radius-lg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--hp-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .hp-driver-popover .driver-popover-prev-btn {
-  background: var(--hp-bg) !important;
-  color: var(--hp-muted) !important;
-  box-shadow: var(--hp-shadow-raised) !important;
+  background: var(--hp-bg);
+  color: var(--hp-muted);
+  box-shadow: var(--hp-shadow-raised);
 }
 
 .hp-driver-popover .driver-popover-prev-btn:hover {
-  box-shadow: var(--hp-shadow-elevated) !important;
-  transform: translateY(-1px) !important;
+  box-shadow: var(--hp-shadow-elevated);
+  transform: translateY(-1px);
 }
 
 .hp-driver-popover .driver-popover-next-btn {
-  background: var(--hp-primary) !important;
-  color: var(--hp-text) !important;
-  box-shadow: var(--hp-shadow-raised) !important;
+  background: var(--hp-primary);
+  color: var(--hp-text);
+  box-shadow: var(--hp-shadow-raised);
 }
 
 .hp-driver-popover .driver-popover-next-btn:hover {
-  background: var(--hp-primary-soft) !important;
-  box-shadow: var(--hp-shadow-elevated) !important;
-  transform: translateY(-1px) !important;
+  background: var(--hp-primary-soft);
+  box-shadow: var(--hp-shadow-elevated);
+  transform: translateY(-1px);
 }
 
 .hp-driver-popover .driver-popover-close-btn {
-  background: var(--hp-bg) !important;
-  color: var(--hp-muted) !important;
-  box-shadow: var(--hp-shadow-inset) !important;
+  background: var(--hp-bg);
+  color: var(--hp-muted);
+  box-shadow: var(--hp-shadow-inset);
 }
 
 .hp-driver-popover .driver-popover-close-btn:hover {
-  color: var(--hp-text) !important;
+  color: var(--hp-text);
 }
 
 .hp-driver-popover .driver-popover-arrow {
-  border-color: var(--hp-bg) !important;
+  border-color: var(--hp-bg);
 }
 
 /* Skip button injected via onPopoverRender */
 .hp-driver-popover [data-tour-skip] {
-  border-radius: var(--hp-radius-lg) !important;
-  font-size: 0.75rem !important;
-  font-weight: 600 !important;
-  padding: 0.35rem 0.65rem !important;
-  border: 1px solid var(--hp-border) !important;
-  background: var(--hp-bg) !important;
-  color: var(--hp-muted) !important;
-  box-shadow: var(--hp-shadow-inset) !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
+  border-radius: var(--hp-radius-lg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--hp-border);
+  background: var(--hp-bg);
+  color: var(--hp-muted);
+  box-shadow: var(--hp-shadow-inset);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .hp-driver-popover [data-tour-skip]:hover {
-  color: var(--hp-text) !important;
-  box-shadow: var(--hp-shadow-pressed) !important;
-  transform: translateY(1px) !important;
+  color: var(--hp-text);
+  box-shadow: var(--hp-shadow-pressed);
+  transform: translateY(1px);
 }
 
 /* ── Responsive: mobile ── */
 @media (max-width: 640px) {
   .hp-driver-popover {
-    max-width: 92vw !important;
-    padding: 0.875rem !important;
-    border-radius: var(--hp-radius-lg) !important;
+    max-width: 92vw;
+    padding: 0.875rem;
+    border-radius: var(--hp-radius-lg);
   }
 
   .hp-driver-popover .driver-popover-title {
-    font-size: 0.9375rem !important;
+    font-size: 0.9375rem;
   }
 
   .hp-driver-popover .driver-popover-description {
-    font-size: 0.8125rem !important;
+    font-size: 0.8125rem;
   }
 
   .hp-driver-popover .driver-popover-footer {
-    flex-wrap: wrap !important;
-    gap: 0.5rem !important;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   .hp-driver-popover .driver-popover-prev-btn,
   .hp-driver-popover .driver-popover-next-btn,
   .hp-driver-popover .driver-popover-close-btn,
   .hp-driver-popover [data-tour-skip] {
-    font-size: 0.75rem !important;
-    padding: 0.3rem 0.55rem !important;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.55rem;
   }
 }

@@ -1,13 +1,23 @@
 "use server";
 
-import { createPublicClient, createWalletClient, http, keccak256, toHex, stringToHex } from "viem";
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  keccak256,
+  stringToHex,
+  toHex,
+} from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import HealthcareNetworkRegistryAbi from "@/lib/abis/HealthcareNetworkRegistry.json";
-import { withAuth, getDeployerPrivateKey } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
 import { isVerifiedAdmin } from "@/lib/auth/permissions";
-import type { OnChainNetwork, OnChainInstitution } from "@/lib/medical-constants";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { getDeployerPrivateKey, withAuth } from "@/lib/auth/with-auth";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import type {
+  OnChainInstitution,
+  OnChainNetwork,
+} from "@/lib/medical-constants";
 
 async function getClients() {
   const pk = await getDeployerPrivateKey();
@@ -16,8 +26,15 @@ async function getClients() {
     `0x${pk.replace(/^0x/, "")}` as `0x${string}`,
   );
   return {
-    publicClient: createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() }),
-    walletClient: createWalletClient({ account, chain: HEALTHPROOF_CHAIN, transport: http() }),
+    publicClient: createPublicClient({
+      chain: HEALTHPROOF_CHAIN,
+      transport: http(),
+    }),
+    walletClient: createWalletClient({
+      account,
+      chain: HEALTHPROOF_CHAIN,
+      transport: http(),
+    }),
     account,
   };
 }
@@ -32,13 +49,14 @@ interface CreateNetworkData {
 
 async function createNetworkHandler(
   data: CreateNetworkData,
-  auth: AuthContext,
+  _auth: AuthContext,
 ): Promise<{ txHash: string }> {
   const { publicClient, walletClient } = await getClients();
 
-  const networkId = data.networkId.startsWith("0x") && data.networkId.length === 66
-    ? (data.networkId as `0x${string}`)
-    : keccak256(toHex(data.networkId));
+  const networkId =
+    data.networkId.startsWith("0x") && data.networkId.length === 66
+      ? (data.networkId as `0x${string}`)
+      : keccak256(toHex(data.networkId));
 
   const txHash = await walletClient.writeContract({
     address: CONTRACT_ADDRESSES.HealthcareNetworkRegistry as `0x${string}`,
@@ -69,17 +87,19 @@ interface RegisterInstitutionData {
 
 async function registerInstitutionHandler(
   data: RegisterInstitutionData,
-  auth: AuthContext,
+  _auth: AuthContext,
 ): Promise<{ txHash: string }> {
   const { publicClient, walletClient } = await getClients();
 
-  const institutionId = data.institutionId.startsWith("0x") && data.institutionId.length === 66
-    ? (data.institutionId as `0x${string}`)
-    : keccak256(toHex(data.institutionId));
+  const institutionId =
+    data.institutionId.startsWith("0x") && data.institutionId.length === 66
+      ? (data.institutionId as `0x${string}`)
+      : keccak256(toHex(data.institutionId));
 
-  const networkId = data.networkId.startsWith("0x") && data.networkId.length === 66
-    ? (data.networkId as `0x${string}`)
-    : keccak256(toHex(data.networkId));
+  const networkId =
+    data.networkId.startsWith("0x") && data.networkId.length === 66
+      ? (data.networkId as `0x${string}`)
+      : keccak256(toHex(data.networkId));
 
   const countryCode = stringToHex(data.countryCode, { size: 32 });
 
@@ -114,13 +134,14 @@ interface VerifyInstitutionData {
 
 async function verifyInstitutionHandler(
   data: VerifyInstitutionData,
-  auth: AuthContext,
+  _auth: AuthContext,
 ): Promise<{ txHash: string }> {
   const { publicClient, walletClient } = await getClients();
 
-  const institutionId = data.institutionId.startsWith("0x") && data.institutionId.length === 66
-    ? (data.institutionId as `0x${string}`)
-    : keccak256(toHex(data.institutionId));
+  const institutionId =
+    data.institutionId.startsWith("0x") && data.institutionId.length === 66
+      ? (data.institutionId as `0x${string}`)
+      : keccak256(toHex(data.institutionId));
 
   const txHash = await walletClient.writeContract({
     address: CONTRACT_ADDRESSES.HealthcareNetworkRegistry as `0x${string}`,
@@ -154,9 +175,10 @@ async function getNetworkHandler(
     transport: http(),
   });
 
-  const networkId = data.networkId.startsWith("0x") && data.networkId.length === 66
-    ? (data.networkId as `0x${string}`)
-    : keccak256(toHex(data.networkId));
+  const networkId =
+    data.networkId.startsWith("0x") && data.networkId.length === 66
+      ? (data.networkId as `0x${string}`)
+      : keccak256(toHex(data.networkId));
 
   const net = (await publicClient.readContract({
     address: CONTRACT_ADDRESSES.HealthcareNetworkRegistry as `0x${string}`,
@@ -246,9 +268,10 @@ async function getInstitutionHandler(
     transport: http(),
   });
 
-  const institutionId = data.institutionId.startsWith("0x") && data.institutionId.length === 66
-    ? (data.institutionId as `0x${string}`)
-    : keccak256(toHex(data.institutionId));
+  const institutionId =
+    data.institutionId.startsWith("0x") && data.institutionId.length === 66
+      ? (data.institutionId as `0x${string}`)
+      : keccak256(toHex(data.institutionId));
 
   const inst = (await publicClient.readContract({
     address: CONTRACT_ADDRESSES.HealthcareNetworkRegistry as `0x${string}`,

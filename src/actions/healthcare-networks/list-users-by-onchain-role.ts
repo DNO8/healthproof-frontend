@@ -1,10 +1,10 @@
 "use server";
 
 import { createPublicClient, http } from "viem";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import IdentityRegistryAbi from "@/lib/abis/IdentityRegistry.json";
-import { ROLE_TO_CONTRACT, CONTRACT_TO_ROLE, type UserRole } from "@/types/domain.types";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { CONTRACT_TO_ROLE, type UserRole } from "@/types/domain.types";
 
 // ─── Rate-limited RPC batch helper ───
 // Queries on-chain role for each wallet with concurrency control.
@@ -128,9 +128,10 @@ export async function listUsersByOnChainRole(
   // 3. Filter by role if specified
   if (filterRole) {
     const roles = Array.isArray(filterRole) ? filterRole : [filterRole];
-    return results.filter((u) => u.onChainRole !== null && roles.includes(u.onChainRole));
+    return results.filter(
+      (u) => u.onChainRole !== null && roles.includes(u.onChainRole),
+    );
   }
 
   return results;
 }
-

@@ -5,7 +5,8 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig = {
   /* config options here */
-  reactCompiler: true,
+  // reactCompiler disabled locally due to high memory usage / IDE freezes
+  reactCompiler: false,
   experimental: {
     serverActions: {
       bodySizeLimit: "10mb",

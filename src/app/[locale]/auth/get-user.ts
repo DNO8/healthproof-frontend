@@ -7,7 +7,9 @@ export async function getDbUser(privyId: string) {
 
   const { data, error } = await supabase
     .from("users")
-    .select("id, email, role, wallet_address, full_name, is_verified, created_at")
+    .select(
+      "id, email, role, wallet_address, full_name, is_verified, created_at",
+    )
     .eq("id", privyId)
     .single();
 

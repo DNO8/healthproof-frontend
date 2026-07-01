@@ -1,13 +1,14 @@
 "use server";
 
 import { keccak256, toHex } from "viem";
-import { CONTRACT_ADDRESSES } from "@/lib/contracts";
 import EmergencyAccessManagerArtifact from "@/lib/abis/EmergencyAccessManager.json";
-const EmergencyAccessManagerAbi = EmergencyAccessManagerArtifact.abi;
-import { withAuth, auditLog } from "@/lib/auth/with-auth";
+
+const _EmergencyAccessManagerAbi = EmergencyAccessManagerArtifact.abi;
+
 import type { AuthContext } from "@/lib/auth/with-auth";
-import { executeForwardRequest } from "../relay/relay-core";
+import { auditLog, withAuth } from "@/lib/auth/with-auth";
 import type { SignedForwardRequest } from "@/lib/metatx/types";
+import { executeForwardRequest } from "../relay/relay-core";
 
 interface RequestEmergencyData {
   request: SignedForwardRequest;
@@ -23,7 +24,7 @@ interface RequestEmergencyData {
  */
 async function requestEmergencyHandler(
   data: RequestEmergencyData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ txHash: string; requestId: string }> {
   if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
     throw new Error("Signer mismatch: request.from != authenticated wallet");
@@ -34,9 +35,10 @@ async function requestEmergencyHandler(
     throw new Error("Meta-transaction failed on-chain");
   }
 
-  const resourceId = data.documentId.startsWith("0x") && data.documentId.length === 66
-    ? (data.documentId as `0x${string}`)
-    : keccak256(toHex(data.documentId));
+  const resourceId =
+    data.documentId.startsWith("0x") && data.documentId.length === 66
+      ? (data.documentId as `0x${string}`)
+      : keccak256(toHex(data.documentId));
 
   // Compute deterministic requestId (same as contract)
   const requestId = keccak256(
@@ -44,7 +46,7 @@ async function requestEmergencyHandler(
       ...new Uint8Array(Buffer.from(data.patientWallet.slice(2), "hex")),
       ...new Uint8Array(Buffer.from(auth.wallet.slice(2), "hex")),
       ...new Uint8Array(Buffer.from(resourceId.slice(2), "hex")),
-    ])
+    ]),
   );
 
   auditLog("requestEmergencyOnChain", auth, true, {

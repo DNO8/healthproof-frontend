@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { downloadAndDecrypt } from "@/services/storage/download";
-import { detectMime } from "@/components/documents/FilePreview";
+import { useCallback, useEffect, useState } from "react";
 import { sileo } from "sileo";
 import type { DecryptedFile } from "@/components/documents/FilePreview";
+import { detectMime } from "@/components/documents/FilePreview";
 import type { WrappedKey } from "@/services/encryption/ecdh";
+import { downloadAndDecrypt } from "@/services/storage/download";
 
 export function useDocumentDecrypt() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [decryptedFile, setDecryptedFile] = useState<DecryptedFile | null>(null);
+  const [decryptedFile, setDecryptedFile] = useState<DecryptedFile | null>(
+    null,
+  );
 
   const decrypt = useCallback(
     async (opts: {

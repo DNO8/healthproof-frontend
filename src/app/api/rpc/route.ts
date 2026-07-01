@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 const BACKEND_RPC =
   process.env.NEXT_PUBLIC_RPC_URL ??
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
       { jsonrpc: "2.0", id: null, error: { code: -32603, message } },
-      { status: 502, headers: corsHeaders() }
+      { status: 502, headers: corsHeaders() },
     );
   }
 }

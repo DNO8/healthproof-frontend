@@ -37,7 +37,10 @@ async function deriveIndexedDbKey(userId: string): Promise<CryptoKey> {
   const password = `${userId}|${pepper}`;
 
   // Deterministic salt so decryption works across devices
-  const saltBuffer = await crypto.subtle.digest("SHA-256", utf8(userId) as BufferSource);
+  const saltBuffer = await crypto.subtle.digest(
+    "SHA-256",
+    utf8(userId) as BufferSource,
+  );
   const salt = new Uint8Array(saltBuffer).slice(0, SALT_LENGTH);
 
   const keyMaterial = await crypto.subtle.importKey(
@@ -45,7 +48,7 @@ async function deriveIndexedDbKey(userId: string): Promise<CryptoKey> {
     utf8(password) as BufferSource,
     "PBKDF2",
     false,
-    ["deriveBits", "deriveKey"]
+    ["deriveBits", "deriveKey"],
   );
 
   return crypto.subtle.deriveKey(
@@ -58,7 +61,7 @@ async function deriveIndexedDbKey(userId: string): Promise<CryptoKey> {
     keyMaterial,
     { name: "AES-GCM", length: DB_KEY_LENGTH * 8 },
     false,
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt"],
   );
 }
 
@@ -68,7 +71,7 @@ async function deriveIndexedDbKey(userId: string): Promise<CryptoKey> {
  */
 export async function encryptShare1(
   share1: string,
-  userId: string
+  userId: string,
 ): Promise<string> {
   const key = await deriveIndexedDbKey(userId);
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
@@ -77,7 +80,7 @@ export async function encryptShare1(
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     key,
-    plaintext as BufferSource
+    plaintext as BufferSource,
   );
 
   const combined = new Uint8Array(iv.length + ciphertext.byteLength);
@@ -94,7 +97,7 @@ export async function encryptShare1(
  */
 export async function decryptShare1(
   encrypted: string,
-  userId: string
+  userId: string,
 ): Promise<string> {
   // Legacy plaintext (hex string, no prefix)
   if (!encrypted.startsWith(ENCRYPTED_PREFIX)) {
@@ -115,7 +118,7 @@ export async function decryptShare1(
   const decrypted = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv },
     key,
-    ciphertext
+    ciphertext,
   );
 
   return new TextDecoder().decode(decrypted);

@@ -1,12 +1,12 @@
 "use server";
 
-import { withAuth } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 async function markOnboardingCompleteHandler(
   _data: { userId: string },
-  auth: AuthContext
+  auth: AuthContext,
 ) {
   const supabase = createAdminClient();
   const { error } = await supabase

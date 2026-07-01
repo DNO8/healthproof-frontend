@@ -2,14 +2,14 @@
 
 import {
   createPublicClient,
-  http,
   encodeFunctionData,
-  type WalletClient,
+  http,
   type PublicClient,
+  type WalletClient,
 } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import ForwarderAbi from "@/lib/abis/HealthProofTrustedForwarder.json";
-import { FORWARD_REQUEST_TYPE, type ForwardRequest, type SignedForwardRequest } from "./types";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import { FORWARD_REQUEST_TYPE, type SignedForwardRequest } from "./types";
 
 const DOMAIN_NAME = "HealthProof";
 const DOMAIN_VERSION = "1";
@@ -34,7 +34,7 @@ const TRUSTED_FORWARDER_ABI = [
  */
 export async function getTrustedForwarderAddress(
   targetContract: `0x${string}` = CONTRACT_ADDRESSES.HealthProofGateway,
-  publicClient?: PublicClient
+  publicClient?: PublicClient,
 ): Promise<`0x${string}`> {
   const cacheKey = targetContract.toLowerCase();
   const cached = forwarderCache.get(cacheKey);
@@ -64,9 +64,12 @@ export async function getTrustedForwarderAddress(
 export async function getForwarderNonce(
   from: `0x${string}`,
   targetContract?: `0x${string}`,
-  publicClient?: PublicClient
+  publicClient?: PublicClient,
 ): Promise<bigint> {
-  const forwarder = await getTrustedForwarderAddress(targetContract, publicClient);
+  const forwarder = await getTrustedForwarderAddress(
+    targetContract,
+    publicClient,
+  );
   const client =
     publicClient ??
     createPublicClient({
@@ -85,9 +88,7 @@ export async function getForwarderNonce(
 /**
  * Build an EIP-712 domain object for the forwarder.
  */
-async function buildDomain(
-  forwarderAddress: `0x${string}`
-): Promise<{
+async function buildDomain(forwarderAddress: `0x${string}`): Promise<{
   name: string;
   version: string;
   chainId: number;
@@ -119,7 +120,7 @@ export async function signMetaTransaction(
   args: readonly unknown[],
   abi: readonly unknown[],
   value: bigint = BigInt(0),
-  gas: bigint = DEFAULT_GAS
+  gas: bigint = DEFAULT_GAS,
 ): Promise<SignedForwardRequest> {
   const [account] = await walletClient.getAddresses();
   if (!account) throw new Error("No wallet account available");
@@ -127,7 +128,7 @@ export async function signMetaTransaction(
   const forwarderAddress = await getTrustedForwarderAddress(targetContract);
   const nonce = await getForwarderNonce(account, targetContract);
   const deadline = BigInt(
-    Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60
+    Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60,
   );
   const data = encodeFunctionData({
     abi,
@@ -176,7 +177,7 @@ export async function signGatewayMetaTx(
   args: readonly unknown[],
   gatewayAbi: readonly unknown[],
   value?: bigint,
-  gas?: bigint
+  gas?: bigint,
 ): Promise<SignedForwardRequest> {
   return signMetaTransaction(
     walletClient,
@@ -185,6 +186,6 @@ export async function signGatewayMetaTx(
     args,
     gatewayAbi,
     value,
-    gas
+    gas,
   );
 }

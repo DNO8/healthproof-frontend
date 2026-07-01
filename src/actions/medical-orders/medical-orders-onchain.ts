@@ -17,17 +17,17 @@
  * actor/issuer for hardened contract compatibility.
  */
 
-import { createPublicClient, http, keccak256, toHex, fromHex } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { createPublicClient, fromHex, http, keccak256, toHex } from "viem";
 import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
-import { withAuth, auditLog } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
-import { isVerifiedDoctor, isVerifiedLab } from "@/lib/auth/permissions";
-import type { OnChainOrder } from "@/lib/medical-constants";
 import { logAuditEvent } from "@/lib/audit-onchain";
+import { isVerifiedDoctor, isVerifiedLab } from "@/lib/auth/permissions";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { auditLog, withAuth } from "@/lib/auth/with-auth";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import type { OnChainOrder } from "@/lib/medical-constants";
 import { AuditAction } from "@/lib/medical-constants";
-import { executeForwardRequest } from "../relay/relay-core";
 import type { SignedForwardRequest } from "@/lib/metatx/types";
+import { executeForwardRequest } from "../relay/relay-core";
 
 interface CreateOrderMetaTx {
   request: SignedForwardRequest;
@@ -41,7 +41,7 @@ interface CreateOrderMetaTx {
 
 async function createOrderHandler(
   data: CreateOrderMetaTx,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ txHash: string; orderId: string }> {
   if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
     throw new Error("Signer mismatch: request.from != authenticated wallet");
@@ -53,7 +53,11 @@ async function createOrderHandler(
   }
 
   try {
-    await logAuditEvent(data.patientWallet, data.orderId, AuditAction.ORDER_CREATED);
+    await logAuditEvent(
+      data.patientWallet,
+      data.orderId,
+      AuditAction.ORDER_CREATED,
+    );
   } catch {
     // On-chain audit logging is best-effort
   }
@@ -67,7 +71,10 @@ async function createOrderHandler(
   return { txHash: result.txHash, orderId: data.orderId };
 }
 
-async function validateCreateOrder(data: CreateOrderMetaTx, auth: AuthContext): Promise<boolean> {
+async function validateCreateOrder(
+  _data: CreateOrderMetaTx,
+  auth: AuthContext,
+): Promise<boolean> {
   return await isVerifiedDoctor(auth.wallet);
 }
 
@@ -88,7 +95,7 @@ interface AssignLabMetaTx {
 
 async function assignLabHandler(
   data: AssignLabMetaTx,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ txHash: string }> {
   if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
     throw new Error("Signer mismatch: request.from != authenticated wallet");
@@ -122,7 +129,7 @@ interface UpdateOrderStatusMetaTx {
 
 async function updateOrderStatusHandler(
   data: UpdateOrderStatusMetaTx,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ txHash: string }> {
   if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
     throw new Error("Signer mismatch: request.from != authenticated wallet");
@@ -142,8 +149,8 @@ async function updateOrderStatusHandler(
 }
 
 async function validateUpdateOrderStatus(
-  data: UpdateOrderStatusMetaTx,
-  auth: AuthContext
+  _data: UpdateOrderStatusMetaTx,
+  auth: AuthContext,
 ): Promise<boolean> {
   const isDoctor = await isVerifiedDoctor(auth.wallet);
   const isLab = await isVerifiedLab(auth.wallet);
@@ -160,9 +167,12 @@ export const updateOrderStatusOnChain = withAuth(updateOrderStatusHandler, {
 
 async function getOrderHandler(
   data: { orderId: string },
-  _auth: AuthContext
+  _auth: AuthContext,
 ): Promise<OnChainOrder | null> {
-  const publicClient = createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() });
+  const publicClient = createPublicClient({
+    chain: HEALTHPROOF_CHAIN,
+    transport: http(),
+  });
 
   const orderIdBytes =
     data.orderId.startsWith("0x") && data.orderId.length === 66

@@ -1,9 +1,9 @@
 "use server";
 
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveWalletNames } from "@/lib/supabase/resolve-wallet-names";
-import { withAuth } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
 import type { DocumentSecretRow } from "./get-document-secret";
 
 interface ListDocsByEpisodeParams {

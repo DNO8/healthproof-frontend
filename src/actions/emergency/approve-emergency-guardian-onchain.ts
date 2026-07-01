@@ -1,10 +1,10 @@
 "use server";
 
-import { withAuth, auditLog } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
 import { validatePatientAccess } from "@/lib/auth/permissions";
-import { executeForwardRequest } from "../relay/relay-core";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { auditLog, withAuth } from "@/lib/auth/with-auth";
 import type { SignedForwardRequest } from "@/lib/metatx/types";
+import { executeForwardRequest } from "../relay/relay-core";
 
 interface ApproveEmergencyData {
   request: SignedForwardRequest;
@@ -18,7 +18,7 @@ interface ApproveEmergencyData {
  */
 async function approveEmergencyGuardianHandler(
   data: ApproveEmergencyData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ txHash: string }> {
   if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
     throw new Error("Signer mismatch: request.from != authenticated wallet");
@@ -39,12 +39,15 @@ async function approveEmergencyGuardianHandler(
 
 async function validateApproveGuardian(
   data: ApproveEmergencyData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<boolean> {
   return await validatePatientAccess(data.patientWallet, auth.wallet);
 }
 
-export const approveEmergencyGuardianOnChain = withAuth(approveEmergencyGuardianHandler, {
-  rateLimit: { windowMs: 60000, maxRequests: 5 },
-  requireOnChainPermission: validateApproveGuardian,
-});
+export const approveEmergencyGuardianOnChain = withAuth(
+  approveEmergencyGuardianHandler,
+  {
+    rateLimit: { windowMs: 60000, maxRequests: 5 },
+    requireOnChainPermission: validateApproveGuardian,
+  },
+);

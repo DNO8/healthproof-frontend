@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { Check, FileText, FlaskConical, Lock, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { FlaskConical, FileText, Lock, Check, Upload } from "lucide-react";
-import { EncryptionDemo } from "./EncryptionDemo";
+import { useState } from "react";
 import { BlockchainConfirmation } from "./BlockchainConfirmation";
+import { EncryptionDemo } from "./EncryptionDemo";
 import { DEMO_PATIENTS } from "./mock-data";
 
 interface LabUploadStepProps {
@@ -13,7 +13,9 @@ interface LabUploadStepProps {
 
 export function LabUploadStep({ onComplete }: LabUploadStepProps) {
   const t = useTranslations("demoFlow");
-  const [stage, setStage] = useState<"orders" | "upload" | "encrypt" | "confirm" | "done">("orders");
+  const [stage, setStage] = useState<
+    "orders" | "upload" | "encrypt" | "confirm" | "done"
+  >("orders");
 
   if (stage === "orders") {
     return (
@@ -24,7 +26,9 @@ export function LabUploadStep({ onComplete }: LabUploadStepProps) {
         </div>
         <p className="text-sm text-slate-600">{t("labPendingDesc")}</p>
         <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{t("pendingOrders")}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            {t("pendingOrders")}
+          </p>
           <button
             type="button"
             onClick={() => setStage("upload")}
@@ -34,8 +38,12 @@ export function LabUploadStep({ onComplete }: LabUploadStepProps) {
               <FileText className="h-4 w-4 text-sky-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-700">{t("examCBC")}</p>
-              <p className="text-xs text-slate-400">{DEMO_PATIENTS[0].name} · {t("orderedBy")}: Dr. Silva</p>
+              <p className="text-sm font-medium text-slate-700">
+                {t("examCBC")}
+              </p>
+              <p className="text-xs text-slate-400">
+                {DEMO_PATIENTS[0].name} · {t("orderedBy")}: Dr. Silva
+              </p>
             </div>
           </button>
         </div>
@@ -49,7 +57,9 @@ export function LabUploadStep({ onComplete }: LabUploadStepProps) {
         <p className="text-sm text-slate-600">{t("labUploadDesc")}</p>
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-(--hp-border) bg-(--hp-layer) p-6">
           <Upload className="h-8 w-8 text-slate-400" />
-          <p className="text-sm font-medium text-slate-700">{t("uploadMockFile")}</p>
+          <p className="text-sm font-medium text-slate-700">
+            {t("uploadMockFile")}
+          </p>
           <p className="text-xs text-slate-400">result_cbc.pdf · 1.2 MB</p>
         </div>
         <button
@@ -79,10 +89,7 @@ export function LabUploadStep({ onComplete }: LabUploadStepProps) {
           <Lock className="h-4 w-4" />
           {t("encryptedReady")}
         </div>
-        <BlockchainConfirmation
-          action="lab"
-          onComplete={onComplete}
-        />
+        <BlockchainConfirmation action="lab" onComplete={onComplete} />
       </div>
     );
   }

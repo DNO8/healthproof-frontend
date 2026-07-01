@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import {
+  Check,
+  FileText,
+  FlaskConical,
+  Share2,
+  Shield,
+  Stethoscope,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Check, Stethoscope, FlaskConical, Shield, Share2, FileText } from "lucide-react";
+import { useEffect } from "react";
 import { generateMockHash, getNextBlockNumber } from "./mock-data";
 
 interface TimelineStepProps {
@@ -14,7 +21,7 @@ export function TimelineStep({ onComplete }: TimelineStepProps) {
 
   useEffect(() => {
     onComplete();
-  }, []);
+  }, [onComplete]);
 
   const events = [
     {
@@ -59,7 +66,7 @@ export function TimelineStep({ onComplete }: TimelineStepProps) {
       <div className="space-y-3">
         {events.map((ev, i) => (
           <div
-            key={i}
+            key={ev.title}
             className="relative flex gap-3 rounded-2xl border border-(--hp-border) bg-(--hp-layer) p-4"
           >
             <div className="flex flex-col items-center gap-1">
@@ -74,10 +81,18 @@ export function TimelineStep({ onComplete }: TimelineStepProps) {
               <p className="text-sm font-medium text-slate-700">{ev.title}</p>
               <p className="text-xs text-slate-400">{ev.actor}</p>
               <div className="mt-1 space-y-0.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{t("txHashLabel")}</p>
-                <p className="font-mono text-[10px] text-slate-600">{ev.hash}</p>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{t("blockLabel")}</p>
-                <p className="font-mono text-[10px] text-slate-600">#{ev.block}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  {t("txHashLabel")}
+                </p>
+                <p className="font-mono text-[10px] text-slate-600">
+                  {ev.hash}
+                </p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  {t("blockLabel")}
+                </p>
+                <p className="font-mono text-[10px] text-slate-600">
+                  #{ev.block}
+                </p>
               </div>
             </div>
             <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100">

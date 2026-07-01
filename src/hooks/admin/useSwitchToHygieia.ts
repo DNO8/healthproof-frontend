@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useEffect, useRef } from "react";
 import { env } from "@/lib/env";
 
 const HYGIEIA_CHAIN_ID = `0x${env.CHAIN_ID.toString(16)}`;

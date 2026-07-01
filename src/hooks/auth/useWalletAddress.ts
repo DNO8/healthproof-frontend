@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
 import { useWallets } from "@privy-io/react-auth";
+import { useMemo } from "react";
 import { useDbUser } from "@/hooks/auth/useDbUser";
 
 /**

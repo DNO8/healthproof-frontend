@@ -10,7 +10,7 @@
 
 import * as secrets from "secrets.js-grempe";
 
-const BITS = 8; // GF(2^8), max secret length ~512 bytes
+const _BITS = 8; // GF(2^8), max secret length ~512 bytes
 
 function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
@@ -40,7 +40,7 @@ export function generateShares(
 ): string[] {
   if (secret.length > MAX_SECRET_LENGTH) {
     throw new Error(
-      `Secret too long for SSS with BITS=8 (max ${MAX_SECRET_LENGTH} bytes, got ${secret.length})`
+      `Secret too long for SSS with BITS=8 (max ${MAX_SECRET_LENGTH} bytes, got ${secret.length})`,
     );
   }
   const secretHex = bytesToHex(secret);
@@ -75,7 +75,10 @@ export async function validateReconstruction(
 ): Promise<boolean> {
   try {
     const reconstructed = reconstructSecret(shares);
-    const hash = await crypto.subtle.digest("SHA-256", reconstructed.buffer as ArrayBuffer);
+    const hash = await crypto.subtle.digest(
+      "SHA-256",
+      reconstructed.buffer as ArrayBuffer,
+    );
     const hashHex = Array.from(new Uint8Array(hash))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");

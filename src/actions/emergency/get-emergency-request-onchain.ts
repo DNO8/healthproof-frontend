@@ -1,11 +1,13 @@
 "use server";
 
 import { createPublicClient, http } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import EmergencyAccessManagerArtifact from "@/lib/abis/EmergencyAccessManager.json";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+
 const EmergencyAccessManagerAbi = EmergencyAccessManagerArtifact.abi;
-import { withAuth } from "@/lib/auth/with-auth";
+
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
 import type { OnChainEmergencyRequest } from "@/lib/medical-constants";
 
 interface GetEmergencyRequestData {
@@ -17,7 +19,7 @@ interface GetEmergencyRequestData {
  */
 async function getEmergencyRequestHandler(
   data: GetEmergencyRequestData,
-  _auth: AuthContext
+  _auth: AuthContext,
 ): Promise<OnChainEmergencyRequest | null> {
   if (!CONTRACT_ADDRESSES.EmergencyAccessManager) {
     return null;
@@ -28,12 +30,12 @@ async function getEmergencyRequestHandler(
     transport: http(),
   });
 
-  const result = await publicClient.readContract({
+  const result = (await publicClient.readContract({
     address: CONTRACT_ADDRESSES.EmergencyAccessManager,
     abi: EmergencyAccessManagerAbi,
     functionName: "requests",
     args: [data.requestId as `0x${string}`],
-  }) as {
+  })) as {
     requestId: string;
     patient: string;
     requestingDoctor: string;

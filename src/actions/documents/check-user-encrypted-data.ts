@@ -1,7 +1,7 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
 import { verifySelf } from "@/lib/auth/privy-verify";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Check if a user has any encrypted documents (as uploader or patient).
@@ -20,7 +20,10 @@ export async function hasEncryptedData(
   try {
     await verifySelf(walletAddress, _privyToken);
   } catch (authErr) {
-    console.warn("[hasEncryptedData] auth failed:", authErr instanceof Error ? authErr.message : authErr);
+    console.warn(
+      "[hasEncryptedData] auth failed:",
+      authErr instanceof Error ? authErr.message : authErr,
+    );
     return false;
   }
 

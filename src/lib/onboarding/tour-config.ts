@@ -21,7 +21,7 @@ const SELECTORS: Record<TourStepKey, string | undefined> = {
 function buildStep(
   key: TourStepKey,
   t: (path: string) => string,
-  role: UserRole
+  role: UserRole,
 ): DriveStep {
   const selector = SELECTORS[key];
   return {
@@ -37,16 +37,44 @@ function buildStep(
 
 export function getTourSteps(
   role: UserRole,
-  t: (path: string) => string
+  t: (path: string) => string,
 ): DriveStep[] {
   const keys: TourStepKey[] =
     role === "patient"
-      ? ["header", "metrics", "quickNav", "quickActions", "profileBanner", "closing"]
+      ? [
+          "header",
+          "metrics",
+          "quickNav",
+          "quickActions",
+          "profileBanner",
+          "closing",
+        ]
       : role === "doctor"
-        ? ["header", "metrics", "quickNav", "quickActions", "profileBanner", "closing"]
+        ? [
+            "header",
+            "metrics",
+            "quickNav",
+            "quickActions",
+            "profileBanner",
+            "closing",
+          ]
         : role === "lab"
-          ? ["header", "metrics", "quickNav", "quickActions", "profileBanner", "closing"]
-          : ["header", "metrics", "quickNav", "quickActions", "profileBanner", "closing"];
+          ? [
+              "header",
+              "metrics",
+              "quickNav",
+              "quickActions",
+              "profileBanner",
+              "closing",
+            ]
+          : [
+              "header",
+              "metrics",
+              "quickNav",
+              "quickActions",
+              "profileBanner",
+              "closing",
+            ];
 
   return keys.map((k) => buildStep(k, t, role));
 }

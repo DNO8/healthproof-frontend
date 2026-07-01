@@ -38,7 +38,7 @@ function gfMul(a: number, b: number): number {
  */
 function gfInv(a: number): number {
   if (a === 0) throw new Error("Division by zero in GF(2^8)");
-  let m = IRREDUCIBLE_POLY;
+  const m = IRREDUCIBLE_POLY;
   let x = 0;
   let y = 1;
   let aa = a & 0xff;
@@ -130,7 +130,10 @@ export function generateShares(
         shares[shareIndex] = new Uint8Array(secret.length + 1);
         shares[shareIndex][0] = shareIndex + 1; // x-coordinate
       }
-      shares[shareIndex][byteIndex + 1] = evalPoly(coefficients, shareIndex + 1);
+      shares[shareIndex][byteIndex + 1] = evalPoly(
+        coefficients,
+        shareIndex + 1,
+      );
     }
   }
 

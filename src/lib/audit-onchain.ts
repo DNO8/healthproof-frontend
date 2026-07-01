@@ -2,11 +2,13 @@
 
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import AuditTrailArtifact from "@/lib/abis/AuditTrail.json";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+
 const AuditTrailAbi = AuditTrailArtifact.abi;
+
 import { getDeployerPrivateKey } from "@/lib/auth/with-auth";
-import { AuditAction } from "@/lib/medical-constants";
+import type { AuditAction } from "@/lib/medical-constants";
 
 async function getClients() {
   const pk = await getDeployerPrivateKey();
@@ -15,8 +17,15 @@ async function getClients() {
     `0x${pk.replace(/^0x/, "")}` as `0x${string}`,
   );
   return {
-    publicClient: createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() }),
-    walletClient: createWalletClient({ account, chain: HEALTHPROOF_CHAIN, transport: http() }),
+    publicClient: createPublicClient({
+      chain: HEALTHPROOF_CHAIN,
+      transport: http(),
+    }),
+    walletClient: createWalletClient({
+      account,
+      chain: HEALTHPROOF_CHAIN,
+      transport: http(),
+    }),
     account,
   };
 }
@@ -32,21 +41,18 @@ export async function logAuditEvent(
 ): Promise<{ txHash: string }> {
   const { publicClient, walletClient } = await getClients();
 
-  const resourceIdHex = resourceId.startsWith("0x") && resourceId.length === 66
-    ? (resourceId as `0x${string}`)
-    : (resourceId.startsWith("0x")
-        ? `0x${resourceId.slice(2).padStart(64, "0")}` as `0x${string}`
-        : `0x${resourceId.padStart(64, "0")}` as `0x${string}`);
+  const resourceIdHex =
+    resourceId.startsWith("0x") && resourceId.length === 66
+      ? (resourceId as `0x${string}`)
+      : resourceId.startsWith("0x")
+        ? (`0x${resourceId.slice(2).padStart(64, "0")}` as `0x${string}`)
+        : (`0x${resourceId.padStart(64, "0")}` as `0x${string}`);
 
   const txHash = await walletClient.writeContract({
     address: CONTRACT_ADDRESSES.AuditTrail as `0x${string}`,
     abi: AuditTrailAbi,
     functionName: "logEvent",
-    args: [
-      patient.toLowerCase() as `0x${string}`,
-      resourceIdHex,
-      action,
-    ],
+    args: [patient.toLowerCase() as `0x${string}`, resourceIdHex, action],
   });
 
   await publicClient.waitForTransactionReceipt({ hash: txHash });

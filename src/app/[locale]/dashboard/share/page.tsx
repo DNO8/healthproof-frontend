@@ -1,42 +1,55 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
-import { QRCodeSVG } from "qrcode.react";
-import { sileo } from "sileo";
-import { useTranslations } from "next-intl";
-import { createWalletClient, custom, keccak256, toHex } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import type { GrantedToRole, EncryptedQRData } from "@/types/domain.types";
-import { QR_EXPIRY_MINUTES } from "@/lib/constants";
-import { buildPermissionPayload } from "@/features/permissions";
 import {
-  listDocumentSecretsForWallet,
-  type DocumentSecretRow,
-} from "@/actions/documents/get-document-secret";
-import { grantPermissionOnChain } from "@/actions/permissions/grant-permission-onchain";
+  Building2,
+  FileText,
+  FlaskConical,
+  FolderOpen,
+  Stethoscope,
+} from "lucide-react";
+import { useTranslations } from "next-intl";
+import { QRCodeSVG } from "qrcode.react";
+import { useCallback, useEffect, useState } from "react";
+import { sileo } from "sileo";
+import { createWalletClient, custom, keccak256, toHex } from "viem";
 import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
-import { rewrapKeyForRecipient } from "@/services/encryption/rewrap";
-import { exportPublicKey } from "@/services/encryption/ecdh";
-import { getKeyPair } from "@/services/encryption/keystore";
-import { UserSelect } from "@/components/forms/UserSelect";
-import { useKeyConflictStore } from "@/state/key-conflict.store";
-import { Stethoscope, FlaskConical, Building2, FileText, FolderOpen } from "lucide-react";
-import { savePermissionKey } from "@/actions/permissions/save-permission-key";
-import { signMetaTransaction } from "@/lib/metatx/forwarder";
-import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import { listEpisodesByPatient } from "@/actions/clinical-episodes/list-episodes-by-patient";
+import {
+  type DocumentSecretRow,
+  listDocumentSecretsForWallet,
+} from "@/actions/documents/get-document-secret";
 import { listDocumentsByEpisode } from "@/actions/documents/list-documents-by-episode";
+import { grantPermissionOnChain } from "@/actions/permissions/grant-permission-onchain";
+import { savePermissionKey } from "@/actions/permissions/save-permission-key";
+import { UserSelect } from "@/components/forms/UserSelect";
+import { buildPermissionPayload } from "@/features/permissions";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import { isAuthSuccess } from "@/lib/auth/with-auth";
+import { QR_EXPIRY_MINUTES } from "@/lib/constants";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import type { OnChainEpisode } from "@/lib/medical-constants";
-const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
+import { signMetaTransaction } from "@/lib/metatx/forwarder";
+import { rewrapKeyForRecipient } from "@/services/encryption/rewrap";
+import { useKeyConflictStore } from "@/state/key-conflict.store";
+import type { GrantedToRole } from "@/types/domain.types";
+
+const _ZERO_BYTES32 =
+  "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
 
 type ShareMode = "document" | "episode";
 
-async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
-  const provider = await wallet.getEthereumProvider();
-  return createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+async function getViemWalletClient(wallet: {
+  getEthereumProvider: () => Promise<unknown>;
+}) {
+  const provider = (await wallet.getEthereumProvider()) as {
+    request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  };
+  return createWalletClient({
+    chain: HEALTHPROOF_CHAIN,
+    transport: custom(provider),
+  });
 }
 
 const GRANTED_ROLES: {
@@ -60,10 +73,13 @@ export default function SharePage() {
   const [recipientId, setRecipientId] = useState("");
   const [shareMode, setShareMode] = useState<ShareMode>("document");
   const [results, setResults] = useState<DocumentSecretRow[]>([]);
-  const [selectedResult, setSelectedResult] = useState<DocumentSecretRow | null>(null);
+  const [selectedResult, setSelectedResult] =
+    useState<DocumentSecretRow | null>(null);
   const [loadingResults, setLoadingResults] = useState(true);
   const [episodes, setEpisodes] = useState<OnChainEpisode[]>([]);
-  const [selectedEpisode, setSelectedEpisode] = useState<OnChainEpisode | null>(null);
+  const [selectedEpisode, setSelectedEpisode] = useState<OnChainEpisode | null>(
+    null,
+  );
   const [episodeDocs, setEpisodeDocs] = useState<DocumentSecretRow[]>([]);
   const [loadingEpisodes, setLoadingEpisodes] = useState(false);
   const [loadingEpisodeDocs, setLoadingEpisodeDocs] = useState(false);
@@ -95,7 +111,9 @@ export default function SharePage() {
         setEpisodes([]);
         return;
       }
-      const response = await listEpisodesByPatient({ patientWallet: walletAddress });
+      const response = await listEpisodesByPatient({
+        patientWallet: walletAddress,
+      });
       if (isAuthSuccess(response)) {
         setEpisodes(response.data.episodes);
       } else {
@@ -144,27 +162,43 @@ export default function SharePage() {
 
   async function handleGenerate() {
     if (shareMode === "document" && !selectedResult) {
-      sileo.warning({ title: t("selectResultTitle"), description: t("selectResultDesc") });
+      sileo.warning({
+        title: t("selectResultTitle"),
+        description: t("selectResultDesc"),
+      });
       return;
     }
     if (shareMode === "episode" && !selectedEpisode) {
-      sileo.warning({ title: t("selectEpisode") ?? "Selecciona un episodio", description: t("selectEpisodeDesc") ?? "Elige qué episodio clínico compartir." });
+      sileo.warning({
+        title: t("selectEpisode") ?? "Selecciona un episodio",
+        description:
+          t("selectEpisodeDesc") ?? "Elige qué episodio clínico compartir.",
+      });
       return;
     }
     if (!grantedTo) {
-      sileo.warning({ title: t("selectRecipient"), description: t("selectRecipientDesc") });
+      sileo.warning({
+        title: t("selectRecipient"),
+        description: t("selectRecipientDesc"),
+      });
       return;
     }
     const trimmedRecipient = recipientId.trim();
     if (!trimmedRecipient) {
-      sileo.warning({ title: t("recipientRequired"), description: t("recipientRequiredDesc") });
+      sileo.warning({
+        title: t("recipientRequired"),
+        description: t("recipientRequiredDesc"),
+      });
       return;
     }
     if (!walletAddress) return;
 
     const activeWallet = wallets.find((w) => w.address);
     if (!activeWallet) {
-      sileo.error({ title: t("generateFailed"), description: "No active wallet found" });
+      sileo.error({
+        title: t("generateFailed"),
+        description: "No active wallet found",
+      });
       return;
     }
 
@@ -180,12 +214,16 @@ export default function SharePage() {
         if (!selectedEpisode) throw new Error("No episode selected");
         const docsToShare = episodeDocs;
         if (docsToShare.length === 0) {
-          throw new Error(t("noDocumentsInEpisode") ?? "Este episodio no tiene documentos.");
+          throw new Error(
+            t("noDocumentsInEpisode") ?? "Este episodio no tiene documentos.",
+          );
         }
         // Warn user about N signatures
         sileo.info({
           title: t("nSignaturesRequired") ?? "Firmas múltiples",
-          description: t("nDocsWillBeShared", { count: docsToShare.length }) ?? `Se compartirán ${docsToShare.length} documentos. Firmando ${docsToShare.length} transacciones…`,
+          description:
+            t("nDocsWillBeShared", { count: docsToShare.length }) ??
+            `Se compartirán ${docsToShare.length} documentos. Firmando ${docsToShare.length} transacciones…`,
           duration: 4000,
         });
         for (const doc of docsToShare) {
@@ -199,20 +237,26 @@ export default function SharePage() {
           patient_wallet: resolvedWalletAddress,
           grantee_wallet: trimmedRecipient,
           episode_id: selectedEpisode.episodeId,
-          expires_at: Date.now() / 1000 + (QR_EXPIRY_MINUTES * 60),
+          expires_at: Date.now() / 1000 + QR_EXPIRY_MINUTES * 60,
           nonce: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         };
         setQrData(JSON.stringify(qrV2));
         sileo.success({
           title: t("qrGenerated"),
-          description: t("qrGeneratedDesc", { role: grantedTo.replace("_", " "), minutes: QR_EXPIRY_MINUTES }),
+          description: t("qrGeneratedDesc", {
+            role: grantedTo.replace("_", " "),
+            minutes: QR_EXPIRY_MINUTES,
+          }),
           duration: 4000,
         });
         setGenerating(false);
         return;
       }
     } catch (e) {
-      sileo.error({ title: t("generateFailed"), description: String(e).slice(0, 120) });
+      sileo.error({
+        title: t("generateFailed"),
+        description: String(e).slice(0, 120),
+      });
     } finally {
       setGenerating(false);
     }
@@ -221,7 +265,7 @@ export default function SharePage() {
   async function shareDocument(
     doc: DocumentSecretRow,
     trimmedRecipient: string,
-    activeWallet: { getEthereumProvider: () => Promise<any> }
+    activeWallet: { getEthereumProvider: () => Promise<unknown> },
   ) {
     const recipientPubKeyJwk = await getUserPublicKey(trimmedRecipient);
     if (!recipientPubKeyJwk) {
@@ -237,7 +281,7 @@ export default function SharePage() {
     }
 
     const myWrappedKey =
-      doc.encrypted_keys[walletAddress!.toLowerCase()] ??
+      doc.encrypted_keys[walletAddress?.toLowerCase() ?? ""] ??
       doc.encrypted_keys[userId];
     if (!myWrappedKey) {
       throw new Error(t("noWrappedKey"));
@@ -252,11 +296,12 @@ export default function SharePage() {
 
     const resolvedWalletAddress = walletAddress ?? userId;
     const documentId = doc.document_id;
+    if (!grantedTo) throw new Error("NoGrantedTo");
 
-    const payload = buildPermissionPayload({
+    const _payload = buildPermissionPayload({
       patientWallet: resolvedWalletAddress,
       granteeWallet: trimmedRecipient,
-      grantedToRole: grantedTo!,
+      grantedToRole: grantedTo,
       documentId,
     });
 
@@ -314,20 +359,25 @@ export default function SharePage() {
       patient_wallet: resolvedWalletAddress,
       grantee_wallet: trimmedRecipient,
       document_id: documentId,
-      expires_at: Date.now() / 1000 + (QR_EXPIRY_MINUTES * 60),
+      expires_at: Date.now() / 1000 + QR_EXPIRY_MINUTES * 60,
       nonce: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     };
     setQrData(JSON.stringify(qrV2));
     sileo.success({
       title: t("qrGenerated"),
-      description: t("qrGeneratedDesc", { role: grantedTo!.replace("_", " "), minutes: QR_EXPIRY_MINUTES }),
+      description: t("qrGeneratedDesc", {
+        role: grantedTo?.replace("_", " "),
+        minutes: QR_EXPIRY_MINUTES,
+      }),
       duration: 4000,
     });
   }
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <h1 className="mb-6 text-2xl font-bold text-slate-800">{tPage("title")}</h1>
+      <h1 className="mb-6 text-2xl font-bold text-slate-800">
+        {tPage("title")}
+      </h1>
 
       {keyConflict && (
         <div className="mb-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-700 border border-amber-200">
@@ -338,7 +388,9 @@ export default function SharePage() {
       <div className="neu-shell border border-white/70 p-6 sm:p-8 space-y-5">
         {/* Toggle: Document / Episode */}
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("shareMode") ?? "Modo de compartir"}</label>
+          <span className="mb-1.5 block text-xs font-medium text-slate-700">
+            {t("shareMode") ?? "Modo de compartir"}
+          </span>
           <div className="flex gap-2">
             <button
               className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium transition-all ${
@@ -370,9 +422,13 @@ export default function SharePage() {
         {/* Document selector */}
         {shareMode === "document" && (
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("selectDocument")}</label>
+            <span className="mb-1.5 block text-xs font-medium text-slate-700">
+              {t("selectDocument")}
+            </span>
             {loadingResults ? (
-              <p className="text-sm text-slate-400 py-2">{t("loadingDocuments")}</p>
+              <p className="text-sm text-slate-400 py-2">
+                {t("loadingDocuments")}
+              </p>
             ) : results.length === 0 ? (
               <p className="text-sm text-slate-400 py-2">{t("noDocuments")}</p>
             ) : (
@@ -388,8 +444,12 @@ export default function SharePage() {
                     onClick={() => setSelectedResult(r)}
                     type="button"
                   >
-                    <span className="font-semibold text-slate-700">{r.file_name ?? r.document_id.slice(0, 20) + "…"}</span>
-                    <span className="ml-2 text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString()}</span>
+                    <span className="font-semibold text-slate-700">
+                      {r.file_name ?? `${r.document_id.slice(0, 20)}…`}
+                    </span>
+                    <span className="ml-2 text-xs text-slate-400">
+                      {new Date(r.created_at).toLocaleDateString()}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -401,11 +461,17 @@ export default function SharePage() {
         {shareMode === "episode" && (
           <div className="space-y-3">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("selectEpisode") ?? "Selecciona un episodio"}</label>
+              <span className="mb-1.5 block text-xs font-medium text-slate-700">
+                {t("selectEpisode") ?? "Selecciona un episodio"}
+              </span>
               {loadingEpisodes ? (
-                <p className="text-sm text-slate-400 py-2">{t("loading") ?? "Cargando…"}</p>
+                <p className="text-sm text-slate-400 py-2">
+                  {t("loading") ?? "Cargando…"}
+                </p>
               ) : episodes.length === 0 ? (
-                <p className="text-sm text-slate-400 py-2">{t("noEpisodes") ?? "No se encontraron episodios."}</p>
+                <p className="text-sm text-slate-400 py-2">
+                  {t("noEpisodes") ?? "No se encontraron episodios."}
+                </p>
               ) : (
                 <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                   {episodes.map((ep) => (
@@ -419,8 +485,12 @@ export default function SharePage() {
                       onClick={() => setSelectedEpisode(ep)}
                       type="button"
                     >
-                      <span className="font-semibold text-slate-700">{ep.episodeType} — {ep.classification}</span>
-                      <span className="ml-2 text-xs text-slate-400">{new Date(ep.openedAt * 1000).toLocaleDateString()}</span>
+                      <span className="font-semibold text-slate-700">
+                        {ep.episodeType} — {ep.classification}
+                      </span>
+                      <span className="ml-2 text-xs text-slate-400">
+                        {new Date(ep.openedAt * 1000).toLocaleDateString()}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -429,11 +499,18 @@ export default function SharePage() {
 
             {selectedEpisode && (
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("documentsInEpisode") ?? "Documentos del episodio"}</label>
+                <span className="mb-1.5 block text-xs font-medium text-slate-700">
+                  {t("documentsInEpisode") ?? "Documentos del episodio"}
+                </span>
                 {loadingEpisodeDocs ? (
-                  <p className="text-sm text-slate-400 py-2">{t("loading") ?? "Cargando…"}</p>
+                  <p className="text-sm text-slate-400 py-2">
+                    {t("loading") ?? "Cargando…"}
+                  </p>
                 ) : episodeDocs.length === 0 ? (
-                  <p className="text-sm text-slate-400 py-2">{t("noDocumentsInEpisode") ?? "Este episodio no tiene documentos."}</p>
+                  <p className="text-sm text-slate-400 py-2">
+                    {t("noDocumentsInEpisode") ??
+                      "Este episodio no tiene documentos."}
+                  </p>
                 ) : (
                   <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                     {episodeDocs.map((d) => (
@@ -441,8 +518,12 @@ export default function SharePage() {
                         key={d.id}
                         className="neu-surface rounded-xl px-3 py-2 text-sm flex items-center justify-between"
                       >
-                        <span className="font-medium text-slate-700">{d.file_name ?? d.document_id.slice(0, 20) + "…"}</span>
-                        <span className="text-xs text-slate-400">{new Date(d.created_at).toLocaleDateString()}</span>
+                        <span className="font-medium text-slate-700">
+                          {d.file_name ?? `${d.document_id.slice(0, 20)}…`}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {new Date(d.created_at).toLocaleDateString()}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -454,7 +535,9 @@ export default function SharePage() {
 
         {/* Select role */}
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("selectRole")}</label>
+          <span className="mb-1.5 block text-xs font-medium text-slate-700">
+            {t("selectRole")}
+          </span>
           <div className="flex gap-2">
             {GRANTED_ROLES.map((role) => (
               <button
@@ -476,7 +559,9 @@ export default function SharePage() {
 
         {/* Select recipient */}
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-slate-700">{t("selectRecipient")}</label>
+          <span className="mb-1.5 block text-xs font-medium text-slate-700">
+            {t("selectRecipient")}
+          </span>
           <UserSelect
             value={recipientId}
             onChange={setRecipientId}
@@ -509,7 +594,9 @@ export default function SharePage() {
             <div className="neu-pressed rounded-2xl p-4">
               <QRCodeSVG value={qrData} size={200} />
             </div>
-            <p className="text-xs text-slate-500">{t("qrExpiresIn", { minutes: QR_EXPIRY_MINUTES })}</p>
+            <p className="text-xs text-slate-500">
+              {t("qrExpiresIn", { minutes: QR_EXPIRY_MINUTES })}
+            </p>
 
             {/* Payload preview */}
             <details className="w-full">

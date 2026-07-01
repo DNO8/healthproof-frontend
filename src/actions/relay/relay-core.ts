@@ -2,9 +2,9 @@
 
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import ForwarderAbi from "@/lib/abis/HealthProofTrustedForwarder.json";
 import { getDeployerPrivateKey } from "@/lib/auth/with-auth";
+import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import type { SignedForwardRequest } from "@/lib/metatx/types";
 
 async function getRelayerClients() {
@@ -28,7 +28,7 @@ async function getRelayerClients() {
 }
 
 export async function executeForwardRequest(
-  request: SignedForwardRequest
+  request: SignedForwardRequest,
 ): Promise<{ txHash: `0x${string}`; success: boolean }> {
   console.log("[relay-core] executeForwardRequest called with:", {
     from: request.from,
@@ -37,7 +37,7 @@ export async function executeForwardRequest(
     gas: request.gas.toString(),
     deadline: request.deadline.toString(),
     data: request.data,
-    signature: request.signature.slice(0, 20) + "...",
+    signature: `${request.signature.slice(0, 20)}...`,
   });
 
   const { publicClient, walletClient } = await getRelayerClients();
@@ -57,7 +57,10 @@ export async function executeForwardRequest(
     functionName: "trustedForwarder",
     args: [],
   })) as `0x${string}`;
-  console.log("[relay-core] Forwarder address from target contract:", forwarderAddress);
+  console.log(
+    "[relay-core] Forwarder address from target contract:",
+    forwarderAddress,
+  );
 
   const txHash = await walletClient.writeContract({
     address: forwarderAddress,

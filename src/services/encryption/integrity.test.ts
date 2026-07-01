@@ -1,7 +1,7 @@
 "use client";
 
-import { describe, it, expect } from "vitest";
-import { hashMasterSecret, hashEquals } from "./integrity";
+import { describe, expect, it } from "vitest";
+import { hashEquals, hashMasterSecret } from "./integrity";
 
 describe("integrity helpers", () => {
   it("hashMasterSecret produces consistent 64-char hex", async () => {

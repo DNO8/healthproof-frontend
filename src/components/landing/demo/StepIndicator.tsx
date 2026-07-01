@@ -24,14 +24,26 @@ export function StepIndicator({ current, labels }: StepIndicatorProps) {
                 }`}
               >
                 {isDone ? (
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  <svg
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 ) : (
                   i + 1
                 )}
               </div>
-              <span className={`text-[10px] font-medium ${isActive ? "text-sky-600" : "text-slate-400"}`}>
+              <span
+                className={`text-[10px] font-medium ${isActive ? "text-sky-600" : "text-slate-400"}`}
+              >
                 {label}
               </span>
             </div>

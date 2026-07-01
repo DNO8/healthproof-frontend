@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { Check, FileText, FlaskConical, Shield } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Shield, FlaskConical, FileText, Check } from "lucide-react";
-import { DEMO_PATIENTS } from "./mock-data";
+import { useState } from "react";
 import { BlockchainConfirmation } from "./BlockchainConfirmation";
+import { DEMO_PATIENTS } from "./mock-data";
 
 interface PatientSelectLabStepProps {
   onComplete: () => void;
 }
 
-export function PatientSelectLabStep({ onComplete }: PatientSelectLabStepProps) {
+export function PatientSelectLabStep({
+  onComplete,
+}: PatientSelectLabStepProps) {
   const t = useTranslations("demoFlow");
   const [selectedLab, setSelectedLab] = useState(0);
   const [confirmed, setConfirmed] = useState(false);
@@ -28,10 +30,7 @@ export function PatientSelectLabStep({ onComplete }: PatientSelectLabStepProps) 
           <Check className="h-4 w-4" />
           {t("labAssigned")}: {labs[selectedLab].name}
         </div>
-        <BlockchainConfirmation
-          action="patient"
-          onComplete={onComplete}
-        />
+        <BlockchainConfirmation action="patient" onComplete={onComplete} />
       </div>
     );
   }
@@ -48,7 +47,9 @@ export function PatientSelectLabStep({ onComplete }: PatientSelectLabStepProps) 
       <div className="rounded-2xl border border-(--hp-border) bg-(--hp-layer) p-4">
         <div className="flex items-center gap-2 text-slate-400">
           <FileText className="h-4 w-4" />
-          <p className="text-[10px] font-medium uppercase tracking-wide">{t("pendingOrder")}</p>
+          <p className="text-[10px] font-medium uppercase tracking-wide">
+            {t("pendingOrder")}
+          </p>
         </div>
         <p className="mt-1 text-sm text-slate-700">
           {DEMO_PATIENTS[0].name} — {t("examCBC")}
@@ -57,7 +58,9 @@ export function PatientSelectLabStep({ onComplete }: PatientSelectLabStepProps) 
       </div>
 
       <div className="space-y-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{t("selectLab")}</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+          {t("selectLab")}
+        </p>
         {labs.map((lab, i) => (
           <button
             key={lab.name}

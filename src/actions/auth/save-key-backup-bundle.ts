@@ -1,8 +1,8 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { withAuth, type AuthContext } from "@/lib/auth/with-auth";
+import { type AuthContext, withAuth } from "@/lib/auth/with-auth";
 import { encryptShareForServer } from "@/lib/kms/server-share-crypto";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 interface KeyBackupBundle {
   userId: string;

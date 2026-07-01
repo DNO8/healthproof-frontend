@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
+import { useEffect, useMemo, useState } from "react";
 import {
-  listLabsWithNetwork,
   getDoctorNetworkId,
   type LabWithNetwork,
+  listLabsWithNetwork,
 } from "@/actions/healthcare-networks/list-labs-with-network";
 
 export type LabSelectProps = {
@@ -81,7 +81,9 @@ export function LabSelect({ value, onChange, doctorWallet }: LabSelectProps) {
           </optgroup>
         )}
         {others.length > 0 && (
-          <optgroup label={recommended.length > 0 ? t("otherLabs") : t("availableLabs")}>
+          <optgroup
+            label={recommended.length > 0 ? t("otherLabs") : t("availableLabs")}
+          >
             {others.map((lab) => (
               <option key={lab.wallet} value={lab.wallet}>
                 {formatLabel(lab)}
@@ -91,7 +93,9 @@ export function LabSelect({ value, onChange, doctorWallet }: LabSelectProps) {
         )}
       </select>
       {!loading && labs.length === 0 && (
-        <p className="mt-1 text-[11px] text-slate-400">{t("noLabsAvailable")}</p>
+        <p className="mt-1 text-[11px] text-slate-400">
+          {t("noLabsAvailable")}
+        </p>
       )}
     </div>
   );

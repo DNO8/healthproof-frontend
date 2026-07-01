@@ -5,6 +5,7 @@ export function SkeletonList({ count = 3 }: { count?: number }) {
     <div className="space-y-4">
       {Array.from({ length: count }).map((_, i) => (
         <div
+          // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders are static
           key={i}
           className="neu-surface animate-pulse rounded-xl p-5 sm:p-6 space-y-3"
         >

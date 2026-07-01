@@ -61,7 +61,11 @@ export async function generateMasterSecret(): Promise<{
     ["deriveKey", "deriveBits"],
   );
 
-  return { masterSecret, publicKeyJwk, keyPair: { privateKey, publicKey: tempPair.publicKey } };
+  return {
+    masterSecret,
+    publicKeyJwk,
+    keyPair: { privateKey, publicKey: tempPair.publicKey },
+  };
 }
 
 /**

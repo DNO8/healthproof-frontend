@@ -1,11 +1,16 @@
-import { createCipheriv, createDecipheriv, scryptSync, randomBytes } from "crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  scryptSync,
+} from "node:crypto";
 import { getKMSProvider } from "@/lib/kms/interface";
 
 // Encryption configuration
 const ALGORITHM = "aes-256-gcm";
 const KEY_LENGTH = 32;
 const IV_LENGTH = 16;
-const AUTH_TAG_LENGTH = 16;
+const _AUTH_TAG_LENGTH = 16;
 
 interface KeyCache {
   key: string;
@@ -49,17 +54,20 @@ export async function getShamirKey(): Promise<string> {
  * Encrypt a private key for storage
  * Use this function to initially encrypt the key
  */
-export function encryptPrivateKey(plainKey: string, encryptionPassword: string): string {
+export function encryptPrivateKey(
+  plainKey: string,
+  encryptionPassword: string,
+): string {
   const iv = randomBytes(IV_LENGTH);
   const key = deriveKey(encryptionPassword);
-  
+
   const cipher = createCipheriv(ALGORITHM, key, iv);
-  
+
   let encrypted = cipher.update(plainKey.replace(/^0x/, ""), "utf8", "hex");
   encrypted += cipher.final("hex");
-  
+
   const authTag = cipher.getAuthTag();
-  
+
   // Format: iv:authTag:encrypted
   return `${iv.toString("hex")}:${authTag.toString("hex")}:${encrypted}`;
 }
@@ -67,24 +75,27 @@ export function encryptPrivateKey(plainKey: string, encryptionPassword: string):
 /**
  * Decrypt the stored key
  */
-function decryptKey(encryptedData: string, encryptionPassword: string): string {
+function _decryptKey(
+  encryptedData: string,
+  encryptionPassword: string,
+): string {
   const parts = encryptedData.split(":");
-  
+
   if (parts.length !== 3) {
     throw new SecureKeyError("Invalid encrypted key format");
   }
-  
+
   const [ivHex, authTagHex, encrypted] = parts;
   const iv = Buffer.from(ivHex, "hex");
   const authTag = Buffer.from(authTagHex, "hex");
   const key = deriveKey(encryptionPassword);
-  
+
   const decipher = createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(authTag);
-  
+
   let decrypted = decipher.update(encrypted, "hex", "utf8");
   decrypted += decipher.final("utf8");
-  
+
   return decrypted;
 }
 
@@ -119,15 +130,23 @@ export class SecureKeyError extends Error {
 export function setupEncryptedKey(): void {
   const plainKey = process.env.DEPLOYER_PRIVATE_KEY;
   const encryptionKey = process.env.DEPLOYER_KEY_ENCRYPTION_KEY;
-  
+
   if (!plainKey || !encryptionKey) {
-    console.log("Set DEPLOYER_PRIVATE_KEY and DEPLOYER_KEY_ENCRYPTION_KEY env vars first");
+    console.log(
+      "Set DEPLOYER_PRIVATE_KEY and DEPLOYER_KEY_ENCRYPTION_KEY env vars first",
+    );
     return;
   }
-  
+
   const encrypted = encryptPrivateKey(plainKey, encryptionKey);
-  console.log("\n=== ENCRYPTED KEY (store this in DEPLOYER_PRIVATE_KEY_ENCRYPTED) ===");
+  console.log(
+    "\n=== ENCRYPTED KEY (store this in DEPLOYER_PRIVATE_KEY_ENCRYPTED) ===",
+  );
   console.log(encrypted);
-  console.log("===================================================================\n");
-  console.log("Remove DEPLOYER_PRIVATE_KEY from env after storing the encrypted version");
+  console.log(
+    "===================================================================\n",
+  );
+  console.log(
+    "Remove DEPLOYER_PRIVATE_KEY from env after storing the encrypted version",
+  );
 }

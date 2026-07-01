@@ -2,10 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function updateProfile(data: {
-  id: string;
-  full_name: string;
-}) {
+export async function updateProfile(data: { id: string; full_name: string }) {
   const supabase = createAdminClient();
 
   const { error } = await supabase

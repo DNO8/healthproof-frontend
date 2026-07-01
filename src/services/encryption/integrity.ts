@@ -9,7 +9,10 @@
  * Compute SHA-256 of raw bytes and return as hex string.
  */
 export async function hashMasterSecret(secret: Uint8Array): Promise<string> {
-  const hash = await crypto.subtle.digest("SHA-256", secret.buffer as ArrayBuffer);
+  const hash = await crypto.subtle.digest(
+    "SHA-256",
+    secret.buffer as ArrayBuffer,
+  );
   return Array.from(new Uint8Array(hash))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");

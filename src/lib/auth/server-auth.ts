@@ -9,7 +9,9 @@ export interface AuthContext {
   token: string;
 }
 
-function extractWalletFromJwt(decoded: Record<string, unknown>): string | undefined {
+function extractWalletFromJwt(
+  decoded: Record<string, unknown>,
+): string | undefined {
   // 1. Custom claim (configured in Privy dashboard)
   const custom = (decoded.custom as Record<string, unknown>) ?? {};
   const fromCustom = custom.wallet_address as string | undefined;
@@ -20,10 +22,16 @@ function extractWalletFromJwt(decoded: Record<string, unknown>): string | undefi
   if (fromTop) return fromTop;
 
   // 3. linked_accounts array (Privy embeds wallets here)
-  const linked = decoded.linked_accounts as Array<Record<string, unknown>> | undefined;
+  const linked = decoded.linked_accounts as
+    | Array<Record<string, unknown>>
+    | undefined;
   if (Array.isArray(linked)) {
     for (const acc of linked) {
-      if (acc.type === "wallet" && typeof acc.address === "string" && acc.address) {
+      if (
+        acc.type === "wallet" &&
+        typeof acc.address === "string" &&
+        acc.address
+      ) {
         return acc.address as string;
       }
       // Some Privy tokens nest address under "wallet" or "embedded_wallet"
@@ -34,7 +42,9 @@ function extractWalletFromJwt(decoded: Record<string, unknown>): string | undefi
   }
 
   // 4. embedded_wallet claim
-  const embedded = decoded.embedded_wallet as Record<string, unknown> | undefined;
+  const embedded = decoded.embedded_wallet as
+    | Record<string, unknown>
+    | undefined;
   if (embedded && typeof embedded.address === "string") {
     return embedded.address;
   }
@@ -47,7 +57,9 @@ function extractWalletFromJwt(decoded: Record<string, unknown>): string | undefi
  * Skips signature verification (JWKS is not accessible in this environment)
  * but checks token expiration. Falls back to cookie-based token.
  */
-export async function verifyPrivyAuth(privyToken?: string): Promise<AuthContext> {
+export async function verifyPrivyAuth(
+  privyToken?: string,
+): Promise<AuthContext> {
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
   const token = privyToken ?? cookieStore.get(PRIVY_TOKEN_COOKIE)?.value;
@@ -105,7 +117,10 @@ export async function verifyPrivyAuth(privyToken?: string): Promise<AuthContext>
   }
 
   if (!walletAddress) {
-    console.warn("[server-auth] No wallet found in token or DB for user", userId);
+    console.warn(
+      "[server-auth] No wallet found in token or DB for user",
+      userId,
+    );
   }
 
   return {
@@ -129,7 +144,7 @@ export async function getAuthContext(): Promise<AuthContext | null> {
 export class AuthError extends Error {
   constructor(
     message: string,
-    public readonly statusCode: number = 401
+    public readonly statusCode: number = 401,
   ) {
     super(message);
     this.name = "AuthError";

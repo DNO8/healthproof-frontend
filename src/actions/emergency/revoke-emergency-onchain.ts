@@ -1,10 +1,10 @@
 "use server";
 
-import { withAuth, auditLog } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
 import { validatePatientAccess } from "@/lib/auth/permissions";
-import { executeForwardRequest } from "../relay/relay-core";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { auditLog, withAuth } from "@/lib/auth/with-auth";
 import type { SignedForwardRequest } from "@/lib/metatx/types";
+import { executeForwardRequest } from "../relay/relay-core";
 
 interface RevokeEmergencyData {
   request: SignedForwardRequest;
@@ -18,7 +18,7 @@ interface RevokeEmergencyData {
  */
 async function revokeEmergencyHandler(
   data: RevokeEmergencyData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ txHash: string }> {
   if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
     throw new Error("Signer mismatch: request.from != authenticated wallet");
@@ -39,7 +39,7 @@ async function revokeEmergencyHandler(
 
 async function validateRevokeEmergency(
   data: RevokeEmergencyData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<boolean> {
   return await validatePatientAccess(data.patientWallet, auth.wallet);
 }

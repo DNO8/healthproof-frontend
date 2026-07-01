@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useLayoutEffect, useState } from "react";
 import gsap from "gsap";
 import { useTranslations } from "next-intl";
+import { useLayoutEffect, useRef, useState } from "react";
 import { CardFile } from "@/components/ui";
 import type { FileSliderItem } from "./constants";
 

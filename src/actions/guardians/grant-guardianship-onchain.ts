@@ -2,13 +2,19 @@
 
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import GuardianRegistryArtifact from "@/lib/abis/GuardianRegistry.json";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+
 const GuardianRegistryAbi = GuardianRegistryArtifact.abi;
-import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
-import { isVerifiedAdmin } from "@/lib/auth/permissions";
+
 import { logAuditEvent } from "@/lib/audit-onchain";
+import { isVerifiedAdmin } from "@/lib/auth/permissions";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import {
+  auditLog,
+  getDeployerPrivateKey,
+  withAuth,
+} from "@/lib/auth/with-auth";
 import { AuditAction } from "@/lib/medical-constants";
 
 const ZERO_BYTES32 =
@@ -43,9 +49,9 @@ async function grantGuardianshipHandler(
   });
 
   const legalDocHash = data.legalDocHash
-    ? (data.legalDocHash.startsWith("0x") && data.legalDocHash.length === 66
+    ? data.legalDocHash.startsWith("0x") && data.legalDocHash.length === 66
       ? (data.legalDocHash as `0x${string}`)
-      : ZERO_BYTES32)
+      : ZERO_BYTES32
     : ZERO_BYTES32;
 
   const validUntil = data.validUntil ? BigInt(data.validUntil) : BigInt(0);

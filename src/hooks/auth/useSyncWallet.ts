@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
-import { usePrivy, useWallets, useCreateWallet } from "@privy-io/react-auth";
+import { useCreateWallet, usePrivy, useWallets } from "@privy-io/react-auth";
+import { useCallback, useEffect, useRef } from "react";
 import { updateWalletAddress } from "@/actions/auth/update-wallet";
 import { clearDbUserCache } from "@/hooks/auth/useDbUser";
 

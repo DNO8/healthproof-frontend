@@ -1,39 +1,39 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useRouter, usePathname } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
-import { useTranslations, useLocale } from "next-intl";
-import { sileo } from "sileo";
-import {
-  Link,
-  useRouter as useIntlRouter,
-  usePathname as useIntlPathname,
-} from "@/i18n/navigation";
-import { useUiStore } from "@/state/ui.store";
-import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
-import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
-import { useDbUser, clearDbUserCache } from "@/hooks/auth/useDbUser";
-import { clearUserSession } from "@/lib/auth/clear-session";
-import { LINKS_BY_ROLE } from "@/lib/navigation";
-import type { UserRole } from "@/types/domain.types";
 import type { LucideIcon } from "lucide-react";
 import {
-  LayoutDashboard,
+  Building2,
   ClipboardList,
   FileText,
-  Shield,
-  User,
-  Mail,
-  Share2,
   FolderOpen,
-  ScanLine,
-  Upload,
   Globe,
-  Building2,
-  Settings,
+  LayoutDashboard,
   Lock,
+  Mail,
+  ScanLine,
+  Settings,
+  Share2,
+  Shield,
+  Upload,
+  User,
 } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { useEffect, useRef } from "react";
+import { sileo } from "sileo";
+import { clearDbUserCache, useDbUser } from "@/hooks/auth/useDbUser";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
+import {
+  Link,
+  usePathname as useIntlPathname,
+  useRouter as useIntlRouter,
+} from "@/i18n/navigation";
+import { clearUserSession } from "@/lib/auth/clear-session";
+import { LINKS_BY_ROLE } from "@/lib/navigation";
+import { useUiStore } from "@/state/ui.store";
+import type { UserRole } from "@/types/domain.types";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   LayoutDashboard,
@@ -71,15 +71,17 @@ export function MobileSheet() {
 
   const isDashboard = pathname.startsWith("/dashboard");
   const dbRole = dbUser?.role?.toLowerCase() as UserRole | null;
-  const intended = typeof window !== "undefined"
-    ? (localStorage.getItem("hp_intended_role") as UserRole | null)
-    : null;
-  const effectiveRole: UserRole = onChainRole ?? dbRole ?? intended ?? "patient";
+  const intended =
+    typeof window !== "undefined"
+      ? (localStorage.getItem("hp_intended_role") as UserRole | null)
+      : null;
+  const effectiveRole: UserRole =
+    onChainRole ?? dbRole ?? intended ?? "patient";
   const sidebarLinks = LINKS_BY_ROLE[effectiveRole] ?? LINKS_BY_ROLE.patient;
 
   useEffect(() => {
     setSheetOpen(false);
-  }, [intlPathname, setSheetOpen]);
+  }, [setSheetOpen]);
 
   useEffect(() => {
     function onEsc(e: KeyboardEvent) {
@@ -95,7 +97,10 @@ export function MobileSheet() {
     clearDbUserCache();
     clearUserSession();
     localStorage.removeItem("hp_intended_role");
-    sileo.success({ title: t("signedOut"), description: t("signedOutDescription") });
+    sileo.success({
+      title: t("signedOut"),
+      description: t("signedOutDescription"),
+    });
     window.location.href = "/";
   }
 
@@ -139,7 +144,18 @@ export function MobileSheet() {
             onClick={() => setSheetOpen(false)}
             type="button"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><title>{t("closeMenu")}</title><path d="M18 6 6 18M6 6l12 12"/></svg>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
+              <title>{t("closeMenu")}</title>
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
@@ -151,7 +167,9 @@ export function MobileSheet() {
               </p>
               {sidebarLinks.map((link) => {
                 const Icon = ICON_MAP[link.icon];
-                const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
+                const active =
+                  pathname === link.href ||
+                  pathname.startsWith(`${link.href}/`);
                 return (
                   <button
                     key={link.id}
@@ -178,21 +196,37 @@ export function MobileSheet() {
           <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
             {t("protocol")}
           </p>
-          <Link className={linkClass(intlPathname === "/")} href="/" onClick={() => setSheetOpen(false)}>
+          <Link
+            className={linkClass(intlPathname === "/")}
+            href="/"
+            onClick={() => setSheetOpen(false)}
+          >
             {t("home")}
           </Link>
-          <Link className={linkClass(intlPathname === "/contact")} href="/contact" onClick={() => setSheetOpen(false)}>
+          <Link
+            className={linkClass(intlPathname === "/contact")}
+            href="/contact"
+            onClick={() => setSheetOpen(false)}
+          >
             {t("contact")}
           </Link>
 
           {authenticated && (
             <>
               {!isDashboard && (
-                <Link className={linkClass(intlPathname === "/dashboard")} href="/dashboard" onClick={() => setSheetOpen(false)}>
+                <Link
+                  className={linkClass(intlPathname === "/dashboard")}
+                  href="/dashboard"
+                  onClick={() => setSheetOpen(false)}
+                >
                   {t("dashboard")}
                 </Link>
               )}
-              <Link className={linkClass(intlPathname === "/dashboard/profile")} href="/dashboard/profile" onClick={() => setSheetOpen(false)}>
+              <Link
+                className={linkClass(intlPathname === "/dashboard/profile")}
+                href="/dashboard/profile"
+                onClick={() => setSheetOpen(false)}
+              >
                 {t("profile")}
               </Link>
             </>
@@ -217,19 +251,24 @@ export function MobileSheet() {
             </button>
           </div>
 
-          {ready && (
-            <>
-              {authenticated ? (
-                <button className="mt-2 block w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-500 transition hover:bg-red-50" onClick={handleLogout} type="button">
-                  {t("logout")}
-                </button>
-              ) : (
-                <Link className={linkClass(intlPathname === "/auth")} href="/auth" onClick={() => setSheetOpen(false)}>
-                  {t("login")}
-                </Link>
-              )}
-            </>
-          )}
+          {ready &&
+            (authenticated ? (
+              <button
+                className="mt-2 block w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-500 transition hover:bg-red-50"
+                onClick={handleLogout}
+                type="button"
+              >
+                {t("logout")}
+              </button>
+            ) : (
+              <Link
+                className={linkClass(intlPathname === "/auth")}
+                href="/auth"
+                onClick={() => setSheetOpen(false)}
+              >
+                {t("login")}
+              </Link>
+            ))}
         </div>
       </div>
     </div>

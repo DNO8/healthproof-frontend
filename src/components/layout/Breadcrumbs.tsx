@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { usePathname, Link } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 
 const labelMap: Record<string, string> = {
   dashboard: "sidebar.overview",
@@ -28,7 +28,8 @@ export function Breadcrumbs() {
   const t = useTranslations("dashboard");
   const pathname = usePathname();
 
-  if (pathname === "/dashboard" || pathname === "/dashboard/overview") return null;
+  if (pathname === "/dashboard" || pathname === "/dashboard/overview")
+    return null;
 
   const segments = pathname
     .replace(/^\/dashboard\/?/, "")
@@ -39,15 +40,19 @@ export function Breadcrumbs() {
 
   return (
     <nav className="mb-4 flex items-center gap-1 text-xs text-slate-500">
-      <Link className="hover:text-slate-700 transition" href="/dashboard/overview">
+      <Link
+        className="hover:text-slate-700 transition"
+        href="/dashboard/overview"
+      >
         {t("sidebar.overview")}
       </Link>
       {segments.map((seg: string, i: number) => {
         const isLast = i === segments.length - 1;
         const labelKey = labelMap[seg] ?? seg;
-        const label = labelKey.startsWith("sidebar.") || labelKey.startsWith("nav.")
-          ? t(labelKey)
-          : seg;
+        const label =
+          labelKey.startsWith("sidebar.") || labelKey.startsWith("nav.")
+            ? t(labelKey)
+            : seg;
         return (
           <span key={seg} className="flex items-center gap-1">
             <span className="text-slate-300">/</span>

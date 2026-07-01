@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import {
+  AlertTriangle,
+  ChevronRight,
+  Clock,
+  Shield,
+  UserCheck,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, Shield, UserCheck, Clock, ChevronRight } from "lucide-react";
+import { useState } from "react";
 
 export default function EmergencyPage() {
   const t = useTranslations("dashboard.emergency");
-  const [activeTab, setActiveTab] = useState<"request" | "pending" | "history">("request");
+  const [activeTab, setActiveTab] = useState<"request" | "pending" | "history">(
+    "request",
+  );
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -21,13 +29,22 @@ export default function EmergencyPage() {
       </div>
 
       <div className="mb-6 flex gap-2">
-        <TabButton active={activeTab === "request"} onClick={() => setActiveTab("request")}>
+        <TabButton
+          active={activeTab === "request"}
+          onClick={() => setActiveTab("request")}
+        >
           Request Access
         </TabButton>
-        <TabButton active={activeTab === "pending"} onClick={() => setActiveTab("pending")}>
+        <TabButton
+          active={activeTab === "pending"}
+          onClick={() => setActiveTab("pending")}
+        >
           Pending Approvals
         </TabButton>
-        <TabButton active={activeTab === "history"} onClick={() => setActiveTab("history")}>
+        <TabButton
+          active={activeTab === "history"}
+          onClick={() => setActiveTab("history")}
+        >
           History
         </TabButton>
       </div>
@@ -54,9 +71,7 @@ function TabButton({
     <button
       onClick={onClick}
       className={`rounded-xl px-4 py-2 text-sm font-medium transition-all ${
-        active
-          ? "bg-sky-100 text-sky-700"
-          : "text-slate-500 hover:bg-slate-50"
+        active ? "bg-sky-100 text-sky-700" : "text-slate-500 hover:bg-slate-50"
       }`}
     >
       {children}
@@ -69,7 +84,9 @@ function RequestTab() {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-slate-800">Request Emergency Access</h3>
+      <h3 className="text-lg font-semibold text-slate-800">
+        Request Emergency Access
+      </h3>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <PathCard
@@ -114,7 +131,8 @@ function PathCard({
   const colorClasses = {
     sky: "border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100",
     amber: "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100",
-    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
+    emerald:
+      "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
   };
 
   return (

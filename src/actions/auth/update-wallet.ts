@@ -1,10 +1,9 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createPublicClient, http } from "viem";
-import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import IdentityRegistryAbi from "@/lib/abis/IdentityRegistry.json";
-import { CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const publicClient = createPublicClient({
   chain: HEALTHPROOF_CHAIN,
@@ -30,17 +29,23 @@ export async function updateWalletAddress(data: {
   // 2. If current wallet is already registered on-chain with a role, BLOCK overwrite
   if (currentWallet && currentWallet.toLowerCase() !== newWallet) {
     try {
-      const entity = await publicClient.readContract({
+      const entity = (await publicClient.readContract({
         address: CONTRACT_ADDRESSES.IdentityRegistry as `0x${string}`,
         abi: IdentityRegistryAbi,
         functionName: "getEntity",
         args: [currentWallet.toLowerCase()],
-      }) as { role: number; isActive: boolean };
+      })) as { role: number; isActive: boolean };
 
       if (entity.role !== 0) {
-        console.warn("[updateWalletAddress] Blocked: current wallet", currentWallet, "has on-chain role", entity.role);
+        console.warn(
+          "[updateWalletAddress] Blocked: current wallet",
+          currentWallet,
+          "has on-chain role",
+          entity.role,
+        );
         return {
-          error: "Cannot change wallet: your current wallet is already registered on-chain. Contact support.",
+          error:
+            "Cannot change wallet: your current wallet is already registered on-chain. Contact support.",
           code: 409,
         };
       }

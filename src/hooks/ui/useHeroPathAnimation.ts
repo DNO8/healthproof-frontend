@@ -56,7 +56,9 @@ export function useHeroPathAnimation(
 
     if (pathEls.length === 0) return;
 
-    const pathLoops = pathEls.map((el) => buildClosedLoop(el, SAMPLES_PER_SEGMENT));
+    const pathLoops = pathEls.map((el) =>
+      buildClosedLoop(el, SAMPLES_PER_SEGMENT),
+    );
     const iconsPerPath = Math.ceil(icons.length / PATH_IDS.length);
 
     const ctx = gsap.context(() => {
@@ -68,7 +70,9 @@ export function useHeroPathAnimation(
           PATH_IDS.length - 1,
         );
         const pathLoop = pathLoops[pathIndex];
-        const progress = { value: (index % iconsPerPath) / (iconsPerPath || 1) };
+        const progress = {
+          value: (index % iconsPerPath) / (iconsPerPath || 1),
+        };
 
         gsap.set(icon, {
           autoAlpha: 0.85,

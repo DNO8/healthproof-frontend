@@ -1,14 +1,14 @@
 // Medical orders — on-chain via MedicalOrderRegistry + Gateway
 
 export {
+  assignLabToOrder,
   createMedicalOrderOnChain as createOrder,
   getOrderOnChain as getOrder,
-  assignLabToOrder,
   updateOrderStatusOnChain as updateOrderStatus,
 } from "@/actions/medical-orders/medical-orders-onchain";
 
 export {
-  OrderStatus,
-  ORDER_STATUS_LABELS,
   type OnChainOrder,
+  ORDER_STATUS_LABELS,
+  OrderStatus,
 } from "@/lib/medical-constants";

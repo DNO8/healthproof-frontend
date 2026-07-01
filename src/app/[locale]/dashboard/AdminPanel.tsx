@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { sileo } from "sileo";
 import {
+  adminGetEntity,
+  adminRegisterEntity,
+  adminVerifyEntity,
   isProtocolPaused,
   pauseProtocol,
   resumeProtocol,
-  adminRegisterEntity,
-  adminVerifyEntity,
-  adminGetEntity,
 } from "@/actions/admin/admin-onchain";
 import { ContractRole } from "@/types/domain.types";
 
@@ -62,10 +62,16 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     try {
       const res = await pauseProtocol({});
       if (!res.success) {
-        sileo.error({ title: "Pause failed", description: (res.error ?? "").slice(0, 120) });
+        sileo.error({
+          title: "Pause failed",
+          description: (res.error ?? "").slice(0, 120),
+        });
       } else {
         setPaused(true);
-        sileo.success({ title: "Protocol paused", description: `TX: ${res.data.txHash.slice(0, 16)}…` });
+        sileo.success({
+          title: "Protocol paused",
+          description: `TX: ${res.data.txHash.slice(0, 16)}…`,
+        });
       }
     } finally {
       setProtocolLoading(false);
@@ -77,10 +83,16 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     try {
       const res = await resumeProtocol({});
       if (!res.success) {
-        sileo.error({ title: "Resume failed", description: (res.error ?? "").slice(0, 120) });
+        sileo.error({
+          title: "Resume failed",
+          description: (res.error ?? "").slice(0, 120),
+        });
       } else {
         setPaused(false);
-        sileo.success({ title: "Protocol resumed", description: `TX: ${res.data.txHash.slice(0, 16)}…` });
+        sileo.success({
+          title: "Protocol resumed",
+          description: `TX: ${res.data.txHash.slice(0, 16)}…`,
+        });
       }
     } finally {
       setProtocolLoading(false);
@@ -97,9 +109,15 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
         specialty: specialty.trim() || undefined,
       });
       if ("error" in res) {
-        sileo.error({ title: "Register failed", description: res.error.slice(0, 120) });
+        sileo.error({
+          title: "Register failed",
+          description: res.error.slice(0, 120),
+        });
       } else {
-        sileo.success({ title: "Entity registered", description: `TX: ${res.txHash.slice(0, 16)}…` });
+        sileo.success({
+          title: "Entity registered",
+          description: `TX: ${res.txHash.slice(0, 16)}…`,
+        });
       }
     } finally {
       setEntityLoading(false);
@@ -112,9 +130,15 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     try {
       const res = await adminVerifyEntity(wallet.trim());
       if ("error" in res) {
-        sileo.error({ title: "Verify failed", description: res.error.slice(0, 120) });
+        sileo.error({
+          title: "Verify failed",
+          description: res.error.slice(0, 120),
+        });
       } else {
-        sileo.success({ title: "Entity verified", description: `TX: ${res.txHash.slice(0, 16)}…` });
+        sileo.success({
+          title: "Entity verified",
+          description: `TX: ${res.txHash.slice(0, 16)}…`,
+        });
       }
     } finally {
       setEntityLoading(false);
@@ -128,7 +152,11 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     try {
       const info = await adminGetEntity(lookupWallet.trim());
       setEntityInfo(info);
-      if (!info) sileo.error({ title: "Not found", description: "Entity not registered on-chain" });
+      if (!info)
+        sileo.error({
+          title: "Not found",
+          description: "Entity not registered on-chain",
+        });
     } finally {
       setEntityLoading(false);
     }
@@ -139,7 +167,13 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
       <div className="neu-surface w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl border border-white/70 p-6 sm:p-8">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-800">Admin Panel</h2>
-          <button className="text-slate-400 hover:text-slate-600" onClick={onClose} type="button">✕</button>
+          <button
+            className="text-slate-400 hover:text-slate-600"
+            onClick={onClose}
+            type="button"
+          >
+            ✕
+          </button>
         </div>
 
         {/* Tabs */}
@@ -148,7 +182,9 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
             <button
               key={t}
               className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
-                tab === t ? "neu-pressed text-slate-800" : "neu-surface text-slate-500 hover:text-slate-700"
+                tab === t
+                  ? "neu-pressed text-slate-800"
+                  : "neu-surface text-slate-500 hover:text-slate-700"
               }`}
               onClick={() => setTab(t)}
               type="button"
@@ -171,7 +207,9 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
             </button>
 
             {paused !== null && (
-              <div className={`rounded-xl p-4 text-sm font-medium ${paused ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
+              <div
+                className={`rounded-xl p-4 text-sm font-medium ${paused ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}
+              >
                 Protocol is {paused ? "PAUSED" : "ACTIVE"}
               </div>
             )}
@@ -202,7 +240,9 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
           <div className="space-y-5">
             {/* Register / Verify */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-slate-700">Register & Verify</h3>
+              <h3 className="text-sm font-semibold text-slate-700">
+                Register & Verify
+              </h3>
               <input
                 className="neu-pressed w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none"
                 placeholder="Wallet address (0x…)"
@@ -213,10 +253,14 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                 <select
                   className="neu-pressed flex-1 rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none"
                   value={role}
-                  onChange={(e) => setRole(Number(e.target.value) as ContractRole)}
+                  onChange={(e) =>
+                    setRole(Number(e.target.value) as ContractRole)
+                  }
                 >
                   {ROLE_OPTIONS.map((r) => (
-                    <option key={r.value} value={r.value}>{r.label}</option>
+                    <option key={r.value} value={r.value}>
+                      {r.label}
+                    </option>
                   ))}
                 </select>
                 <input
@@ -248,7 +292,9 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
             {/* Lookup */}
             <div className="space-y-3 border-t border-slate-200 pt-4">
-              <h3 className="text-sm font-semibold text-slate-700">Lookup Entity</h3>
+              <h3 className="text-sm font-semibold text-slate-700">
+                Lookup Entity
+              </h3>
               <input
                 className="neu-pressed w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none"
                 placeholder="Wallet address (0x…)"
@@ -266,10 +312,31 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
               {entityInfo && (
                 <div className="rounded-xl bg-slate-50 p-4 text-xs text-slate-700 space-y-1">
-                  <div><span className="font-medium">Role:</span> {ROLE_OPTIONS.find((r) => r.value === entityInfo.role)?.label ?? entityInfo.role}</div>
-                  <div><span className="font-medium">Specialty:</span> {entityInfo.specialty || "—"}</div>
-                  <div><span className="font-medium">Institution:</span> <code className="text-[11px]">{entityInfo.institution}</code></div>
-                  <div><span className="font-medium">Verified:</span> <span className={entityInfo.verified ? "text-green-600" : "text-red-500"}>{entityInfo.verified ? "Yes" : "No"}</span></div>
+                  <div>
+                    <span className="font-medium">Role:</span>{" "}
+                    {ROLE_OPTIONS.find((r) => r.value === entityInfo.role)
+                      ?.label ?? entityInfo.role}
+                  </div>
+                  <div>
+                    <span className="font-medium">Specialty:</span>{" "}
+                    {entityInfo.specialty || "—"}
+                  </div>
+                  <div>
+                    <span className="font-medium">Institution:</span>{" "}
+                    <code className="text-[11px]">
+                      {entityInfo.institution}
+                    </code>
+                  </div>
+                  <div>
+                    <span className="font-medium">Verified:</span>{" "}
+                    <span
+                      className={
+                        entityInfo.verified ? "text-green-600" : "text-red-500"
+                      }
+                    >
+                      {entityInfo.verified ? "Yes" : "No"}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>

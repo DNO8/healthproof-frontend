@@ -1,8 +1,8 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { withAuth } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 interface RetrieveEmergencyKeyData {
   requestId: string;
@@ -14,7 +14,7 @@ interface RetrieveEmergencyKeyData {
  */
 async function retrieveEmergencyKeyHandler(
   data: RetrieveEmergencyKeyData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ encryptedKey: string; expiresAt: string }> {
   const supabase = createAdminClient();
 

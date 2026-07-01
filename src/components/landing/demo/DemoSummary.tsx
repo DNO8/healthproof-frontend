@@ -1,8 +1,8 @@
 "use client";
 
 import { Check, FlaskConical, Shield, User, X } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui";
 
 interface DemoSummaryProps {
@@ -48,7 +48,9 @@ export function DemoSummary({ onClose }: DemoSummaryProps) {
       <div className="relative flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-white/70 bg-(--hp-bg) shadow-(--hp-shadow-raised)">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-(--hp-border) px-6 py-4">
-          <h2 className="text-lg font-semibold text-slate-800">{t("summaryTitle")}</h2>
+          <h2 className="text-lg font-semibold text-slate-800">
+            {t("summaryTitle")}
+          </h2>
           <button
             onClick={onClose}
             className="rounded-full p-1 text-slate-500 transition hover:bg-white/60 hover:text-slate-700"
@@ -66,14 +68,16 @@ export function DemoSummary({ onClose }: DemoSummaryProps) {
           <div className="mt-5 space-y-3">
             {steps.map((s, i) => (
               <div
-                key={i}
+                key={s.title}
                 className={`flex items-center gap-3 rounded-2xl border p-3.5 ${s.color}`}
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
                   {s.icon}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-700">{s.title}</p>
+                  <p className="text-sm font-medium text-slate-700">
+                    {s.title}
+                  </p>
                   <p className="text-[10px] text-slate-500">
                     {t("summaryStepNumber", { number: i + 1 })}
                   </p>
@@ -83,8 +87,12 @@ export function DemoSummary({ onClose }: DemoSummaryProps) {
           </div>
 
           <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 text-center">
-            <p className="text-sm font-semibold text-emerald-800">{t("summaryConclusion")}</p>
-            <p className="mt-1 text-xs text-emerald-700">{t("summaryConclusionSub")}</p>
+            <p className="text-sm font-semibold text-emerald-800">
+              {t("summaryConclusion")}
+            </p>
+            <p className="mt-1 text-xs text-emerald-700">
+              {t("summaryConclusionSub")}
+            </p>
           </div>
         </div>
 

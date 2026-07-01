@@ -1,13 +1,17 @@
 "use server";
 
-import { createWalletClient, createPublicClient, http } from "viem";
+import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import { env } from "@/lib/env";
 import IdentityRegistryAbi from "@/lib/abis/IdentityRegistry.json";
-import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth";
-import type { AuthContext, AuthResponse } from "@/lib/auth/with-auth";
 import { isVerifiedAdmin } from "@/lib/auth/permissions";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import {
+  auditLog,
+  getDeployerPrivateKey,
+  withAuth,
+} from "@/lib/auth/with-auth";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import { env } from "@/lib/env";
 import type { ContractRole } from "@/types/domain.types";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
@@ -43,7 +47,7 @@ interface RegisterEntityData {
 
 async function registerEntityHandler(
   data: RegisterEntityData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ txHash: string }> {
   const { publicClient, walletClient, account } = await getClients();
 
@@ -51,36 +55,46 @@ async function registerEntityHandler(
   const institutionAddr = (data.institution ?? ZERO_ADDRESS) as `0x${string}`;
 
   const { request } = await publicClient.simulateContract({
-      account,
-      address: CONTRACT_ADDRESSES.IdentityRegistry as `0x${string}`,
-      abi: IdentityRegistryAbi,
-      functionName: "registerEntity",
-      args: [walletAddr, data.role, data.specialty ?? "", institutionAddr],
+    account,
+    address: CONTRACT_ADDRESSES.IdentityRegistry as `0x${string}`,
+    abi: IdentityRegistryAbi,
+    functionName: "registerEntity",
+    args: [walletAddr, data.role, data.specialty ?? "", institutionAddr],
+  });
+
+  const txHash = await walletClient.writeContract(request);
+
+  try {
+    await publicClient.waitForTransactionReceipt({
+      hash: txHash,
+      timeout: 180_000,
     });
-
-    const txHash = await walletClient.writeContract(request);
-
-    try {
-      await publicClient.waitForTransactionReceipt({ hash: txHash, timeout: 180_000 });
-    } catch (waitErr) {
-      const waitMsg = waitErr instanceof Error ? waitErr.message : String(waitErr);
-      if (waitMsg.toLowerCase().includes("timed out")) {
-        console.warn("registerEntityOnChain: receipt timeout, TX submitted:", txHash);
-        // Transaction was submitted successfully even if receipt timed out
-      } else {
-        throw waitErr;
-      }
+  } catch (waitErr) {
+    const waitMsg =
+      waitErr instanceof Error ? waitErr.message : String(waitErr);
+    if (waitMsg.toLowerCase().includes("timed out")) {
+      console.warn(
+        "registerEntityOnChain: receipt timeout, TX submitted:",
+        txHash,
+      );
+      // Transaction was submitted successfully even if receipt timed out
+    } else {
+      throw waitErr;
     }
+  }
 
-    auditLog("registerEntityOnChain", auth, true, {
-      wallet: data.wallet,
-      role: data.role,
-    });
+  auditLog("registerEntityOnChain", auth, true, {
+    wallet: data.wallet,
+    role: data.role,
+  });
 
-    return { txHash };
+  return { txHash };
 }
 
-async function validateAdminOrSelf(data: unknown, auth: AuthContext): Promise<boolean> {
+async function validateAdminOrSelf(
+  data: unknown,
+  auth: AuthContext,
+): Promise<boolean> {
   const isAdmin = await isVerifiedAdmin(auth.wallet);
   if (isAdmin) return true;
   // Allow users to register their own wallet
@@ -88,14 +102,17 @@ async function validateAdminOrSelf(data: unknown, auth: AuthContext): Promise<bo
   return payload.wallet.toLowerCase() === auth.wallet.toLowerCase();
 }
 
-export const registerEntityOnChain = withAuth<RegisterEntityData, { txHash: string }>(registerEntityHandler, {
+export const registerEntityOnChain = withAuth<
+  RegisterEntityData,
+  { txHash: string }
+>(registerEntityHandler, {
   rateLimit: { windowMs: 60000, maxRequests: 30 },
   requireOnChainPermission: validateAdminOrSelf,
 });
 
 async function verifyEntityHandler(
   data: { wallet: string },
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ txHash: string }> {
   const { publicClient, walletClient, account } = await getClients();
 
@@ -112,11 +129,18 @@ async function verifyEntityHandler(
   const txHash = await walletClient.writeContract(request);
 
   try {
-    await publicClient.waitForTransactionReceipt({ hash: txHash, timeout: 180_000 });
+    await publicClient.waitForTransactionReceipt({
+      hash: txHash,
+      timeout: 180_000,
+    });
   } catch (waitErr) {
-    const waitMsg = waitErr instanceof Error ? waitErr.message : String(waitErr);
+    const waitMsg =
+      waitErr instanceof Error ? waitErr.message : String(waitErr);
     if (waitMsg.toLowerCase().includes("timed out")) {
-      console.warn("verifyEntityOnChain: receipt timeout, TX submitted:", txHash);
+      console.warn(
+        "verifyEntityOnChain: receipt timeout, TX submitted:",
+        txHash,
+      );
     } else {
       throw waitErr;
     }
@@ -129,21 +153,27 @@ async function verifyEntityHandler(
   return { txHash };
 }
 
-async function verifyAdminOrSelf(data: unknown, auth: AuthContext): Promise<boolean> {
+async function verifyAdminOrSelf(
+  data: unknown,
+  auth: AuthContext,
+): Promise<boolean> {
   const isAdmin = await isVerifiedAdmin(auth.wallet);
   if (isAdmin) return true;
   const payload = data as { wallet: string };
   return payload.wallet.toLowerCase() === auth.wallet.toLowerCase();
 }
 
-export const verifyEntityOnChain = withAuth<{ wallet: string }, { txHash: string }>(verifyEntityHandler, {
+export const verifyEntityOnChain = withAuth<
+  { wallet: string },
+  { txHash: string }
+>(verifyEntityHandler, {
   rateLimit: { windowMs: 60000, maxRequests: 30 },
   requireOnChainPermission: verifyAdminOrSelf,
 });
 
 async function getEntityHandler(
   data: { wallet: string },
-  _auth: AuthContext
+  _auth: AuthContext,
 ): Promise<{
   role: number;
   specialty: string;
@@ -174,14 +204,22 @@ async function getEntityHandler(
   return { role, specialty, institution, verified };
 }
 
-type EntityData = { role: number; specialty: string; institution: string; verified: boolean } | null;
-export const getEntityOnChain = withAuth<{ wallet: string }, EntityData>(getEntityHandler, {
-  rateLimit: { windowMs: 60000, maxRequests: 30 },
-});
+type EntityData = {
+  role: number;
+  specialty: string;
+  institution: string;
+  verified: boolean;
+} | null;
+export const getEntityOnChain = withAuth<{ wallet: string }, EntityData>(
+  getEntityHandler,
+  {
+    rateLimit: { windowMs: 60000, maxRequests: 30 },
+  },
+);
 
 async function getRoleHandler(
   data: { wallet: string },
-  _auth: AuthContext
+  _auth: AuthContext,
 ): Promise<number | null> {
   const { publicClient } = await getClients();
 
@@ -198,4 +236,3 @@ async function getRoleHandler(
 export const getRoleOnChain = withAuth(getRoleHandler, {
   rateLimit: { windowMs: 60000, maxRequests: 30 },
 });
-

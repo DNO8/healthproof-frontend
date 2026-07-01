@@ -2,12 +2,12 @@
 
 import { useLoginWithEmail, usePrivy } from "@privy-io/react-auth";
 import Image from "next/image";
-import { Link } from "@/i18n/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { sileo } from "sileo";
-import { useLocale, useTranslations } from "next-intl";
-import { ROLES, type UserRole } from "@/types/domain.types";
+import { Link } from "@/i18n/navigation";
 import { ROLE_ICONS } from "@/lib/icons";
+import { ROLES, type UserRole } from "@/types/domain.types";
 
 export default function AuthPage() {
   const t = useTranslations("auth");
@@ -33,12 +33,15 @@ export default function AuthPage() {
     }
   }, [ready, authenticated, dashboardPath]);
 
-  const roleLabels: Partial<Record<UserRole, { label: string; desc: string }>> = {
-    patient: { label: tRoles("patient"), desc: tRoles("patientDesc") },
-    doctor: { label: tRoles("doctor"), desc: tRoles("doctorDesc") },
-  };
+  const roleLabels: Partial<Record<UserRole, { label: string; desc: string }>> =
+    {
+      patient: { label: tRoles("patient"), desc: tRoles("patientDesc") },
+      doctor: { label: tRoles("doctor"), desc: tRoles("doctorDesc") },
+    };
 
-  const loginRoles = ROLES.filter((r) => r.key === "patient" || r.key === "doctor");
+  const loginRoles = ROLES.filter(
+    (r) => r.key === "patient" || r.key === "doctor",
+  );
   const allowedRoles: UserRole[] = ["patient", "doctor"];
   const isAllowedRole = (r: UserRole | null): r is UserRole =>
     r !== null && allowedRoles.includes(r);
@@ -196,7 +199,9 @@ export default function AuthPage() {
                         >
                           {(() => {
                             const Icon = ROLE_ICONS[role.key];
-                            return Icon ? <Icon className="h-6 w-6 text-sky-600" /> : null;
+                            return Icon ? (
+                              <Icon className="h-6 w-6 text-sky-600" />
+                            ) : null;
                           })()}
                           <span className="text-[11px] font-semibold leading-tight">
                             {roleLabels[role.key]?.label}

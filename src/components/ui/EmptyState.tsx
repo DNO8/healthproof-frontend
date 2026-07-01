@@ -1,7 +1,7 @@
 "use client";
 
-import { Link } from "@/i18n/navigation";
 import type { LucideIcon } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 
 interface EmptyStateProps {
   icon: LucideIcon;
@@ -13,7 +13,12 @@ interface EmptyStateProps {
   };
 }
 
-export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+}: EmptyStateProps) {
   return (
     <div className="neu-shell flex flex-col items-center gap-3 rounded-2xl border border-white/70 p-8 text-center">
       <Icon className="h-10 w-10 text-slate-300" />

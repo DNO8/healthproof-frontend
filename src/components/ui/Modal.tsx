@@ -18,7 +18,13 @@ const sizeClasses: Record<string, string> = {
   full: "max-w-full mx-4",
 };
 
-export function Modal({ open, onClose, title, size = "md", children }: ModalProps) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  size = "md",
+  children,
+}: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,8 +45,17 @@ export function Modal({ open, onClose, title, size = "md", children }: ModalProp
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
+        role="button"
+        tabIndex={-1}
+        aria-label="Close"
         className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity"
         onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClose();
+          }
+        }}
       />
       <div
         ref={dialogRef}
@@ -54,7 +69,18 @@ export function Modal({ open, onClose, title, size = "md", children }: ModalProp
               onClick={onClose}
               type="button"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <title>Close</title>
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
             </button>
           </div>
         )}

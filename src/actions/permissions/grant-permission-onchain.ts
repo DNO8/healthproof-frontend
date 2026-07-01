@@ -1,13 +1,14 @@
 "use server";
 
-import { keccak256, toHex } from "viem";
-import { withAuth, auditLog } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
-import { validatePatientAccess } from "@/lib/auth/permissions";
+import { decodeFunctionData, keccak256, toHex } from "viem";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import { logAuditEvent } from "@/lib/audit-onchain";
+import { validatePatientAccess } from "@/lib/auth/permissions";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { auditLog, withAuth } from "@/lib/auth/with-auth";
 import { AuditAction } from "@/lib/medical-constants";
-import { executeForwardRequest } from "../relay/relay-core";
 import type { SignedForwardRequest } from "@/lib/metatx/types";
+import { executeForwardRequest } from "../relay/relay-core";
 
 interface GrantPermissionData {
   request: SignedForwardRequest;
@@ -26,10 +27,19 @@ interface GrantPermissionData {
  */
 async function grantPermissionHandler(
   data: GrantPermissionData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ txHash: string }> {
   if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
     throw new Error("Signer mismatch: request.from != authenticated wallet");
+  }
+
+  // Validate the decoded function call to ensure the request is a grantAccess
+  const decoded = decodeFunctionData({
+    abi: HealthProofGatewayAbi,
+    data: data.request.data as `0x${string}`,
+  });
+  if (decoded.functionName !== "grantAccess") {
+    throw new Error("InvalidForwardRequest: expected grantAccess");
   }
 
   const result = await executeForwardRequest(data.request);
@@ -38,12 +48,17 @@ async function grantPermissionHandler(
   }
 
   // resourceId = keccak256(documentId) if it's a CID, or use directly if already bytes32
-  const resourceId = data.documentId.startsWith("0x") && data.documentId.length === 66
-    ? (data.documentId as `0x${string}`)
-    : keccak256(toHex(data.documentId));
+  const resourceId =
+    data.documentId.startsWith("0x") && data.documentId.length === 66
+      ? (data.documentId as `0x${string}`)
+      : keccak256(toHex(data.documentId));
 
   try {
-    await logAuditEvent(data.patientWallet, resourceId, AuditAction.PERMISSION_GRANTED);
+    await logAuditEvent(
+      data.patientWallet,
+      resourceId,
+      AuditAction.PERMISSION_GRANTED,
+    );
   } catch {
     // On-chain audit logging is best-effort
   }
@@ -64,7 +79,7 @@ async function grantPermissionHandler(
  */
 async function validateGrantPermission(
   data: GrantPermissionData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<boolean> {
   // Caller must be the patient themselves or a guardian
   return await validatePatientAccess(data.patientWallet, auth.wallet);
@@ -74,4 +89,3 @@ export const grantPermissionOnChain = withAuth(grantPermissionHandler, {
   rateLimit: { windowMs: 60000, maxRequests: 5 },
   requireOnChainPermission: validateGrantPermission,
 });
-

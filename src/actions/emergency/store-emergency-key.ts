@@ -1,9 +1,9 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { withAuth, auditLog } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
 import { validatePatientAccess } from "@/lib/auth/permissions";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { auditLog, withAuth } from "@/lib/auth/with-auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 interface StoreEmergencyKeyData {
   requestId: string;
@@ -21,7 +21,7 @@ interface StoreEmergencyKeyData {
  */
 async function storeEmergencyKeyHandler(
   data: StoreEmergencyKeyData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ id: string }> {
   const supabase = createAdminClient();
 
@@ -53,7 +53,7 @@ async function storeEmergencyKeyHandler(
 
 async function validateStoreKey(
   data: StoreEmergencyKeyData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<boolean> {
   return await validatePatientAccess(data.patientWallet, auth.wallet);
 }

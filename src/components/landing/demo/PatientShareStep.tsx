@@ -1,8 +1,8 @@
 "use client";
 
+import { Check, Eye, FileText, Share2, Shield, User } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { useTranslations, useLocale } from "next-intl";
-import { Shield, FileText, Eye, Share2, Check, User } from "lucide-react";
 import { MOCK_CLINICAL_TEXT_EN, MOCK_CLINICAL_TEXT_ES } from "./mock-data";
 
 interface PatientShareStepProps {
@@ -12,14 +12,15 @@ interface PatientShareStepProps {
 export function PatientShareStep({ onComplete }: PatientShareStepProps) {
   const t = useTranslations("demoFlow");
   const locale = useLocale();
-  const plaintext = locale === "es" ? MOCK_CLINICAL_TEXT_ES : MOCK_CLINICAL_TEXT_EN;
+  const plaintext =
+    locale === "es" ? MOCK_CLINICAL_TEXT_ES : MOCK_CLINICAL_TEXT_EN;
 
   const [viewed, setViewed] = useState(false);
   const [shared, setShared] = useState(false);
 
   useEffect(() => {
     if (shared) onComplete();
-  }, [shared]);
+  }, [shared, onComplete]);
 
   const doctors = [
     { name: "Dr. Pérez", specialty: t("specialtyCardiology") },
@@ -41,7 +42,9 @@ export function PatientShareStep({ onComplete }: PatientShareStepProps) {
           <FileText className="h-8 w-8 text-sky-400" />
           <div>
             <p className="text-sm font-medium text-slate-700">{t("examCBC")}</p>
-            <p className="text-xs text-slate-400">{t("uploadedBy")}: Lab Central · {t("date")}: 2026-05-25</p>
+            <p className="text-xs text-slate-400">
+              {t("uploadedBy")}: Lab Central · {t("date")}: 2026-05-25
+            </p>
           </div>
         </div>
       </div>
@@ -60,7 +63,9 @@ export function PatientShareStep({ onComplete }: PatientShareStepProps) {
           <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
             <div className="flex items-center gap-2 text-emerald-700">
               <Eye className="h-4 w-4" />
-              <p className="text-xs font-semibold uppercase tracking-wide">{t("decryptedResult")}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide">
+                {t("decryptedResult")}
+              </p>
             </div>
             <pre className="mt-2 max-h-40 overflow-auto text-[10px] font-mono leading-relaxed text-emerald-800">
               {plaintext}
@@ -69,7 +74,9 @@ export function PatientShareStep({ onComplete }: PatientShareStepProps) {
 
           {!shared ? (
             <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{t("shareWith")}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                {t("shareWith")}
+              </p>
               {doctors.map((d, i) => (
                 <button
                   key={d.name}
@@ -85,7 +92,9 @@ export function PatientShareStep({ onComplete }: PatientShareStepProps) {
                     <User className="h-4 w-4" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-700">{d.name}</p>
+                    <p className="text-sm font-medium text-slate-700">
+                      {d.name}
+                    </p>
                     <p className="text-xs text-slate-400">{d.specialty}</p>
                   </div>
                 </button>
@@ -107,7 +116,6 @@ export function PatientShareStep({ onComplete }: PatientShareStepProps) {
           )}
         </div>
       )}
-
     </div>
   );
 }

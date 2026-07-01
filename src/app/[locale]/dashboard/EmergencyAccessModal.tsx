@@ -1,25 +1,39 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
-import { AlertTriangle, X, Shield, UserCheck, Clock, ChevronDown } from "lucide-react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
+import {
+  AlertTriangle,
+  ChevronDown,
+  Clock,
+  Shield,
+  UserCheck,
+  X,
+} from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 import { createWalletClient, custom, keccak256, toHex } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import { signMetaTransaction } from "@/lib/metatx/forwarder";
-import { requestEmergencyOnChain } from "@/actions/emergency/request-emergency-onchain";
-import { listPatients } from "@/actions/emergency/list-patients";
+import type { PatientDocument } from "@/actions/emergency/list-patient-documents";
 import { listPatientDocuments } from "@/actions/emergency/list-patient-documents";
 import type { PatientOption } from "@/actions/emergency/list-patients";
-import type { PatientDocument } from "@/actions/emergency/list-patient-documents";
+import { listPatients } from "@/actions/emergency/list-patients";
+import { requestEmergencyOnChain } from "@/actions/emergency/request-emergency-onchain";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import { signMetaTransaction } from "@/lib/metatx/forwarder";
 
 interface Props {
   onClose: () => void;
 }
 
-async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
-  const provider = await wallet.getEthereumProvider();
-  return createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+async function getViemWalletClient(wallet: {
+  getEthereumProvider: () => Promise<unknown>;
+}) {
+  const provider = (await wallet.getEthereumProvider()) as {
+    request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  };
+  return createWalletClient({
+    chain: HEALTHPROOF_CHAIN,
+    transport: custom(provider),
+  });
 }
 
 export function EmergencyAccessModal({ onClose }: Props) {
@@ -37,7 +51,9 @@ export function EmergencyAccessModal({ onClose }: Props) {
 
   const [selectedDocumentId, setSelectedDocumentId] = useState("");
   const [reason, setReason] = useState("");
-  const [path, setPath] = useState<"guardian" | "dual-doctor" | "patient">("guardian");
+  const [path, setPath] = useState<"guardian" | "dual-doctor" | "patient">(
+    "guardian",
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -45,22 +61,26 @@ export function EmergencyAccessModal({ onClose }: Props) {
   // Load patients on mount
   useEffect(() => {
     let cancelled = false;
-    listPatients({}).then((res) => {
-      if (!cancelled) {
-        if (res.success && res.data) {
-          setPatients(res.data);
-        } else {
-          setPatients([]);
+    listPatients({})
+      .then((res) => {
+        if (!cancelled) {
+          if (res.success && res.data) {
+            setPatients(res.data);
+          } else {
+            setPatients([]);
+          }
+          setLoadingPatients(false);
         }
-        setLoadingPatients(false);
-      }
-    }).catch(() => {
-      if (!cancelled) {
-        setPatients([]);
-        setLoadingPatients(false);
-      }
-    });
-    return () => { cancelled = true; };
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPatients([]);
+          setLoadingPatients(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Load documents when patient changes
@@ -72,36 +92,47 @@ export function EmergencyAccessModal({ onClose }: Props) {
     }
     let cancelled = false;
     setLoadingDocs(true);
-    listPatientDocuments({ patientWallet: selectedPatientWallet }).then((res) => {
-      if (!cancelled) {
-        if (res.success && res.data) {
-          setDocuments(res.data);
-        } else {
-          setDocuments([]);
+    listPatientDocuments({ patientWallet: selectedPatientWallet })
+      .then((res) => {
+        if (!cancelled) {
+          if (res.success && res.data) {
+            setDocuments(res.data);
+          } else {
+            setDocuments([]);
+          }
+          setLoadingDocs(false);
         }
-        setLoadingDocs(false);
-      }
-    }).catch(() => {
-      if (!cancelled) {
-        setDocuments([]);
-        setLoadingDocs(false);
-      }
-    });
-    return () => { cancelled = true; };
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDocuments([]);
+          setLoadingDocs(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedPatientWallet]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!wallet || !wallets?.length || !selectedPatientWallet || !selectedDocumentId) return;
+    if (
+      !wallet ||
+      !wallets?.length ||
+      !selectedPatientWallet ||
+      !selectedDocumentId
+    )
+      return;
 
     setLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
-      const resourceId = selectedDocumentId.startsWith("0x") && selectedDocumentId.length === 66
-        ? (selectedDocumentId as `0x${string}`)
-        : keccak256(toHex(selectedDocumentId));
+      const resourceId =
+        selectedDocumentId.startsWith("0x") && selectedDocumentId.length === 66
+          ? (selectedDocumentId as `0x${string}`)
+          : keccak256(toHex(selectedDocumentId));
 
       const reasonHash = keccak256(toHex(reason || "Emergency access"));
 
@@ -146,7 +177,7 @@ export function EmergencyAccessModal({ onClose }: Props) {
           t("requestSuccess", {
             txHash: result.data.txHash,
             requestId: result.data.requestId,
-          })
+          }),
         );
       } else {
         setError(result.error || "Unknown error");
@@ -158,23 +189,34 @@ export function EmergencyAccessModal({ onClose }: Props) {
     }
   }
 
-  const selectedPatient = patients.find((p) => p.wallet_address === selectedPatientWallet);
+  const _selectedPatient = patients.find(
+    (p) => p.wallet_address === selectedPatientWallet,
+  );
 
-  const pathInfo: Record<typeof path, { icon: React.ReactNode; desc: string; detail: string }> = {
+  const pathInfo: Record<
+    typeof path,
+    { icon: React.ReactNode; desc: string; detail: string }
+  > = {
     guardian: {
       icon: <Shield className="h-4 w-4" />,
       desc: t("pathGuardian"),
-      detail: t("pathGuardianDetail") || "Requires an active guardian to approve. Access expires in 72 hours.",
+      detail:
+        t("pathGuardianDetail") ||
+        "Requires an active guardian to approve. Access expires in 72 hours.",
     },
     "dual-doctor": {
       icon: <UserCheck className="h-4 w-4" />,
       desc: t("pathDualDoctor"),
-      detail: t("pathDualDoctorDetail") || "Requires a second verified doctor to witness. Access expires in 4 hours.",
+      detail:
+        t("pathDualDoctorDetail") ||
+        "Requires a second verified doctor to witness. Access expires in 4 hours.",
     },
     patient: {
       icon: <Clock className="h-4 w-4" />,
       desc: t("pathPatient"),
-      detail: t("pathPatientDetail") || "Patient must be conscious and explicitly approve. Unlimited duration.",
+      detail:
+        t("pathPatientDetail") ||
+        "Patient must be conscious and explicitly approve. Unlimited duration.",
     },
   };
 
@@ -186,7 +228,10 @@ export function EmergencyAccessModal({ onClose }: Props) {
             <AlertTriangle className="h-5 w-5 text-amber-600" />
             <h2 className="text-lg font-bold text-slate-800">{t("title")}</h2>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -208,9 +253,9 @@ export function EmergencyAccessModal({ onClose }: Props) {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Patient Select */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
+            <span className="mb-1 block text-sm font-medium text-slate-700">
               {t("selectPatient")}
-            </label>
+            </span>
             <div className="relative">
               <select
                 value={selectedPatientWallet}
@@ -223,11 +268,17 @@ export function EmergencyAccessModal({ onClose }: Props) {
                 required
               >
                 <option value="">
-                  {loadingPatients ? t("loadingPatients") : patients.length === 0 ? t("noPatients") : "--"}
+                  {loadingPatients
+                    ? t("loadingPatients")
+                    : patients.length === 0
+                      ? t("noPatients")
+                      : "--"}
                 </option>
                 {patients.map((p) => (
                   <option key={p.id} value={p.wallet_address}>
-                    {p.full_name || p.email || p.wallet_address.slice(0, 8) + "..."}
+                    {p.full_name ||
+                      p.email ||
+                      `${p.wallet_address.slice(0, 8)}...`}
                   </option>
                 ))}
               </select>
@@ -238,9 +289,9 @@ export function EmergencyAccessModal({ onClose }: Props) {
           {/* Document Select */}
           {selectedPatientWallet && (
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <span className="mb-1 block text-sm font-medium text-slate-700">
                 {t("selectDocument")}
-              </label>
+              </span>
               <div className="relative">
                 <select
                   value={selectedDocumentId}
@@ -250,11 +301,16 @@ export function EmergencyAccessModal({ onClose }: Props) {
                   required
                 >
                   <option value="">
-                    {loadingDocs ? t("loadingDocuments") : documents.length === 0 ? t("noDocuments") : "--"}
+                    {loadingDocs
+                      ? t("loadingDocuments")
+                      : documents.length === 0
+                        ? t("noDocuments")
+                        : "--"}
                   </option>
                   {documents.map((d) => (
                     <option key={d.document_id} value={d.document_id}>
-                      {d.file_name || d.document_id.slice(0, 16) + "..."} ({new Date(d.created_at).toLocaleDateString()})
+                      {d.file_name || `${d.document_id.slice(0, 16)}...`} (
+                      {new Date(d.created_at).toLocaleDateString()})
                     </option>
                   ))}
                 </select>
@@ -270,9 +326,9 @@ export function EmergencyAccessModal({ onClose }: Props) {
 
           {/* Reason */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
+            <span className="mb-1 block text-sm font-medium text-slate-700">
               {t("reason")}
-            </label>
+            </span>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -285,9 +341,9 @@ export function EmergencyAccessModal({ onClose }: Props) {
 
           {/* Activation Path */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">
+            <span className="mb-2 block text-sm font-medium text-slate-700">
               {t("activationPath")}
-            </label>
+            </span>
             <div className="grid grid-cols-3 gap-2">
               {(["guardian", "dual-doctor", "patient"] as const).map((p) => (
                 <button
@@ -312,7 +368,12 @@ export function EmergencyAccessModal({ onClose }: Props) {
 
           <button
             type="submit"
-            disabled={loading || !wallet || !selectedPatientWallet || !selectedDocumentId}
+            disabled={
+              loading ||
+              !wallet ||
+              !selectedPatientWallet ||
+              !selectedDocumentId
+            }
             className="w-full rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
           >
             {loading ? t("submitting") : t("submitRequest")}

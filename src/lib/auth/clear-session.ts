@@ -14,11 +14,7 @@ const SESSION_KEYS = [
   "hp_register_attempts",
 ];
 
-const LOCAL_KEYS = [
-  "hp_intended_role",
-  "hp_selected_role",
-  "hp_last_user_id",
-];
+const LOCAL_KEYS = ["hp_intended_role", "hp_selected_role", "hp_last_user_id"];
 
 export function clearUserSession() {
   try {

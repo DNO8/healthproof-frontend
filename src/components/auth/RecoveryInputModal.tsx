@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useTranslations } from "next-intl";
 import { KeyRound, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useState } from "react";
 
 interface RecoveryInputModalProps {
   onRecover: (code: string) => Promise<boolean>;
   onDismiss: () => void;
 }
 
-export function RecoveryInputModal({ onRecover, onDismiss }: RecoveryInputModalProps) {
+export function RecoveryInputModal({
+  onRecover,
+  onDismiss,
+}: RecoveryInputModalProps) {
   const t = useTranslations("keyRecovery.recoveryInput");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -43,9 +46,7 @@ export function RecoveryInputModal({ onRecover, onDismiss }: RecoveryInputModalP
             <h2 className="text-base font-semibold sm:text-lg">{t("title")}</h2>
           </div>
 
-          <p className="text-sm text-gray-600">
-            {t("info")}
-          </p>
+          <p className="text-sm text-gray-600">{t("info")}</p>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 pb-2 sm:px-6">
@@ -58,9 +59,7 @@ export function RecoveryInputModal({ onRecover, onDismiss }: RecoveryInputModalP
               rows={3}
             />
 
-            {error && (
-              <p className="text-sm text-red-600">{error}</p>
-            )}
+            {error && <p className="text-sm text-red-600">{error}</p>}
           </form>
         </div>
 

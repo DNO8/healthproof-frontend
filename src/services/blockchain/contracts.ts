@@ -1,9 +1,9 @@
 export {
+  auditTrailConfig,
+  clinicalEpisodeRegistryConfig,
+  healthProofGatewayConfig,
   identityRegistryConfig,
-  permissionManagerConfig,
   medicalDocumentRegistryConfig,
   medicalOrderRegistryConfig,
-  clinicalEpisodeRegistryConfig,
-  auditTrailConfig,
-  healthProofGatewayConfig,
+  permissionManagerConfig,
 } from "@/lib/wagmi-contracts";

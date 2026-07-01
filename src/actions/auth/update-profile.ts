@@ -1,8 +1,8 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { withAuth } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 interface UpdateProfileData {
   id: string;
@@ -11,7 +11,7 @@ interface UpdateProfileData {
 
 async function updateProfileHandler(
   data: UpdateProfileData,
-  auth: AuthContext
+  auth: AuthContext,
 ) {
   // Verify caller can only update their own profile
   if (data.id !== auth.userId) {

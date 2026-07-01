@@ -2,9 +2,9 @@
 
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
-import { withAuth, getDeployerPrivateKey } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { getDeployerPrivateKey, withAuth } from "@/lib/auth/with-auth";
+import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
 
 const FAUCET_AMOUNT = BigInt(1e18); // 1 HVE
 const FAUCET_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -38,7 +38,7 @@ async function getRelayerClients() {
 
 async function faucetHandler(
   data: { wallet: string },
-  auth: AuthContext
+  _auth: AuthContext,
 ): Promise<{ txHash: string; amount: string }> {
   const { publicClient, walletClient } = await getRelayerClients();
 
@@ -52,11 +52,13 @@ async function faucetHandler(
 
   // Check cooldown (simple in-memory check via localStorage key pattern)
   // For production, use Redis or database
-  const lastRequest = globalThis[FAUCET_KEY] as Record<string, number> || {};
+  const lastRequest = (globalThis[FAUCET_KEY] as Record<string, number>) || {};
   const now = Date.now();
   const lastTime = lastRequest[data.wallet.toLowerCase()] || 0;
   if (now - lastTime < FAUCET_COOLDOWN_MS) {
-    const hoursLeft = Math.ceil((FAUCET_COOLDOWN_MS - (now - lastTime)) / (60 * 60 * 1000));
+    const hoursLeft = Math.ceil(
+      (FAUCET_COOLDOWN_MS - (now - lastTime)) / (60 * 60 * 1000),
+    );
     throw new Error(`Faucet cooldown: please wait ${hoursLeft} hours`);
   }
 

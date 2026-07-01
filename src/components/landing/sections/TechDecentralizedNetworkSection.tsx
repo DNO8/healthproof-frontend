@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { useTranslations } from "next-intl";
 import {
-  Shield,
-  Server,
-  Users,
   Building2,
   FlaskConical,
-  Stethoscope,
   Pill,
+  Server,
+  Shield,
   ShieldCheck,
+  Stethoscope,
+  Users,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { ScrollReveal, SectionTitle } from "@/components/ui";
 
 export function TechDecentralizedNetworkSection() {
@@ -28,7 +28,14 @@ export function TechDecentralizedNetworkSection() {
   ];
 
   const links = [
-    [0, 1], [0, 2], [1, 3], [2, 4], [3, 4], [1, 2], [0, 3], [0, 4],
+    [0, 1],
+    [0, 2],
+    [1, 3],
+    [2, 4],
+    [3, 4],
+    [1, 2],
+    [0, 3],
+    [0, 4],
   ];
 
   const handleNodeClick = (id: number) => {
@@ -57,14 +64,18 @@ export function TechDecentralizedNetworkSection() {
             <div className="flex-1">
               <div className="relative aspect-square w-full max-w-lg mx-auto rounded-3xl border border-white/60 bg-(--hp-bg) p-6 shadow-(--hp-shadow-inset)">
                 {/* SVG Links */}
-                <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
-                  {links.map(([a, b], i) => {
+                <svg
+                  className="absolute inset-0 h-full w-full"
+                  viewBox="0 0 100 100"
+                >
+                  {links.map(([a, b]) => {
                     const na = nodes[a];
                     const nb = nodes[b];
-                    const isBroken = compromised && (a === activeNode || b === activeNode);
+                    const isBroken =
+                      compromised && (a === activeNode || b === activeNode);
                     return (
                       <line
-                        key={i}
+                        key={`link-${a}-${b}`}
                         x1={na.x}
                         y1={na.y}
                         x2={nb.x}
@@ -102,13 +113,21 @@ export function TechDecentralizedNetworkSection() {
                       >
                         <Icon
                           className={`h-4 w-4 sm:h-5 sm:w-5 ${
-                            isDown ? "text-red-500" : isActive ? "text-sky-600" : "text-slate-400"
+                            isDown
+                              ? "text-red-500"
+                              : isActive
+                                ? "text-sky-600"
+                                : "text-slate-400"
                           }`}
                         />
                       </div>
                       <span
                         className={`whitespace-nowrap text-[10px] font-medium sm:text-xs ${
-                          isDown ? "text-red-600" : isActive ? "text-sky-700" : "text-slate-500"
+                          isDown
+                            ? "text-red-600"
+                            : isActive
+                              ? "text-sky-700"
+                              : "text-slate-500"
                         }`}
                       >
                         {node.label}
@@ -144,8 +163,12 @@ export function TechDecentralizedNetworkSection() {
                   <Server className="h-5 w-5 text-sky-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-800">{t("noSinglePointTitle")}</h3>
-                  <p className="mt-1 text-sm text-slate-600">{t("noSinglePointDesc")}</p>
+                  <h3 className="text-sm font-semibold text-slate-800">
+                    {t("noSinglePointTitle")}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {t("noSinglePointDesc")}
+                  </p>
                 </div>
               </div>
 
@@ -154,8 +177,12 @@ export function TechDecentralizedNetworkSection() {
                   <Shield className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-800">{t("resilienceTitle")}</h3>
-                  <p className="mt-1 text-sm text-slate-600">{t("resilienceDesc")}</p>
+                  <h3 className="text-sm font-semibold text-slate-800">
+                    {t("resilienceTitle")}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {t("resilienceDesc")}
+                  </p>
                 </div>
               </div>
 
@@ -164,8 +191,12 @@ export function TechDecentralizedNetworkSection() {
                   <Users className="h-5 w-5 text-indigo-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-800">{t("interoperabilityTitle")}</h3>
-                  <p className="mt-1 text-sm text-slate-600">{t("interoperabilityDesc")}</p>
+                  <h3 className="text-sm font-semibold text-slate-800">
+                    {t("interoperabilityTitle")}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {t("interoperabilityDesc")}
+                  </p>
                 </div>
               </div>
             </div>

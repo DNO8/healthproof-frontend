@@ -2,11 +2,13 @@
 
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import GuardianRegistryArtifact from "@/lib/abis/GuardianRegistry.json";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+
 const GuardianRegistryAbi = GuardianRegistryArtifact.abi;
-import { withAuth, getDeployerPrivateKey } from "@/lib/auth/with-auth";
+
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { getDeployerPrivateKey, withAuth } from "@/lib/auth/with-auth";
 
 async function getClients() {
   const pk = await getDeployerPrivateKey();
@@ -15,8 +17,15 @@ async function getClients() {
     `0x${pk.replace(/^0x/, "")}` as `0x${string}`,
   );
   return {
-    publicClient: createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() }),
-    walletClient: createWalletClient({ account, chain: HEALTHPROOF_CHAIN, transport: http() }),
+    publicClient: createPublicClient({
+      chain: HEALTHPROOF_CHAIN,
+      transport: http(),
+    }),
+    walletClient: createWalletClient({
+      account,
+      chain: HEALTHPROOF_CHAIN,
+      transport: http(),
+    }),
     account,
   };
 }
@@ -28,9 +37,9 @@ interface RevokeGuardianshipData {
 
 async function revokeGuardianshipHandler(
   data: RevokeGuardianshipData,
-  auth: AuthContext
+  _auth: AuthContext,
 ): Promise<{ txHash: string }> {
-  const { publicClient, walletClient, account } = await getClients();
+  const { walletClient, publicClient } = await getClients();
 
   const txHash = await walletClient.writeContract({
     address: CONTRACT_ADDRESSES.GuardianRegistry as `0x${string}`,
@@ -49,7 +58,7 @@ async function revokeGuardianshipHandler(
 
 async function validateRevokeGuardianship(
   data: RevokeGuardianshipData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<boolean> {
   // Patient can revoke their own guardians, or an admin can revoke on their behalf
   return (

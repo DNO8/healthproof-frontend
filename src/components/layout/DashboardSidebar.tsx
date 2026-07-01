@@ -1,34 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { sileo } from "sileo";
 import { usePrivy } from "@privy-io/react-auth";
+import type { LucideIcon } from "lucide-react";
+import {
+  Building2,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  FileText,
+  FolderOpen,
+  Globe,
+  LayoutDashboard,
+  Lock,
+  LogOut,
+  Mail,
+  ScanLine,
+  Settings,
+  Share2,
+  Shield,
+  Upload,
+  User,
+} from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type { UserRole } from "@/types/domain.types";
+import { useEffect, useState } from "react";
+import { sileo } from "sileo";
 import { clearDbUserCache } from "@/hooks/auth/useDbUser";
 import { clearUserSession } from "@/lib/auth/clear-session";
 import { LINKS_BY_ROLE } from "@/lib/navigation";
-import type { LucideIcon } from "lucide-react";
-import {
-  LayoutDashboard,
-  ClipboardList,
-  FileText,
-  Shield,
-  User,
-  Mail,
-  Share2,
-  FolderOpen,
-  ScanLine,
-  Upload,
-  Globe,
-  Building2,
-  Settings,
-  Lock,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import type { UserRole } from "@/types/domain.types";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   LayoutDashboard,
@@ -54,7 +54,10 @@ interface DashboardSidebarProps {
 
 const COLLAPSE_KEY = "hp_sidebar_collapsed";
 
-export function DashboardSidebar({ role, walletAddress }: DashboardSidebarProps) {
+export function DashboardSidebar({
+  role,
+  walletAddress,
+}: DashboardSidebarProps) {
   const t = useTranslations("dashboard.sidebar");
   const router = useRouter();
   const pathname = usePathname();
@@ -144,7 +147,9 @@ export function DashboardSidebar({ role, walletAddress }: DashboardSidebarProps)
             >
               {Icon && <Icon className="h-5 w-5 shrink-0" />}
               {!collapsed && (
-                <span className="text-sm font-medium truncate">{t(link.labelKey)}</span>
+                <span className="text-sm font-medium truncate">
+                  {t(link.labelKey)}
+                </span>
               )}
             </button>
           );

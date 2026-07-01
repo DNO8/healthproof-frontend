@@ -27,11 +27,11 @@ export interface RateLimitOptions {
 export async function checkRateLimit(
   actionName: string,
   options: RateLimitOptions = {},
-  identifier?: string
+  identifier?: string,
 ): Promise<void> {
   const windowMs = options.windowMs ?? DEFAULT_WINDOW_MS;
   const maxRequests = options.maxRequests ?? DEFAULT_MAX_REQUESTS;
-  
+
   const ip = getClientIP();
   const prefix = identifier ? `user:${identifier}` : `ip:${ip}`;
   const key = `${prefix}:${actionName}`;
@@ -52,7 +52,7 @@ export async function checkRateLimit(
     const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
     throw new RateLimitError(
       `Rate limit exceeded. Try again in ${retryAfter}s`,
-      retryAfter
+      retryAfter,
     );
   }
 
@@ -63,7 +63,7 @@ export async function checkRateLimit(
 export class RateLimitError extends Error {
   constructor(
     message: string,
-    public readonly retryAfter: number
+    public readonly retryAfter: number,
   ) {
     super(message);
     this.name = "RateLimitError";

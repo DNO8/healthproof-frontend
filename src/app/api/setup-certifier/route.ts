@@ -8,17 +8,14 @@ import { setupDeployerAsCertifier } from "@/actions/admin/setup-deployer-certifi
  */
 export async function GET() {
   const result = await setupDeployerAsCertifier({});
-  
+
   if (result.success) {
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       txHash: result.data.txHash,
-      alreadyCertifier: result.data.alreadyCertifier 
+      alreadyCertifier: result.data.alreadyCertifier,
     });
   }
-  
-  return NextResponse.json(
-    { error: result.error },
-    { status: result.code }
-  );
+
+  return NextResponse.json({ error: result.error }, { status: result.code });
 }

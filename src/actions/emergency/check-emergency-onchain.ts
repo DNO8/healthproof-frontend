@@ -1,11 +1,13 @@
 "use server";
 
 import { createPublicClient, http, keccak256, toHex } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import EmergencyAccessManagerArtifact from "@/lib/abis/EmergencyAccessManager.json";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+
 const EmergencyAccessManagerAbi = EmergencyAccessManagerArtifact.abi;
-import { withAuth } from "@/lib/auth/with-auth";
+
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
 
 interface CheckEmergencyData {
   patientWallet: string;
@@ -19,7 +21,7 @@ interface CheckEmergencyData {
  */
 async function checkEmergencyHandler(
   data: CheckEmergencyData,
-  _auth: AuthContext
+  _auth: AuthContext,
 ): Promise<boolean> {
   const publicClient = createPublicClient({
     chain: HEALTHPROOF_CHAIN,
@@ -30,9 +32,10 @@ async function checkEmergencyHandler(
     return false;
   }
 
-  const resourceId = data.documentId.startsWith("0x") && data.documentId.length === 66
-    ? (data.documentId as `0x${string}`)
-    : keccak256(toHex(data.documentId));
+  const resourceId =
+    data.documentId.startsWith("0x") && data.documentId.length === 66
+      ? (data.documentId as `0x${string}`)
+      : keccak256(toHex(data.documentId));
 
   const result = await publicClient.readContract({
     address: CONTRACT_ADDRESSES.EmergencyAccessManager,

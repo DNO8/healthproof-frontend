@@ -1,8 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { sileo } from "sileo";
-import { useTranslations } from "next-intl";
 
 const WELCOME_KEY = "hp_welcome_shown";
 

@@ -13,8 +13,8 @@ import {
   TeamSection,
   TechDecentralizedNetworkSection,
   TechEncryptionSection,
-  TechTraceabilitySection,
   TechnologySection,
+  TechTraceabilitySection,
   UseCasesSection,
   WorkflowSection,
 } from "./sections";

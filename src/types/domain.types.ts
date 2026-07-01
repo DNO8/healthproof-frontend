@@ -104,6 +104,15 @@ export interface QRData extends SignedPermission {
   type: "healthproof_permission";
 }
 
+export interface QRCryptoDocument {
+  document_id: string;
+  cid: string;
+  iv: string;
+  encrypted_key: { data: string; iv: string };
+  document_type?: string | null;
+  file_name?: string | null;
+}
+
 export interface EncryptedQRData extends QRData {
   crypto: {
     document_id: string;
@@ -111,6 +120,7 @@ export interface EncryptedQRData extends QRData {
     iv: string;
     encrypted_key: { data: string; iv: string };
     patient_public_key: string;
+    documents?: QRCryptoDocument[];
   };
 }
 

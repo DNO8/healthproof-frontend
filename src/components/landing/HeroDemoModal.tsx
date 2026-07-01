@@ -5,11 +5,11 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui";
 import {
-  StepIndicator,
   DoctorOrderStep,
-  PatientSelectLabStep,
   LabUploadStep,
+  PatientSelectLabStep,
   PatientShareStep,
+  StepIndicator,
   TimelineStep,
 } from "./demo";
 
@@ -19,10 +19,20 @@ interface HeroDemoModalProps {
   onSummary?: () => void;
 }
 
-export function HeroDemoModal({ onClose, onComplete, onSummary }: HeroDemoModalProps) {
+export function HeroDemoModal({
+  onClose,
+  onComplete,
+  onSummary,
+}: HeroDemoModalProps) {
   const t = useTranslations("demoFlow");
   const [step, setStep] = useState(0);
-  const [stepsDone, setStepsDone] = useState<boolean[]>([false, false, false, false, false]);
+  const [stepsDone, setStepsDone] = useState<boolean[]>([
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
 
   const labels = [
     t("stepOrder"),

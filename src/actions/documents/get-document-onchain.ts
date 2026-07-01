@@ -1,10 +1,10 @@
 "use server";
 
 import { createPublicClient, http } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import MedicalDocumentRegistryAbi from "@/lib/abis/MedicalDocumentRegistry.json";
-import { withAuth } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import type { OnChainDocument } from "@/lib/medical-constants";
 
 interface GetDocumentParams {
@@ -20,9 +20,10 @@ async function handler(
     transport: http(),
   });
 
-  const documentIdHex = data.documentId.startsWith("0x") && data.documentId.length === 66
-    ? (data.documentId as `0x${string}`)
-    : `0x${data.documentId.padStart(64, "0")}` as `0x${string}`;
+  const documentIdHex =
+    data.documentId.startsWith("0x") && data.documentId.length === 66
+      ? (data.documentId as `0x${string}`)
+      : (`0x${data.documentId.padStart(64, "0")}` as `0x${string}`);
 
   const doc = (await publicClient.readContract({
     address: CONTRACT_ADDRESSES.MedicalDocumentRegistry as `0x${string}`,

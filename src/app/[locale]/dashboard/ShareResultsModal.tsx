@@ -1,36 +1,53 @@
 "use client";
 
-import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { useWallets } from "@privy-io/react-auth";
-import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
-import { QRCodeSVG } from "qrcode.react";
-import { sileo } from "sileo";
-import { useTranslations } from "next-intl";
-import { createWalletClient, custom, keccak256, toHex } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import type { GrantedToRole, EncryptedQRData } from "@/types/domain.types";
-import { QR_EXPIRY_MINUTES } from "@/lib/constants";
-import { buildPermissionPayload } from "@/features/permissions";
 import {
-  listDocumentSecretsForWallet,
-  type DocumentSecretRow,
-} from "@/actions/documents/get-document-secret";
+  AlertTriangle,
+  Building2,
+  FlaskConical,
+  Stethoscope,
+} from "lucide-react";
+import { useTranslations } from "next-intl";
+import { QRCodeSVG } from "qrcode.react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { sileo } from "sileo";
+import { createWalletClient, custom, keccak256, toHex } from "viem";
 import { getDbUser } from "@/actions/auth/get-user";
-import { grantPermissionOnChain } from "@/actions/permissions/grant-permission-onchain";
 import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
-import { rewrapKeyForRecipient } from "@/services/encryption/rewrap";
+import {
+  type DocumentSecretRow,
+  listDocumentSecretsForWallet,
+} from "@/actions/documents/get-document-secret";
+import { getRelatedDocuments } from "@/actions/documents/get-related-documents";
+import { grantPermissionOnChain } from "@/actions/permissions/grant-permission-onchain";
+import { savePermissionKey } from "@/actions/permissions/save-permission-key";
+import { UserSelect } from "@/components/forms/UserSelect";
+import { buildPermissionPayload } from "@/features/permissions";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
+import { QR_EXPIRY_MINUTES } from "@/lib/constants";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import { signMetaTransaction } from "@/lib/metatx/forwarder";
 import { exportPublicKey } from "@/services/encryption/ecdh";
 import { getKeyPair } from "@/services/encryption/keystore";
-import { UserSelect } from "@/components/forms/UserSelect";
+import { rewrapKeyForRecipient } from "@/services/encryption/rewrap";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
-import { savePermissionKey } from "@/actions/permissions/save-permission-key";
-import { signMetaTransaction } from "@/lib/metatx/forwarder";
-import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
-import { Stethoscope, FlaskConical, Building2, AlertTriangle } from "lucide-react";
+import type {
+  EncryptedQRData,
+  GrantedToRole,
+  QRCryptoDocument,
+} from "@/types/domain.types";
 
-async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
-  const provider = await wallet.getEthereumProvider();
-  return createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+async function getViemWalletClient(wallet: {
+  getEthereumProvider: () => Promise<unknown>;
+}) {
+  const provider = (await wallet.getEthereumProvider()) as {
+    request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  };
+  return createWalletClient({
+    chain: HEALTHPROOF_CHAIN,
+    transport: custom(provider),
+  });
 }
 
 const GRANTED_ROLES: {
@@ -38,9 +55,21 @@ const GRANTED_ROLES: {
   labelKey: string;
   icon: ReactNode;
 }[] = [
-  { key: "doctor", labelKey: "doctor", icon: <Stethoscope className="h-5 w-5" /> },
-  { key: "lab", labelKey: "laboratory", icon: <FlaskConical className="h-5 w-5" /> },
-  { key: "institution", labelKey: "medicalCenter", icon: <Building2 className="h-5 w-5" /> },
+  {
+    key: "doctor",
+    labelKey: "doctor",
+    icon: <Stethoscope className="h-5 w-5" />,
+  },
+  {
+    key: "lab",
+    labelKey: "laboratory",
+    icon: <FlaskConical className="h-5 w-5" />,
+  },
+  {
+    key: "institution",
+    labelKey: "medicalCenter",
+    icon: <Building2 className="h-5 w-5" />,
+  },
 ];
 
 export function ShareResultsModal({
@@ -57,6 +86,7 @@ export function ShareResultsModal({
   const [recipientId, setRecipientId] = useState("");
   const [results, setResults] = useState<DocumentSecretRow[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  const [relatedDocs, setRelatedDocs] = useState<DocumentSecretRow[]>([]);
   const [loadingResults, setLoadingResults] = useState(true);
   const [qrData, setQrData] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -68,7 +98,9 @@ export function ShareResultsModal({
     try {
       // Resolve wallet address from Privy DID
       const dbUserRes = await getDbUser({ idOrWallet: patientId });
-      const wallet = dbUserRes.success ? dbUserRes.data?.wallet_address : undefined;
+      const wallet = dbUserRes.success
+        ? dbUserRes.data?.wallet_address
+        : undefined;
       if (!wallet) {
         setResults([]);
         return;
@@ -85,6 +117,17 @@ export function ShareResultsModal({
   useEffect(() => {
     fetchResults();
   }, [fetchResults]);
+
+  useEffect(() => {
+    if (!selectedDocId) {
+      setRelatedDocs([]);
+      return;
+    }
+    getRelatedDocuments(selectedDocId).then((rows) => {
+      const distinct = rows.filter((r) => r.document_id !== selectedDocId);
+      setRelatedDocs(distinct);
+    });
+  }, [selectedDocId]);
 
   async function handleGenerate() {
     if (!selectedDocId) {
@@ -110,7 +153,8 @@ export function ShareResultsModal({
       return;
     }
 
-    const selectedResult = results.find((r) => r.document_id === selectedDocId) ?? null;
+    const selectedResult =
+      results.find((r) => r.document_id === selectedDocId) ?? null;
     if (!selectedResult) {
       sileo.warning({
         title: t("selectDocumentTitle"),
@@ -121,7 +165,10 @@ export function ShareResultsModal({
 
     const activeWallet = wallets.find((w) => w.address);
     if (!activeWallet) {
-      sileo.error({ title: t("errorTitle"), description: "No active wallet found" });
+      sileo.error({
+        title: t("errorTitle"),
+        description: "No active wallet found",
+      });
       return;
     }
 
@@ -134,46 +181,65 @@ export function ShareResultsModal({
         throw new Error(t("noRecipientKey"));
       }
 
-      // 2. Get the uploader's public key — prefer the stored key from upload time,
-      //    fall back to current DB key for legacy records without uploader_public_key
-      let senderPublicKeyJwk = selectedResult.uploader_public_key;
-      if (!senderPublicKeyJwk) {
-        senderPublicKeyJwk = await getUserPublicKey(
-          selectedResult.uploader_wallet,
-        );
-      }
-      if (!senderPublicKeyJwk) {
-        throw new Error(t("noLabPublicKey"));
-      }
-
-      // 3. Re-wrap the AES key for the recipient
-      const myWrappedKey =
-        selectedResult.encrypted_keys[selectedResult.patient_wallet] ??
-        selectedResult.encrypted_keys[patientId];
-
-      if (!myWrappedKey) {
-        throw new Error(t("noWrappedKey"));
-      }
-
-      const rewrapped = await rewrapKeyForRecipient({
-        myUserId: patientId,
-        myWrappedKey,
-        senderPublicKeyJwk,
-        recipientPublicKeyJwk: recipientPubKeyJwk,
-      });
-
-      // 4. Get my public key to include in QR
+      // 2. Get my public key to include in QR
       const myKeys = await getKeyPair(patientId);
       if (!myKeys?.publicKey) {
         throw new Error(t("noPatientKeys"));
       }
       const myPublicKeyJwk = await exportPublicKey(myKeys.publicKey);
 
-      // 5. Resolve wallet address
+      // 3. Resolve wallet address and documents to share (selected + related pair)
       const resolvedWalletAddress = walletAddress ?? patientId;
-      const documentId = selectedResult.document_id;
+      const docsToShare = [selectedResult, ...relatedDocs];
 
-      // 6. Build permission payload
+      // 4. Re-wrap AES keys for every document in the pair
+      const rewrappedDocs: QRCryptoDocument[] = [];
+      for (const doc of docsToShare) {
+        let senderPublicKeyJwk = doc.uploader_public_key;
+        if (!senderPublicKeyJwk) {
+          senderPublicKeyJwk = await getUserPublicKey(doc.uploader_wallet);
+        }
+        if (!senderPublicKeyJwk) {
+          console.warn(
+            "[ShareResultsModal] skipping related doc, no uploader public key:",
+            doc.document_id,
+          );
+          continue;
+        }
+        const myWrappedKey =
+          doc.encrypted_keys[doc.patient_wallet] ??
+          doc.encrypted_keys[patientId];
+        if (!myWrappedKey) {
+          console.warn(
+            "[ShareResultsModal] skipping related doc, no wrapped key:",
+            doc.document_id,
+          );
+          continue;
+        }
+        const rewrapped = await rewrapKeyForRecipient({
+          myUserId: patientId,
+          myWrappedKey,
+          senderPublicKeyJwk,
+          recipientPublicKeyJwk: recipientPubKeyJwk,
+        });
+        rewrappedDocs.push({
+          document_id: doc.document_id,
+          cid: doc.document_id,
+          iv: doc.iv,
+          encrypted_key: rewrapped,
+          document_type: null,
+          file_name: doc.file_name,
+        });
+      }
+
+      if (rewrappedDocs.length === 0) {
+        throw new Error(t("noWrappedKey"));
+      }
+
+      const primaryDoc = rewrappedDocs[0];
+      const documentId = primaryDoc.document_id;
+
+      // 5. Build permission payload
       const payload = buildPermissionPayload({
         patientWallet: resolvedWalletAddress,
         granteeWallet: trimmedRecipient,
@@ -181,65 +247,71 @@ export function ShareResultsModal({
         documentId,
       });
 
-      // 7. Sign on-chain permission grant via EIP-2771 meta-transaction
+      // 6. Grant on-chain access for each document in the pair
       const viemWallet = await getViemWalletClient(activeWallet);
-      const resourceId =
-        documentId.startsWith("0x") && documentId.length === 66
-          ? (documentId as `0x${string}`)
-          : keccak256(toHex(documentId));
-
-      const request = await signMetaTransaction(
-        viemWallet,
-        CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
-        "grantAccess",
-        [
-          resolvedWalletAddress.toLowerCase(),
-          trimmedRecipient.toLowerCase(),
-          0, // Scope.DOCUMENT
-          resourceId,
-          BigInt(0), // no expiry
-        ],
-        HealthProofGatewayAbi,
-      );
-
-      const grantResult = await grantPermissionOnChain({
-        request,
-        patientWallet: resolvedWalletAddress,
-        granteeWallet: trimmedRecipient,
-        documentId,
-        scope: 0,
-      });
-      if (!grantResult.success) {
-        throw new Error(grantResult.error ?? "On-chain grant failed");
-      }
-
-      // 8. Persist rewrapped key so grantee can access without QR scan
-      try {
-        const permSave = await savePermissionKey({
-          document_id: documentId,
-          patient_wallet: resolvedWalletAddress,
-          grantee_wallet: trimmedRecipient,
-          encrypted_key: JSON.stringify(rewrapped),
+      for (const doc of rewrappedDocs) {
+        const resourceId =
+          doc.document_id.startsWith("0x") && doc.document_id.length === 66
+            ? (doc.document_id as `0x${string}`)
+            : keccak256(toHex(doc.document_id));
+        const request = await signMetaTransaction(
+          viemWallet,
+          CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
+          "grantAccess",
+          [
+            resolvedWalletAddress.toLowerCase(),
+            trimmedRecipient.toLowerCase(),
+            0, // Scope.DOCUMENT
+            resourceId,
+            BigInt(0), // no expiry
+          ],
+          HealthProofGatewayAbi,
+        );
+        const grantResult = await grantPermissionOnChain({
+          request,
+          patientWallet: resolvedWalletAddress,
+          granteeWallet: trimmedRecipient,
+          documentId: doc.document_id,
+          scope: 0,
         });
-        if (!permSave.success) {
-          console.warn("[ShareResultsModal] savePermissionKey:", permSave.error);
+        if (!grantResult.success) {
+          throw new Error(grantResult.error ?? "On-chain grant failed");
         }
-      } catch (e) {
-        console.warn("[ShareResultsModal] savePermissionKey failed:", e);
       }
 
-      // 9. Build encrypted QR data
+      // 7. Persist rewrapped keys for every document
+      for (const doc of rewrappedDocs) {
+        try {
+          const permSave = await savePermissionKey({
+            document_id: doc.document_id,
+            patient_wallet: resolvedWalletAddress,
+            grantee_wallet: trimmedRecipient,
+            encrypted_key: JSON.stringify(doc.encrypted_key),
+          });
+          if (!permSave.success) {
+            console.warn(
+              "[ShareResultsModal] savePermissionKey:",
+              permSave.error,
+            );
+          }
+        } catch (e) {
+          console.warn("[ShareResultsModal] savePermissionKey failed:", e);
+        }
+      }
+
+      // 8. Build encrypted QR data with the document pair
       const qr: EncryptedQRData = {
         type: "healthproof_permission",
         payload,
         signature: "unsigned",
         wallet: resolvedWalletAddress,
         crypto: {
-          document_id: documentId,
-          cid: documentId,
-          iv: selectedResult.iv,
-          encrypted_key: rewrapped,
+          document_id: primaryDoc.document_id,
+          cid: primaryDoc.cid,
+          iv: primaryDoc.iv,
+          encrypted_key: primaryDoc.encrypted_key,
           patient_public_key: myPublicKeyJwk,
+          documents: rewrappedDocs,
         },
       };
 
@@ -303,7 +375,10 @@ export function ShareResultsModal({
               {loadingResults ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="neu-pressed h-10 w-full animate-pulse rounded-xl bg-slate-200" />
+                    <div
+                      key={i}
+                      className="neu-pressed h-10 w-full animate-pulse rounded-xl bg-slate-200"
+                    />
                   ))}
                 </div>
               ) : results.length === 0 ? (
@@ -313,7 +388,10 @@ export function ShareResultsModal({
               ) : (
                 <div className="neu-inset rounded-xl p-4 space-y-2 max-h-56 overflow-y-auto">
                   {results.map((r) => (
-                    <label key={r.document_id} className="flex items-center gap-2 cursor-pointer py-1">
+                    <label
+                      key={r.document_id}
+                      className="flex items-center gap-2 cursor-pointer py-1"
+                    >
                       <input
                         type="checkbox"
                         className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-200"
@@ -321,7 +399,7 @@ export function ShareResultsModal({
                         onChange={() => setSelectedDocId(r.document_id)}
                       />
                       <span className="text-sm text-slate-700 truncate">
-                        {r.file_name ?? r.document_id.slice(0, 24) + "…"}
+                        {r.file_name ?? `${r.document_id.slice(0, 24)}…`}
                       </span>
                       <span className="text-xs text-slate-400 ml-auto shrink-0">
                         {new Date(r.created_at).toLocaleDateString()}

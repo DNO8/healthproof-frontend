@@ -1,29 +1,42 @@
 "use client";
 
+import { useWallets } from "@privy-io/react-auth";
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { sileo } from "sileo";
-import { useTranslations } from "next-intl";
-import { useWallets } from "@privy-io/react-auth";
-import { createWalletClient, custom, keccak256, toHex, stringToHex } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import { signMetaTransaction } from "@/lib/metatx/forwarder";
-import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
-import { uploadHybridEncryptedFile } from "@/services/storage/upload";
-import { getKeyPair } from "@/services/encryption/keystore";
-import { exportPublicKey } from "@/services/encryption/ecdh";
-import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
-import { saveDocumentSecret } from "@/actions/documents/save-document-secret";
+import { createWalletClient, custom, keccak256, toHex } from "viem";
 import { getDbUser } from "@/actions/auth/get-user";
+import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
 import { registerDocumentOnChain } from "@/actions/documents/register-document-onchain";
+import { saveDocumentSecret } from "@/actions/documents/save-document-secret";
 import { UserSelect } from "@/components/forms/UserSelect";
-import { useKeyConflictStore } from "@/state/key-conflict.store";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import {
+  DOC_TYPE,
+  NO_CLASSIFICATION,
+  NO_STANDARD,
+} from "@/lib/medical-constants";
+import { signMetaTransaction } from "@/lib/metatx/forwarder";
 import { isPdfFile } from "@/lib/validate-file";
+import { exportPublicKey } from "@/services/encryption/ecdh";
+import { getKeyPair } from "@/services/encryption/keystore";
+import { uploadHybridEncryptedFile } from "@/services/storage/upload";
+import { useKeyConflictStore } from "@/state/key-conflict.store";
 
-const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
+const ZERO_BYTES32 =
+  "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
 
-async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<unknown> }) {
-  const provider = await wallet.getEthereumProvider() as { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
-  return createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+async function getViemWalletClient(wallet: {
+  getEthereumProvider: () => Promise<unknown>;
+}) {
+  const provider = (await wallet.getEthereumProvider()) as {
+    request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  };
+  return createWalletClient({
+    chain: HEALTHPROOF_CHAIN,
+    transport: custom(provider),
+  });
 }
 
 type UploadResultsModalProps = {
@@ -91,7 +104,10 @@ export function UploadResultsModal({
     const dropped = e.dataTransfer.files?.[0];
     if (!dropped) return;
     if (!isPdfFile(dropped)) {
-      sileo.error({ title: t("uploadFailed"), description: t("invalidFileType") });
+      sileo.error({
+        title: t("uploadFailed"),
+        description: t("invalidFileType"),
+      });
       return;
     }
     setFile(dropped);
@@ -112,7 +128,10 @@ export function UploadResultsModal({
     }
 
     if (!isPdfFile(file)) {
-      sileo.error({ title: t("uploadFailed"), description: t("invalidFileType") });
+      sileo.error({
+        title: t("uploadFailed"),
+        description: t("invalidFileType"),
+      });
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
@@ -151,25 +170,31 @@ export function UploadResultsModal({
       // Get lab's own public key for self-wrapping
       const labPubKeyJwk = await exportPublicKey(labKeys.publicKey);
 
+      // Resolve wallet addresses for DB storage
+      // patientId is already a wallet address from UserSelect
+      const labResult = await getDbUser({ idOrWallet: labId });
+      const labWallet =
+        labResult.success && labResult.data && labResult.data.wallet_address
+          ? labResult.data.wallet_address
+          : "";
+      if (!labWallet) throw new Error("NoLabWallet");
+      const patientWallet = trimmedPatientId;
+
       // Hybrid encrypt: AES-GCM + wrap key for lab & patient
       const uploadResult = await uploadHybridEncryptedFile(
         file,
         labKeys.privateKey,
+        labKeys.publicKey,
         [
-          { userId: labId, publicKeyJwk: labPubKeyJwk },
-          { userId: trimmedPatientId, publicKeyJwk: patientPubKeyJwk },
+          { wallet: labWallet, publicKeyJwk: labPubKeyJwk },
+          { wallet: trimmedPatientId, publicKeyJwk: patientPubKeyJwk },
         ],
       );
-
-      // Resolve wallet addresses for DB storage
-      // patientId is already a wallet address from UserSelect
-      const labResult = await getDbUser({ idOrWallet: labId });
-      const labWallet = (labResult.success && labResult.data && labResult.data.wallet_address) ? labResult.data.wallet_address : "";
-      const patientWallet = trimmedPatientId;
 
       // Save encryption secrets to document_secrets table
       await saveDocumentSecret({
         document_id: uploadResult.ipfs.cid,
+        file_name: file.name,
         uploader_wallet: labWallet,
         patient_wallet: patientWallet,
         iv: uploadResult.iv,
@@ -209,6 +234,10 @@ export function UploadResultsModal({
         cid: uploadResult.ipfs.cid,
         fileHash: uploadResult.fileHash,
         patientWallet: patientWallet,
+        documentType: DOC_TYPE.MEDICAL_RESULT,
+        standard: NO_STANDARD,
+        classification: NO_CLASSIFICATION,
+        episodeId: ZERO_BYTES32,
       });
       if ("error" in onChainResult) {
         console.warn(
@@ -322,7 +351,10 @@ export function UploadResultsModal({
                 onChange={(e) => {
                   const f = e.target.files?.[0] ?? null;
                   if (f && !isPdfFile(f)) {
-                    sileo.error({ title: t("uploadFailed"), description: t("invalidFileType") });
+                    sileo.error({
+                      title: t("uploadFailed"),
+                      description: t("invalidFileType"),
+                    });
                     return;
                   }
                   setFile(f);

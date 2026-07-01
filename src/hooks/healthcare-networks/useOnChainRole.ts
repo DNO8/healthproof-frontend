@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
 import { usePrivy } from "@privy-io/react-auth";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getRoleOnChain } from "@/actions/healthcare-networks/register-entity-onchain";
 import { CONTRACT_TO_ROLE, type UserRole } from "@/types/domain.types";
 
@@ -84,7 +84,9 @@ export function useOnChainRole(walletAddress: string | null | undefined) {
       if (result.success) {
         const contractRole = result.data;
         const resolved =
-          contractRole !== null ? (CONTRACT_TO_ROLE[contractRole] ?? null) : null;
+          contractRole !== null
+            ? (CONTRACT_TO_ROLE[contractRole] ?? null)
+            : null;
         setRole(resolved);
         setCache(walletAddress, resolved);
       } else {

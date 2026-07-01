@@ -1,11 +1,13 @@
 "use server";
 
 import { createPublicClient, http } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import GuardianRegistryArtifact from "@/lib/abis/GuardianRegistry.json";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+
 const GuardianRegistryAbi = GuardianRegistryArtifact.abi;
-import { withAuth } from "@/lib/auth/with-auth";
+
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
 import type { OnChainGuardianship } from "@/lib/medical-constants";
 
 interface ListGuardiansParams {

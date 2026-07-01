@@ -14,14 +14,14 @@ interface Params {
  * No Privy session required (supports opening email on another device).
  */
 export async function GET(
-  request: Request,
-  { params }: { params: Promise<Params> }
+  _request: Request,
+  { params }: { params: Promise<Params> },
 ) {
   try {
     if (!MAGIC_LINK_SECRET) {
       return NextResponse.json(
         { error: "Server configuration error" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -33,7 +33,7 @@ export async function GET(
     if (parts.length !== 2) {
       return NextResponse.json(
         { error: "Invalid token format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -47,24 +47,24 @@ export async function GET(
       encoder.encode(MAGIC_LINK_SECRET),
       { name: "HMAC", hash: "SHA-256" },
       false,
-      ["verify"]
+      ["verify"],
     );
 
     const signatureBytes = Uint8Array.from(atob(signatureB64), (c) =>
-      c.charCodeAt(0)
+      c.charCodeAt(0),
     );
 
     const isValid = await crypto.subtle.verify(
       "HMAC",
       keyMaterial,
       signatureBytes,
-      encoder.encode(tokenData)
+      encoder.encode(tokenData),
     );
 
     if (!isValid) {
       return NextResponse.json(
         { error: "Invalid token signature" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -73,7 +73,7 @@ export async function GET(
     if (tokenParts.length < 2) {
       return NextResponse.json(
         { error: "Malformed token data" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     const jti = tokenParts[1];
@@ -83,9 +83,9 @@ export async function GET(
     // Lookup token in DB
     const tokenHash = await crypto.subtle.digest(
       "SHA-256",
-      encoder.encode(decodedToken)
+      encoder.encode(decodedToken),
     );
-    const tokenHashHex = Array.from(new Uint8Array(tokenHash))
+    const _tokenHashHex = Array.from(new Uint8Array(tokenHash))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
 
@@ -96,25 +96,19 @@ export async function GET(
       .single();
 
     if (error || !link) {
-      return NextResponse.json(
-        { error: "Token not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Token not found" }, { status: 404 });
     }
 
     // Check expiry
     if (new Date(link.expires_at) < new Date()) {
-      return NextResponse.json(
-        { error: "Token expired" },
-        { status: 410 }
-      );
+      return NextResponse.json({ error: "Token expired" }, { status: 410 });
     }
 
     // Check consumed
     if (link.consumed_at) {
       return NextResponse.json(
         { error: "Token already used" },
-        { status: 410 }
+        { status: 410 },
       );
     }
 
@@ -144,7 +138,7 @@ export async function GET(
     console.error("[recovery-code/show] Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

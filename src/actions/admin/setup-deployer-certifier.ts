@@ -1,14 +1,20 @@
 "use server";
 
-import { createWalletClient, createPublicClient, http } from "viem";
+import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import IdentityRegistryAbi from "@/lib/abis/IdentityRegistry.json";
 import GuardianRegistryArtifact from "@/lib/abis/GuardianRegistry.json";
+import IdentityRegistryAbi from "@/lib/abis/IdentityRegistry.json";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+
 const GuardianRegistryAbi = GuardianRegistryArtifact.abi;
-import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
+
 import { isVerifiedAdmin } from "@/lib/auth/permissions";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import {
+  auditLog,
+  getDeployerPrivateKey,
+  withAuth,
+} from "@/lib/auth/with-auth";
 import { ContractRole } from "@/types/domain.types";
 
 const ZERO_BYTES32 =
@@ -36,7 +42,10 @@ async function getClients() {
  * One-time setup: register deployer as CERTIFIER + verify it.
  * Requires admin authentication.
  */
-async function setupCertifierHandler(_data: {}, auth: AuthContext): Promise<{ txHash: string; alreadyCertifier?: boolean }> {
+async function setupCertifierHandler(
+  _data: Record<string, never>,
+  auth: AuthContext,
+): Promise<{ txHash: string; alreadyCertifier?: boolean }> {
   const { publicClient, walletClient, account } = await getClients();
 
   // Check if deployer already has a role
@@ -96,7 +105,7 @@ interface RegisterGuardianData {
  */
 async function registerGuardianHandler(
   data: RegisterGuardianData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ txHash: string; alreadyGuardian?: boolean }> {
   const { publicClient, walletClient, account } = await getClients();
 
@@ -139,4 +148,3 @@ export const registerDeployerAsGuardian = withAuth(registerGuardianHandler, {
   rateLimit: { windowMs: 60000, maxRequests: 5 },
   requireOnChainPermission: async (_data, auth) => isVerifiedAdmin(auth.wallet),
 });
-

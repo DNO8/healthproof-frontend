@@ -1,13 +1,19 @@
 "use server";
 
-import { createPublicClient, createWalletClient, http, keccak256, toHex } from "viem";
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  keccak256,
+  toHex,
+} from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
-import { withAuth, getDeployerPrivateKey } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
-import { validatePatientAccess } from "@/lib/auth/permissions";
 import { logAuditEvent } from "@/lib/audit-onchain";
+import { validatePatientAccess } from "@/lib/auth/permissions";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { getDeployerPrivateKey, withAuth } from "@/lib/auth/with-auth";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import { AuditAction } from "@/lib/medical-constants";
 
 async function getClients() {
@@ -17,8 +23,15 @@ async function getClients() {
     `0x${pk.replace(/^0x/, "")}` as `0x${string}`,
   );
   return {
-    publicClient: createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() }),
-    walletClient: createWalletClient({ account, chain: HEALTHPROOF_CHAIN, transport: http() }),
+    publicClient: createPublicClient({
+      chain: HEALTHPROOF_CHAIN,
+      transport: http(),
+    }),
+    walletClient: createWalletClient({
+      account,
+      chain: HEALTHPROOF_CHAIN,
+      transport: http(),
+    }),
     account,
   };
 }
@@ -33,13 +46,14 @@ interface GrantAccessData {
 
 async function grantAccessHandler(
   data: GrantAccessData,
-  auth: AuthContext,
+  _auth: AuthContext,
 ): Promise<{ txHash: string }> {
   const { publicClient, walletClient } = await getClients();
 
-  const resourceId = data.resourceId.startsWith("0x") && data.resourceId.length === 66
-    ? (data.resourceId as `0x${string}`)
-    : keccak256(toHex(data.resourceId));
+  const resourceId =
+    data.resourceId.startsWith("0x") && data.resourceId.length === 66
+      ? (data.resourceId as `0x${string}`)
+      : keccak256(toHex(data.resourceId));
 
   const scope = data.scope ?? 0;
   const expiresAt = data.expiresAt ?? 0;
@@ -60,7 +74,11 @@ async function grantAccessHandler(
   await publicClient.waitForTransactionReceipt({ hash: txHash });
 
   try {
-    await logAuditEvent(data.patientWallet, resourceId, AuditAction.PERMISSION_GRANTED);
+    await logAuditEvent(
+      data.patientWallet,
+      resourceId,
+      AuditAction.PERMISSION_GRANTED,
+    );
   } catch {
     // On-chain audit logging is best-effort
   }
@@ -68,7 +86,10 @@ async function grantAccessHandler(
   return { txHash };
 }
 
-async function validateGrantAccess(data: GrantAccessData, auth: AuthContext): Promise<boolean> {
+async function validateGrantAccess(
+  data: GrantAccessData,
+  auth: AuthContext,
+): Promise<boolean> {
   return await validatePatientAccess(data.patientWallet, auth.wallet);
 }
 

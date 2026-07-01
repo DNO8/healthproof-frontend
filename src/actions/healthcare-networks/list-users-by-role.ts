@@ -9,9 +9,7 @@ export interface UserOption {
   email: string | null;
 }
 
-export async function listAllUsers(
-  excludeId?: string,
-): Promise<UserOption[]> {
+export async function listAllUsers(excludeId?: string): Promise<UserOption[]> {
   const supabase = createAdminClient();
 
   let query = supabase

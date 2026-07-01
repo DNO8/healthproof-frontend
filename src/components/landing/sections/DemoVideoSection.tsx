@@ -1,7 +1,6 @@
 "use client";
 
-import { useLocale } from "next-intl";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { SectionTitle } from "@/components/ui";
 
 const VIDEO_IDS: Record<string, string> = {
@@ -12,7 +11,7 @@ const VIDEO_IDS: Record<string, string> = {
 export function DemoVideoSection() {
   const locale = useLocale();
   const t = useTranslations("demoVideo");
-  const videoId = VIDEO_IDS[locale] ?? VIDEO_IDS["en"];
+  const videoId = VIDEO_IDS[locale] ?? VIDEO_IDS.en;
 
   return (
     <div className="neu-shell border border-white/70 p-6 sm:p-10">

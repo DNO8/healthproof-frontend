@@ -1,7 +1,7 @@
 // IndexedDB-based keystore for ECDH private keys + SSS metadata
 // CryptoKey objects marked as non-extractable can only be stored in IndexedDB
 
-import { encryptShare1, decryptShare1 } from "./keystore-crypto";
+import { decryptShare1, encryptShare1 } from "./keystore-crypto";
 
 const DB_NAME = "healthproof-keystore";
 const DB_VERSION = 3; // v3: share1 encrypted at rest
@@ -14,7 +14,10 @@ function openDb(): Promise<IDBDatabase> {
     request.onupgradeneeded = (event) => {
       const db = request.result;
       const tx = (event.target as IDBOpenDBRequest).transaction;
-      if (!tx) { reject(new Error("Upgrade transaction missing")); return; }
+      if (!tx) {
+        reject(new Error("Upgrade transaction missing"));
+        return;
+      }
 
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, { keyPath: "userId" });
@@ -136,7 +139,9 @@ export async function saveLocalShare1(
 
     const request = store.get(userId);
     request.onsuccess = () => {
-      const existing = (request.result as StoredKeyPair | undefined) ?? { userId };
+      const existing = (request.result as StoredKeyPair | undefined) ?? {
+        userId,
+      };
       const updated: StoredKeyPair = {
         ...existing,
         userId,
@@ -205,7 +210,9 @@ export async function saveLocalMasterSecretHash(
 
     const request = store.get(userId);
     request.onsuccess = () => {
-      const existing = (request.result as StoredKeyPair | undefined) ?? { userId };
+      const existing = (request.result as StoredKeyPair | undefined) ?? {
+        userId,
+      };
       const updated: StoredKeyPair = {
         ...existing,
         userId,
@@ -223,7 +230,9 @@ export async function saveLocalMasterSecretHash(
 /**
  * Retrieve the local master secret hash.
  */
-export async function getLocalMasterSecretHash(userId: string): Promise<string | null> {
+export async function getLocalMasterSecretHash(
+  userId: string,
+): Promise<string | null> {
   const pair = await getKeyPair(userId);
   return pair?.masterSecretHash ?? null;
 }

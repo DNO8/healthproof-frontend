@@ -1,7 +1,7 @@
-import type { QRData } from "@/types/domain.types";
-import type { VerifyPermissionResponse } from "@/types/api.types";
-import { apiClient } from "@/services/api/client";
 import { API_ROUTES } from "@/lib/constants";
+import { apiClient } from "@/services/api/client";
+import type { VerifyPermissionResponse } from "@/types/api.types";
+import type { QRData } from "@/types/domain.types";
 
 export function parseQRData(raw: string): QRData | null {
   try {

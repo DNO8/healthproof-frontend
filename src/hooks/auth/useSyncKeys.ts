@@ -1,29 +1,29 @@
 ﻿"use client";
 
-import { useEffect, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useTranslations } from "next-intl";
-import {
-  generateKeyPair,
-  exportPublicKey,
-} from "@/services/encryption/ecdh";
-import {
-  saveKeyPair,
-  hasKeyPair,
-  getKeyPair,
-  deleteKeyPair,
-  saveLocalShare1,
-  getLocalShare1,
-  saveLocalMasterSecretHash,
-} from "@/services/encryption/keystore";
-import { updatePublicKey } from "@/actions/auth/update-public-key";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
 import { getUserWithBackup } from "@/actions/auth/get-user-with-backup";
+import { saveEncryptedPrivateKey } from "@/actions/auth/save-encrypted-private-key";
+import { saveKeyBackupBundle } from "@/actions/auth/save-key-backup-bundle";
+import { updatePublicKey } from "@/actions/auth/update-public-key";
 import { hasEncryptedData } from "@/actions/documents/check-user-encrypted-data";
 import { clearDbUserCache } from "@/hooks/auth/useDbUser";
-import { useKeyConflictStore } from "@/state/key-conflict.store";
-import { generateShares, reconstructSecret, hexToBytes } from "@/services/encryption/sss";
+import { requestTourStart } from "@/lib/onboarding/tour-events";
+import { exportPublicKey } from "@/services/encryption/ecdh";
 import { hashMasterSecret } from "@/services/encryption/integrity";
+import {
+  decryptPrivateKeyV2,
+  encryptPrivateKeyV2,
+} from "@/services/encryption/key-backup";
+import {
+  deleteKeyPair,
+  getKeyPair,
+  getLocalShare1,
+  hasKeyPair,
+  saveKeyPair,
+} from "@/services/encryption/keystore";
 import {
   generateMasterSecret,
   importKeyPairFromMasterSecret,
@@ -33,13 +33,12 @@ import {
   hashRecoveryCode,
   normalizeRecoveryCode,
 } from "@/services/encryption/recovery-code";
-import { saveKeyBackupBundle } from "@/actions/auth/save-key-backup-bundle";
 import {
-  encryptPrivateKeyV2,
-  decryptPrivateKeyV2,
-} from "@/services/encryption/key-backup";
-import { saveEncryptedPrivateKey } from "@/actions/auth/save-encrypted-private-key";
-import { requestTourStart } from "@/lib/onboarding/tour-events";
+  generateShares,
+  hexToBytes,
+  reconstructSecret,
+} from "@/services/encryption/sss";
+import { useKeyConflictStore } from "@/state/key-conflict.store";
 
 const SYNCED_KEY = "hp_keys_synced";
 
@@ -60,181 +59,224 @@ export function useSyncKeys() {
   const clearConflict = useKeyConflictStore((s) => s.clearConflict);
   const setIsRecovering = useKeyConflictStore((s) => s.setIsRecovering);
 
+  const userId = user?.id;
+  const walletAddress = user?.wallet?.address;
+
   // ── Structured flow logging (never logs sensitive data) ──
-  const logFlow = (step: string, meta?: Record<string, unknown>) => {
-    const payload: Record<string, unknown> = { step };
-    if (meta) {
-      for (const [k, v] of Object.entries(meta)) {
-        if (v === undefined || v === null) continue;
-        if (typeof v === "string" && v.length > 20) {
-          payload[k] = `${v.slice(0, 8)}...${v.slice(-4)}(${v.length})`;
-        } else {
-          payload[k] = v;
+  const logFlow = useCallback(
+    (step: string, meta?: Record<string, unknown>) => {
+      const payload: Record<string, unknown> = { step };
+      if (meta) {
+        for (const [k, v] of Object.entries(meta)) {
+          if (v === undefined || v === null) continue;
+          if (typeof v === "string" && v.length > 20) {
+            payload[k] = `${v.slice(0, 8)}...${v.slice(-4)}(${v.length})`;
+          } else {
+            payload[k] = v;
+          }
         }
       }
-    }
-    console.log("[useSyncKeys:flow]", payload);
-  };
+      console.log("[useSyncKeys:flow]", payload);
+    },
+    [],
+  );
 
   // Robust gating: refs survive re-renders but NOT remounts.
   // Use sessionStorage as backup so we don't loop if PrivyTokenSync remounts.
-  const alreadyProcessed = (uid: string) => {
+  const alreadyProcessed = useCallback((uid: string) => {
     try {
       return sessionStorage.getItem(SYNCED_KEY) === uid;
     } catch {
       return false;
     }
-  };
+  }, []);
 
   // Helper: inject Privy token into server action payloads (required for withAuth)
-  const withPrivyToken = async <T extends Record<string, unknown>>(data: T): Promise<T & { _privyToken?: string }> => {
-    try {
-      const token = await getAccessToken();
-      return { ...data, ...(token ? { _privyToken: token } : {}) };
-    } catch {
-      return data;
-    }
-  };
+  const withPrivyToken = useCallback(
+    async <T extends Record<string, unknown>>(
+      data: T,
+    ): Promise<T & { _privyToken?: string }> => {
+      try {
+        const token = await getAccessToken();
+        return { ...data, ...(token ? { _privyToken: token } : {}) };
+      } catch {
+        return data;
+      }
+    },
+    [getAccessToken],
+  );
 
   // Helper: fail fast when a withAuth-wrapped server action returns an error
-  function assertOk<T>(
-    result: { success: true; data: T } | { success: false; error: string; code: number },
-    label: string,
-  ): T {
-    if (!result.success) {
-      throw new Error(`${label} failed: ${result.error} (code ${result.code})`);
-    }
-    return result.data;
-  }
+  const assertOk = useCallback(
+    <T>(
+      result:
+        | { success: true; data: T }
+        | { success: false; error: string; code: number },
+      label: string,
+    ): T => {
+      if (!result.success) {
+        throw new Error(
+          `${label} failed: ${result.error} (code ${result.code})`,
+        );
+      }
+      return result.data;
+    },
+    [],
+  );
 
   const RECOVERY_STATE_KEY = "hp_recovery_state";
-  const [recoveryState, setRecoveryStateInternal] = useState<RecoveryState>(() => {
-    if (typeof window === "undefined") {
+  const [recoveryState, setRecoveryStateInternal] = useState<RecoveryState>(
+    () => {
+      if (typeof window === "undefined") {
+        return {
+          needsRecoveryCode: false,
+          needsRegeneration: false,
+          recoveryCode: null,
+          step: "idle",
+        };
+      }
+      try {
+        const raw = sessionStorage.getItem(RECOVERY_STATE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as RecoveryState & { userId?: string };
+          if (parsed.userId && parsed.userId === user?.id) {
+            // Never restore recoveryCode from storage (show-once only)
+            return { ...parsed, recoveryCode: null };
+          }
+        }
+      } catch {
+        /* ignore */
+      }
       return {
         needsRecoveryCode: false,
         needsRegeneration: false,
         recoveryCode: null,
         step: "idle",
       };
-    }
-    try {
-      const raw = sessionStorage.getItem(RECOVERY_STATE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as RecoveryState & { userId?: string };
-        if (parsed.userId && parsed.userId === user?.id) {
-          // Never restore recoveryCode from storage (show-once only)
-          return { ...parsed, recoveryCode: null };
+    },
+  );
+
+  const setRecoveryState = useCallback(
+    (next: RecoveryState | ((prev: RecoveryState) => RecoveryState)) => {
+      setRecoveryStateInternal((prev) => {
+        const value = typeof next === "function" ? next(prev) : next;
+        try {
+          // Persist UI flags only; recoveryCode must never touch storage
+          const { recoveryCode: _, ...persistable } = value;
+          sessionStorage.setItem(
+            RECOVERY_STATE_KEY,
+            JSON.stringify({ ...persistable, userId }),
+          );
+        } catch {
+          /* ignore */
         }
-      }
-    } catch {
-      /* ignore */
-    }
-    return {
-      needsRecoveryCode: false,
-      needsRegeneration: false,
-      recoveryCode: null,
-      step: "idle",
-    };
-  });
-
-  const setRecoveryState = (
-    next: RecoveryState | ((prev: RecoveryState) => RecoveryState),
-  ) => {
-    setRecoveryStateInternal((prev) => {
-      const value = typeof next === "function" ? next(prev) : next;
-      try {
-        // Persist UI flags only; recoveryCode must never touch storage
-        const { recoveryCode: _, ...persistable } = value;
-        sessionStorage.setItem(
-          RECOVERY_STATE_KEY,
-          JSON.stringify({ ...persistable, userId })
-        );
-      } catch {
-        /* ignore */
-      }
-      return value;
-    });
-  };
-
-  const userId = user?.id;
-  const walletAddress = user?.wallet?.address;
+        return value;
+      });
+    },
+    [userId],
+  );
 
   // ── Helper: onboard a brand-new user with SSS(2,3) + KMS ──
-  const onboardNewUser = async (uid: string) => {
-    logFlow("onboard:start", { schemeVersion: 2 });
-    const { masterSecret, publicKeyJwk, keyPair } = await generateMasterSecret();
+  const onboardNewUser = useCallback(
+    async (uid: string) => {
+      logFlow("onboard:start", { schemeVersion: 2 });
+      const { masterSecret, publicKeyJwk, keyPair } =
+        await generateMasterSecret();
 
-    // SSS(2,3) over the master secret (serialized JWK bytes)
-    const shares = generateShares(masterSecret, 2, 3);
-    const [share1, share2, share3] = shares;
+      // SSS(2,3) over the master secret (serialized JWK bytes)
+      const shares = generateShares(masterSecret, 2, 3);
+      const [share1, share2, share3] = shares;
 
-    // Compute hashes
-    const masterHash = await hashMasterSecret(masterSecret);
-    const recoveryCode = encodeRecoveryCode(hexToBytes(share3));
-    const recoveryHash = await hashRecoveryCode(recoveryCode);
+      // Compute hashes
+      const masterHash = await hashMasterSecret(masterSecret);
+      const recoveryCode = encodeRecoveryCode(hexToBytes(share3));
+      const recoveryHash = await hashRecoveryCode(recoveryCode);
 
-    // Save share1 locally
-    await saveKeyPair(uid, keyPair, {
-      share1,
-      masterSecretHash: masterHash,
-      schemeVersion: 2,
-    });
+      // Save share1 locally
+      await saveKeyPair(uid, keyPair, {
+        share1,
+        masterSecretHash: masterHash,
+        schemeVersion: 2,
+      });
 
-    // Atomically save all SSS v2 backup fields
-    assertOk(await saveKeyBackupBundle(await withPrivyToken({
-      userId: uid,
-      share2,
-      recoveryCodeHash: recoveryHash,
-      masterSecretHash: masterHash,
-      publicKey: publicKeyJwk,
-    })), "saveKeyBackupBundle");
+      // Atomically save all SSS v2 backup fields
+      assertOk(
+        await saveKeyBackupBundle(
+          await withPrivyToken({
+            userId: uid,
+            share2,
+            recoveryCodeHash: recoveryHash,
+            masterSecretHash: masterHash,
+            publicKey: publicKeyJwk,
+          }),
+        ),
+        "saveKeyBackupBundle",
+      );
 
-    // Backup encrypted private key for silent cross-device recovery
-    try {
-      const privJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
-      const encrypted = await encryptPrivateKeyV2(JSON.stringify(privJwk), uid);
-      assertOk(await saveEncryptedPrivateKey(await withPrivyToken({ id: uid, encrypted_private_key: encrypted })), "saveEncryptedPrivateKey");
-    } catch (e) {
-      logFlow("onboard:backup-fail", { reason: e instanceof Error ? e.message : "unknown" });
+      // Backup encrypted private key for silent cross-device recovery
+      try {
+        const privJwk = await crypto.subtle.exportKey(
+          "jwk",
+          keyPair.privateKey,
+        );
+        const encrypted = await encryptPrivateKeyV2(
+          JSON.stringify(privJwk),
+          uid,
+        );
+        assertOk(
+          await saveEncryptedPrivateKey(
+            await withPrivyToken({ id: uid, encrypted_private_key: encrypted }),
+          ),
+          "saveEncryptedPrivateKey",
+        );
+      } catch (e) {
+        logFlow("onboard:backup-fail", {
+          reason: e instanceof Error ? e.message : "unknown",
+        });
+        try {
+          const { sileo } = await import("sileo");
+          sileo.error({
+            title: t("backupCreateWarning"),
+            description: t("backupCreateWarningDesc"),
+            duration: 5000,
+          });
+        } catch {
+          /* sileo not available in tests */
+        }
+      }
+
+      sessionStorage.setItem(SYNCED_KEY, uid);
+      clearDbUserCache();
+      clearConflict();
+      logFlow("onboard:complete", { hasRecoveryCode: true });
       try {
         const { sileo } = await import("sileo");
-        sileo.error({
-          title: t("backupCreateWarning"),
-          description: t("backupCreateWarningDesc"),
+        sileo.success({
+          title: t("keysGenerated"),
+          description: t("keysGeneratedDesc"),
           duration: 5000,
         });
-      } catch { /* sileo not available in tests */ }
-    }
+      } catch {
+        /* sileo not available in tests */
+      }
 
-    sessionStorage.setItem(SYNCED_KEY, uid);
-    clearDbUserCache();
-    clearConflict();
-    logFlow("onboard:complete", { hasRecoveryCode: true });
-    try {
-      const { sileo } = await import("sileo");
-      sileo.success({
-        title: t("keysGenerated"),
-        description: t("keysGeneratedDesc"),
-        duration: 5000,
+      // Show recovery code to the user immediately
+      setRecoveryState({
+        needsRecoveryCode: true,
+        needsRegeneration: false,
+        recoveryCode,
+        step: "show_recovery_code",
       });
-    } catch { /* sileo not available in tests */ }
-
-    // Show recovery code to the user immediately
-    setRecoveryState({
-      needsRecoveryCode: true,
-      needsRegeneration: false,
-      recoveryCode,
-      step: "show_recovery_code",
-    });
-
-    requestTourStart();
-  };
+      requestTourStart();
+    },
+    [assertOk, clearConflict, logFlow, setRecoveryState, t, withPrivyToken],
+  );
 
   // ── Helper: reconstruct from two shares ──
   const reconstructFromShares = async (
     shareA: string,
     shareB: string,
-    expectedHash: string
+    expectedHash: string,
   ): Promise<{ keyPair: CryptoKeyPair; publicKeyJwk: string } | null> => {
     try {
       const reconstructed = reconstructSecret([shareA, shareB]);
@@ -259,14 +301,18 @@ export function useSyncKeys() {
   // ── Helper: fetch server share2 ──
   const fetchServerShare = async (): Promise<string | null> => {
     if (serverShareAttemptedRef.current) {
-      console.log("[useSyncKeys] fetchServerShare: already attempted this session, skipping");
+      console.log(
+        "[useSyncKeys] fetchServerShare: already attempted this session, skipping",
+      );
       return null;
     }
     // Also check a sessionStorage flag so we don't re-fetch across remounts
     const flagKey = "hp_server_share_attempted";
     try {
       if (sessionStorage.getItem(flagKey) === "1") {
-        console.log("[useSyncKeys] fetchServerShare: sessionStorage flag set, skipping");
+        console.log(
+          "[useSyncKeys] fetchServerShare: sessionStorage flag set, skipping",
+        );
         return null;
       }
       sessionStorage.setItem(flagKey, "1");
@@ -277,7 +323,9 @@ export function useSyncKeys() {
     try {
       const token = await getAccessToken();
       if (!token) {
-        console.error("[useSyncKeys] fetchServerShare: no Privy token available");
+        console.error(
+          "[useSyncKeys] fetchServerShare: no Privy token available",
+        );
         return null;
       }
       const res = await fetch("/api/server-share/fetch", {
@@ -290,9 +338,15 @@ export function useSyncKeys() {
       });
       if (!res.ok) {
         if (res.status === 409) {
-          console.warn("[useSyncKeys] fetchServerShare: no server share stored for this user (409)");
+          console.warn(
+            "[useSyncKeys] fetchServerShare: no server share stored for this user (409)",
+          );
         } else {
-          console.error("[useSyncKeys] fetchServerShare failed:", res.status, res.statusText);
+          console.error(
+            "[useSyncKeys] fetchServerShare failed:",
+            res.status,
+            res.statusText,
+          );
         }
         return null;
       }
@@ -313,7 +367,7 @@ export function useSyncKeys() {
         const parsed = JSON.parse(raw) as RecoveryState & { userId?: string };
         if (parsed.userId === userId) {
           setRecoveryStateInternal((current) =>
-            current.step === "idle" ? parsed : current
+            current.step === "idle" ? parsed : current,
           );
         } else {
           sessionStorage.removeItem(RECOVERY_STATE_KEY);
@@ -351,7 +405,10 @@ export function useSyncKeys() {
     // Successful runs are gated by SYNCED_KEY + ranForRef. Recovery state is
     // persisted in sessionStorage so the modal still shows after remount.
     try {
-      const lastErrTs = parseInt(sessionStorage.getItem("hp_keys_sync_error") ?? "0", 10);
+      const lastErrTs = parseInt(
+        sessionStorage.getItem("hp_keys_sync_error") ?? "0",
+        10,
+      );
       if (Date.now() - lastErrTs < 60_000) {
         console.warn("[useSyncKeys] In error cooldown, skipping sync");
         return;
@@ -415,6 +472,7 @@ export function useSyncKeys() {
 
           let localPk: string;
           try {
+            // biome-ignore lint/style/noNonNullAssertion: keypair is validated before use
             localPk = await exportPublicKey(kp.publicKey!);
           } catch {
             // Local keypair corrupted → delete and re-onboard or recover
@@ -427,33 +485,55 @@ export function useSyncKeys() {
             logFlow("sync:case-B:keys-match");
             // Lazy migration: create encrypted_private_key backup if missing
             if (!userWithBackup?.encrypted_private_key) {
-              logFlow("sync:lazy-migration:start", { reason: "missing-encrypted-private-key" });
+              logFlow("sync:lazy-migration:start", {
+                reason: "missing-encrypted-private-key",
+              });
               try {
                 let privJwkStr: string;
                 try {
-                  const privJwk = await crypto.subtle.exportKey("jwk", kp.privateKey!);
+                  // biome-ignore lint/style/noNonNullAssertion: keypair is validated before use
+                  const privJwk = await crypto.subtle.exportKey(
+                    "jwk",
+                    kp.privateKey!,
+                  );
                   privJwkStr = JSON.stringify(privJwk);
-                } catch (exportErr) {
+                } catch (_exportErr) {
                   // Key is non-extractable → reconstruct master secret from SSS shares
                   const localShare1 = await getLocalShare1(userId);
-                  if (!localShare1) throw new Error("No local share1 for reconstruction");
+                  if (!localShare1)
+                    throw new Error("No local share1 for reconstruction");
                   const share2 = await fetchServerShare();
                   if (!share2) {
                     if (!userWithBackup?.server_share_ciphertext) {
-                      console.warn("[useSyncKeys] No server share stored for user; cross-device backup unavailable");
+                      console.warn(
+                        "[useSyncKeys] No server share stored for user; cross-device backup unavailable",
+                      );
                       throw new Error("CROSS_DEVICE_BACKUP_UNAVAILABLE");
                     }
                     throw new Error("No server share2 for reconstruction");
                   }
-                  const reconstructed = reconstructSecret([localShare1, share2]);
+                  const reconstructed = reconstructSecret([
+                    localShare1,
+                    share2,
+                  ]);
                   const hash = await hashMasterSecret(reconstructed);
                   if (hash !== userWithBackup?.master_secret_hash) {
-                    throw new Error("Master secret hash mismatch during reconstruction");
+                    throw new Error(
+                      "Master secret hash mismatch during reconstruction",
+                    );
                   }
                   privJwkStr = new TextDecoder().decode(reconstructed);
                 }
                 const encrypted = await encryptPrivateKeyV2(privJwkStr, userId);
-                assertOk(await saveEncryptedPrivateKey(await withPrivyToken({ id: userId, encrypted_private_key: encrypted })), "saveEncryptedPrivateKey");
+                assertOk(
+                  await saveEncryptedPrivateKey(
+                    await withPrivyToken({
+                      id: userId,
+                      encrypted_private_key: encrypted,
+                    }),
+                  ),
+                  "saveEncryptedPrivateKey",
+                );
                 logFlow("sync:lazy-migration:success");
                 try {
                   const { sileo } = await import("sileo");
@@ -462,11 +542,18 @@ export function useSyncKeys() {
                     description: t("crossDeviceBackupReadyDesc"),
                     duration: 5000,
                   });
-                } catch { /* sileo not available in tests */ }
+                } catch {
+                  /* sileo not available in tests */
+                }
               } catch (e) {
                 const reason = e instanceof Error ? e.message : "unknown";
-                if (e instanceof Error && e.message === "CROSS_DEVICE_BACKUP_UNAVAILABLE") {
-                  logFlow("sync:lazy-migration:skip", { reason: "no-server-share" });
+                if (
+                  e instanceof Error &&
+                  e.message === "CROSS_DEVICE_BACKUP_UNAVAILABLE"
+                ) {
+                  logFlow("sync:lazy-migration:skip", {
+                    reason: "no-server-share",
+                  });
                   try {
                     const { sileo } = await import("sileo");
                     sileo.error({
@@ -474,7 +561,9 @@ export function useSyncKeys() {
                       description: t("crossDeviceBackupUnavailableDesc"),
                       duration: 6000,
                     });
-                  } catch { /* sileo not available in tests */ }
+                  } catch {
+                    /* sileo not available in tests */
+                  }
                 } else {
                   logFlow("sync:lazy-migration:fail", { reason });
                   try {
@@ -484,7 +573,9 @@ export function useSyncKeys() {
                       description: t("backupCreateFailedDesc"),
                       duration: 5000,
                     });
-                  } catch { /* sileo not available in tests */ }
+                  } catch {
+                    /* sileo not available in tests */
+                  }
                 }
               }
             }
@@ -492,9 +583,14 @@ export function useSyncKeys() {
             // for cross-device support — but ONLY if they have no encrypted data.
             if (!userWithBackup?.server_share_ciphertext && walletAddress) {
               try {
-                const hasData = await hasEncryptedData(walletAddress, privyToken);
+                const hasData = await hasEncryptedData(
+                  walletAddress,
+                  privyToken,
+                );
                 if (!hasData) {
-                  console.warn("[useSyncKeys] No server share and no encrypted data — safe to regenerate");
+                  console.warn(
+                    "[useSyncKeys] No server share and no encrypted data — safe to regenerate",
+                  );
                   setRecoveryState({
                     needsRecoveryCode: false,
                     needsRegeneration: true,
@@ -516,41 +612,58 @@ export function useSyncKeys() {
             logFlow("sync:case-B:key-mismatch", {
               hasEncryptedBackup: !!userWithBackup?.encrypted_private_key,
             });
-            const userWithBackupMismatch = await getUserWithBackup(userId, privyToken);
+            const userWithBackupMismatch = await getUserWithBackup(
+              userId,
+              privyToken,
+            );
 
             // Step 1: Try silent auto-recovery from encrypted_private_key backup
-            if (userWithBackupMismatch?.encrypted_private_key && userWithBackupMismatch?.public_key) {
-              logFlow("sync:auto-recovery:attempt", { source: "encrypted-private-key" });
+            if (
+              userWithBackupMismatch?.encrypted_private_key &&
+              userWithBackupMismatch?.public_key
+            ) {
+              logFlow("sync:auto-recovery:attempt", {
+                source: "encrypted-private-key",
+              });
               const decrypted = await decryptPrivateKeyV2(
                 userWithBackupMismatch.encrypted_private_key,
-                userId
+                userId,
               );
 
               if (decrypted) {
                 try {
                   const privJwk = JSON.parse(decrypted) as JsonWebKey;
-                  const pubJwk = JSON.parse(userWithBackupMismatch.public_key) as JsonWebKey;
+                  const pubJwk = JSON.parse(
+                    userWithBackupMismatch.public_key,
+                  ) as JsonWebKey;
                   const privateKey = await crypto.subtle.importKey(
                     "jwk",
                     privJwk,
                     { name: "ECDH", namedCurve: "P-256" },
                     false,
-                    ["deriveKey", "deriveBits"]
+                    ["deriveKey", "deriveBits"],
                   );
                   const publicKey = await crypto.subtle.importKey(
                     "jwk",
                     pubJwk,
                     { name: "ECDH", namedCurve: "P-256" },
                     true,
-                    []
+                    [],
                   );
                   // Auto-recovery: just import the keypair from backup.
                   // Do NOT regenerate SSS shares — existing recovery code and server share2 remain valid.
-                  await saveKeyPair(userId, { privateKey, publicKey }, {
-                    masterSecretHash: userWithBackupMismatch.master_secret_hash ?? undefined,
-                    schemeVersion: 2,
+                  await saveKeyPair(
+                    userId,
+                    { privateKey, publicKey },
+                    {
+                      masterSecretHash:
+                        userWithBackupMismatch.master_secret_hash ?? undefined,
+                      schemeVersion: 2,
+                    },
+                  );
+                  logFlow("sync:auto-recovery:success", {
+                    source: "encrypted-private-key",
                   });
-                  logFlow("sync:auto-recovery:success", { source: "encrypted-private-key" });
                   sessionStorage.setItem(SYNCED_KEY, userId);
                   clearConflict();
                   try {
@@ -560,11 +673,16 @@ export function useSyncKeys() {
                       description: t("recoverySuccess"),
                       duration: 5000,
                     });
-                  } catch { /* sileo not available in tests */ }
+                  } catch {
+                    /* sileo not available in tests */
+                  }
                   return;
                 } catch (e) {
                   const reason = e instanceof Error ? e.message : "unknown";
-                  logFlow("sync:auto-recovery:fail", { source: "encrypted-private-key", reason });
+                  logFlow("sync:auto-recovery:fail", {
+                    source: "encrypted-private-key",
+                    reason,
+                  });
                   try {
                     const { sileo } = await import("sileo");
                     sileo.error({
@@ -572,16 +690,25 @@ export function useSyncKeys() {
                       description: t("autoRecoveryFailedDesc"),
                       duration: 6000,
                     });
-                  } catch { /* sileo not available in tests */ }
+                  } catch {
+                    /* sileo not available in tests */
+                  }
                   try {
-                    sessionStorage.setItem("hp_keys_sync_error", String(Date.now()));
-                  } catch { /* ignore */ }
+                    sessionStorage.setItem(
+                      "hp_keys_sync_error",
+                      String(Date.now()),
+                    );
+                  } catch {
+                    /* ignore */
+                  }
                 }
               }
             }
 
             // Auto-recovery failed → delete incorrect local keys and offer recovery/regenerate
-            logFlow("sync:auto-recovery:fallback", { canRegenerate: !userWithBackupMismatch?.server_share_ciphertext });
+            logFlow("sync:auto-recovery:fallback", {
+              canRegenerate: !userWithBackupMismatch?.server_share_ciphertext,
+            });
             try {
               const { sileo } = await import("sileo");
               sileo.error({
@@ -589,7 +716,9 @@ export function useSyncKeys() {
                 description: t("keyMismatchDetectedDesc"),
                 duration: 6000,
               });
-            } catch { /* sileo not available in tests */ }
+            } catch {
+              /* sileo not available in tests */
+            }
             await deleteKeyPair(userId);
 
             if (!userWithBackupMismatch?.server_share_ciphertext) {
@@ -613,10 +742,12 @@ export function useSyncKeys() {
 
           // No DB key → save local to DB
           logFlow("sync:case-B:no-db-key", { action: "save-local-to-db" });
-          const pubRes = await updatePublicKey(await withPrivyToken({
-            id: userId,
-            public_key: localPk,
-          }));
+          const pubRes = await updatePublicKey(
+            await withPrivyToken({
+              id: userId,
+              public_key: localPk,
+            }),
+          );
           if (pubRes.success) {
             logFlow("sync:case-B:local-saved-to-db");
             sessionStorage.setItem(SYNCED_KEY, userId);
@@ -632,27 +763,41 @@ export function useSyncKeys() {
           logFlow("sync:case-C", { reason: "indexeddb-empty-scheme-v2" });
           setIsRecovering(true);
           // Step 1: Try silent auto-recovery from encrypted_private_key backup
-          if (userWithBackup?.encrypted_private_key && userWithBackup?.public_key) {
-            logFlow("sync:case-C:auto-recovery:attempt", { source: "encrypted-private-key" });
+          if (
+            userWithBackup?.encrypted_private_key &&
+            userWithBackup?.public_key
+          ) {
+            logFlow("sync:case-C:auto-recovery:attempt", {
+              source: "encrypted-private-key",
+            });
             const decrypted = await decryptPrivateKeyV2(
               userWithBackup.encrypted_private_key,
-              userId
+              userId,
             );
             if (decrypted) {
               try {
                 const privJwk = JSON.parse(decrypted) as JsonWebKey;
-                const pubJwk = JSON.parse(userWithBackup.public_key) as JsonWebKey;
+                const pubJwk = JSON.parse(
+                  userWithBackup.public_key,
+                ) as JsonWebKey;
 
                 // Defensive: verify encrypted_private_key matches current master_secret_hash
                 const encoder = new TextEncoder();
-                const backupMasterSecret = encoder.encode(JSON.stringify(privJwk));
+                const backupMasterSecret = encoder.encode(
+                  JSON.stringify(privJwk),
+                );
                 const backupHash = await hashMasterSecret(backupMasterSecret);
                 if (backupHash !== userWithBackup.master_secret_hash) {
                   logFlow("sync:case-C:auto-recovery:hash-mismatch", {
                     backupHashPrefix: backupHash.slice(0, 16),
-                    dbHashPrefix: userWithBackup.master_secret_hash?.slice(0, 16),
+                    dbHashPrefix: userWithBackup.master_secret_hash?.slice(
+                      0,
+                      16,
+                    ),
                   });
-                  throw new Error("encrypted_private_key does not match current master_secret_hash");
+                  throw new Error(
+                    "encrypted_private_key does not match current master_secret_hash",
+                  );
                 }
 
                 const privateKey = await crypto.subtle.importKey(
@@ -660,25 +805,32 @@ export function useSyncKeys() {
                   privJwk,
                   { name: "ECDH", namedCurve: "P-256" },
                   false,
-                  ["deriveKey", "deriveBits"]
+                  ["deriveKey", "deriveBits"],
                 );
                 const publicKey = await crypto.subtle.importKey(
                   "jwk",
                   pubJwk,
                   { name: "ECDH", namedCurve: "P-256" },
                   true,
-                  []
+                  [],
                 );
                 // Auto-recovery: just import the keypair from backup.
                 // Do NOT regenerate SSS shares or call saveKeyBackupBundle —
                 // the user's existing recovery code and server share2 remain valid.
-                await saveKeyPair(userId, { privateKey, publicKey }, {
-                  masterSecretHash: userWithBackup.master_secret_hash ?? undefined,
-                  schemeVersion: 2,
-                });
+                await saveKeyPair(
+                  userId,
+                  { privateKey, publicKey },
+                  {
+                    masterSecretHash:
+                      userWithBackup.master_secret_hash ?? undefined,
+                    schemeVersion: 2,
+                  },
+                );
                 sessionStorage.setItem(SYNCED_KEY, userId);
                 clearConflict();
-                logFlow("sync:case-C:auto-recovery:success", { source: "encrypted-private-key" });
+                logFlow("sync:case-C:auto-recovery:success", {
+                  source: "encrypted-private-key",
+                });
                 try {
                   const { sileo } = await import("sileo");
                   sileo.success({
@@ -692,10 +844,18 @@ export function useSyncKeys() {
                 return;
               } catch (e) {
                 const reason = e instanceof Error ? e.message : "unknown";
-                logFlow("sync:case-C:auto-recovery:fail", { source: "encrypted-private-key", reason });
+                logFlow("sync:case-C:auto-recovery:fail", {
+                  source: "encrypted-private-key",
+                  reason,
+                });
                 try {
-                  sessionStorage.setItem("hp_keys_sync_error", String(Date.now()));
-                } catch { /* ignore */ }
+                  sessionStorage.setItem(
+                    "hp_keys_sync_error",
+                    String(Date.now()),
+                  );
+                } catch {
+                  /* ignore */
+                }
               }
             }
           }
@@ -705,10 +865,16 @@ export function useSyncKeys() {
           if (localShare1) {
             logFlow("sync:case-C:sss-recovery:attempt");
             serverShareAttemptedRef.current = false;
-            try { sessionStorage.removeItem("hp_server_share_attempted"); } catch { /* ignore */ }
+            try {
+              sessionStorage.removeItem("hp_server_share_attempted");
+            } catch {
+              /* ignore */
+            }
             const share2 = await fetchServerShare();
             if (!share2) {
-              logFlow("sync:case-C:sss-recovery:fail", { reason: "server-share2-unavailable" });
+              logFlow("sync:case-C:sss-recovery:fail", {
+                reason: "server-share2-unavailable",
+              });
               if (!userWithBackup?.server_share_ciphertext) {
                 setRecoveryState({
                   needsRecoveryCode: false,
@@ -730,7 +896,7 @@ export function useSyncKeys() {
             const result = await reconstructFromShares(
               localShare1,
               share2,
-              userWithBackup?.master_secret_hash ?? ""
+              userWithBackup?.master_secret_hash ?? "",
             );
 
             if (!result) {
@@ -755,7 +921,9 @@ export function useSyncKeys() {
           }
 
           // Step 3: No local share1 → need recovery code or regeneration
-          logFlow("sync:case-C:fallback", { hasServerShare: !!userWithBackup?.server_share_ciphertext });
+          logFlow("sync:case-C:fallback", {
+            hasServerShare: !!userWithBackup?.server_share_ciphertext,
+          });
           try {
             const { sileo } = await import("sileo");
             sileo.error({
@@ -763,7 +931,9 @@ export function useSyncKeys() {
               description: t("recoveryCodeRequiredDesc"),
               duration: 6000,
             });
-          } catch { /* sileo not available in tests */ }
+          } catch {
+            /* sileo not available in tests */
+          }
           if (!userWithBackup?.server_share_ciphertext) {
             setRecoveryState({
               needsRecoveryCode: false,
@@ -789,18 +959,25 @@ export function useSyncKeys() {
           let legacyPrivJwk: JsonWebKey | null = null;
           let legacyPubJwk: JsonWebKey | null = null;
 
-          if (userWithBackup?.encrypted_private_key && userWithBackup?.public_key) {
+          if (
+            userWithBackup?.encrypted_private_key &&
+            userWithBackup?.public_key
+          ) {
             logFlow("sync:case-D:legacy-recovery:attempt");
             const decrypted = await decryptPrivateKeyV2(
               userWithBackup.encrypted_private_key,
-              userId
+              userId,
             );
             if (decrypted) {
               legacyPrivJwk = JSON.parse(decrypted) as JsonWebKey;
-              legacyPubJwk = JSON.parse(userWithBackup.public_key) as JsonWebKey;
+              legacyPubJwk = JSON.parse(
+                userWithBackup.public_key,
+              ) as JsonWebKey;
               logFlow("sync:case-D:legacy-recovery:success");
             } else {
-              logFlow("sync:case-D:legacy-recovery:fail", { reason: "decrypt-failed" });
+              logFlow("sync:case-D:legacy-recovery:fail", {
+                reason: "decrypt-failed",
+              });
               try {
                 const { sileo } = await import("sileo");
                 sileo.error({
@@ -808,7 +985,9 @@ export function useSyncKeys() {
                   description: t("legacyDecryptFailedDesc"),
                   duration: 5000,
                 });
-              } catch { /* sileo not available in tests */ }
+              } catch {
+                /* sileo not available in tests */
+              }
             }
           }
 
@@ -829,29 +1008,38 @@ export function useSyncKeys() {
               legacyPrivJwk,
               { name: "ECDH", namedCurve: "P-256" },
               false,
-              ["deriveKey", "deriveBits"]
+              ["deriveKey", "deriveBits"],
             );
             const publicKey = await crypto.subtle.importKey(
               "jwk",
               legacyPubJwk,
               { name: "ECDH", namedCurve: "P-256" },
               true,
-              []
+              [],
             );
 
-            await saveKeyPair(userId, { privateKey, publicKey }, {
-              share1,
-              masterSecretHash: masterHash,
-              schemeVersion: 2,
-            });
-
-            assertOk(await saveKeyBackupBundle(await withPrivyToken({
+            await saveKeyPair(
               userId,
-              share2,
-              recoveryCodeHash: recoveryHash,
-              masterSecretHash: masterHash,
-              publicKey: JSON.stringify(legacyPubJwk),
-            })), "saveKeyBackupBundle");
+              { privateKey, publicKey },
+              {
+                share1,
+                masterSecretHash: masterHash,
+                schemeVersion: 2,
+              },
+            );
+
+            assertOk(
+              await saveKeyBackupBundle(
+                await withPrivyToken({
+                  userId,
+                  share2,
+                  recoveryCodeHash: recoveryHash,
+                  masterSecretHash: masterHash,
+                  publicKey: JSON.stringify(legacyPubJwk),
+                }),
+              ),
+              "saveKeyBackupBundle",
+            );
             logFlow("sync:case-D:complete", { hasNewRecoveryCode: true });
 
             sessionStorage.setItem(SYNCED_KEY, userId);
@@ -871,7 +1059,9 @@ export function useSyncKeys() {
                 description: t("recoveryCodeUpdatedDesc"),
                 duration: 8000,
               });
-            } catch { /* sileo not available in tests */ }
+            } catch {
+              /* sileo not available in tests */
+            }
             return;
           }
 
@@ -924,7 +1114,25 @@ export function useSyncKeys() {
         syncInProgressRef.current = false;
       }
     })();
-  }, [ready, authenticated, userId, walletAddress, setConflict, clearConflict, setIsRecovering]);
+  }, [
+    ready,
+    authenticated,
+    userId,
+    walletAddress,
+    setConflict,
+    clearConflict,
+    setIsRecovering,
+    alreadyProcessed,
+    assertOk,
+    fetchServerShare,
+    getAccessToken,
+    logFlow,
+    onboardNewUser,
+    reconstructFromShares,
+    setRecoveryState,
+    t,
+    withPrivyToken,
+  ]);
 
   // ── Manual recovery with recovery code ──
   const recoverWithCode = async (code: string): Promise<boolean> => {
@@ -942,12 +1150,18 @@ export function useSyncKeys() {
             description: t("noBackupDesc"),
             duration: 5000,
           });
-        } catch { /* sileo not available in tests */ }
+        } catch {
+          /* sileo not available in tests */
+        }
         return false;
       }
 
       serverShareAttemptedRef.current = false;
-      try { sessionStorage.removeItem("hp_server_share_attempted"); } catch { /* ignore */ }
+      try {
+        sessionStorage.removeItem("hp_server_share_attempted");
+      } catch {
+        /* ignore */
+      }
       const share2 = await fetchServerShare();
       if (!share2) {
         try {
@@ -957,24 +1171,39 @@ export function useSyncKeys() {
             description: t("noServerShareDesc"),
             duration: 5000,
           });
-        } catch { /* sileo not available in tests */ }
+        } catch {
+          /* sileo not available in tests */
+        }
         return false;
       }
 
       // Decode recovery code to share3 bytes, then to hex string
-      const { decodeRecoveryCode } = await import("@/services/encryption/recovery-code");
+      const { decodeRecoveryCode } = await import(
+        "@/services/encryption/recovery-code"
+      );
       const share3Bytes = decodeRecoveryCode(code);
       const share3 = Array.from(share3Bytes)
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
 
       // Diagnose: check if recovery code matches the stored recovery hash
-      const enteredRecoveryHash = await hashRecoveryCode(normalizeRecoveryCode(code));
-      if (userWithBackup.recovery_code_hash && enteredRecoveryHash !== userWithBackup.recovery_code_hash) {
-        console.error("[useSyncKeys] Recovery code hash mismatch — code may be from an older generation", {
-          expectedRecoveryHashPrefix: userWithBackup.recovery_code_hash.slice(0, 16),
-          enteredRecoveryHashPrefix: enteredRecoveryHash.slice(0, 16),
-        });
+      const enteredRecoveryHash = await hashRecoveryCode(
+        normalizeRecoveryCode(code),
+      );
+      if (
+        userWithBackup.recovery_code_hash &&
+        enteredRecoveryHash !== userWithBackup.recovery_code_hash
+      ) {
+        console.error(
+          "[useSyncKeys] Recovery code hash mismatch — code may be from an older generation",
+          {
+            expectedRecoveryHashPrefix: userWithBackup.recovery_code_hash.slice(
+              0,
+              16,
+            ),
+            enteredRecoveryHashPrefix: enteredRecoveryHash.slice(0, 16),
+          },
+        );
         try {
           const { sileo } = await import("sileo");
           sileo.error({
@@ -982,14 +1211,16 @@ export function useSyncKeys() {
             description: t("recoveryCodeExpiredDesc"),
             duration: 8000,
           });
-        } catch { /* sileo not available in tests */ }
+        } catch {
+          /* sileo not available in tests */
+        }
         return false;
       }
 
       const result = await reconstructFromShares(
         share2,
         share3,
-        userWithBackup.master_secret_hash
+        userWithBackup.master_secret_hash,
       );
       if (!result) {
         try {
@@ -999,16 +1230,20 @@ export function useSyncKeys() {
             description: t("reconstructFailedDesc"),
             duration: 5000,
           });
-        } catch { /* sileo not available in tests */ }
+        } catch {
+          /* sileo not available in tests */
+        }
         return false;
       }
 
       // Generate new share1 for this device
       const { generateShares } = await import("@/services/encryption/sss");
       const encoder = new TextEncoder();
-      const masterSecret = encoder.encode(JSON.stringify(
-        await crypto.subtle.exportKey("jwk", result.keyPair.privateKey)
-      ));
+      const masterSecret = encoder.encode(
+        JSON.stringify(
+          await crypto.subtle.exportKey("jwk", result.keyPair.privateKey),
+        ),
+      );
       const newShares = generateShares(masterSecret, 2, 3);
       const newShare1 = newShares[0];
 
@@ -1063,8 +1298,11 @@ export function useSyncKeys() {
       serverShareAttemptedRef.current = false;
       try {
         sessionStorage.removeItem("hp_server_share_attempted");
-      } catch { /* ignore */ }
-      const { masterSecret, publicKeyJwk, keyPair } = await generateMasterSecret();
+      } catch {
+        /* ignore */
+      }
+      const { masterSecret, publicKeyJwk, keyPair } =
+        await generateMasterSecret();
       logFlow("regenerate:master-secret", { length: masterSecret.length });
 
       const shares = generateShares(masterSecret, 2, 3);
@@ -1084,10 +1322,16 @@ export function useSyncKeys() {
       });
 
       if (!share2 || typeof share2 !== "string") {
-        console.error("[useSyncKeys] regenerateKeys aborted: share2 is missing or not a string", {
-          share2: typeof share2 === "string" ? `${share2.slice(0, 20)}...` : share2,
-        });
-        throw new Error("Generated share2 is missing or invalid. This is a bug; please report it.");
+        console.error(
+          "[useSyncKeys] regenerateKeys aborted: share2 is missing or not a string",
+          {
+            share2:
+              typeof share2 === "string" ? `${share2.slice(0, 20)}...` : share2,
+          },
+        );
+        throw new Error(
+          "Generated share2 is missing or invalid. This is a bug; please report it.",
+        );
       }
 
       const masterHash = await hashMasterSecret(masterSecret);
@@ -1100,18 +1344,31 @@ export function useSyncKeys() {
         schemeVersion: 2,
       });
 
-      assertOk(await saveKeyBackupBundle(await withPrivyToken({
-        userId,
-        share2,
-        recoveryCodeHash: recoveryHash,
-        masterSecretHash: masterHash,
-        publicKey: publicKeyJwk,
-      })), "saveKeyBackupBundle");
+      assertOk(
+        await saveKeyBackupBundle(
+          await withPrivyToken({
+            userId,
+            share2,
+            recoveryCodeHash: recoveryHash,
+            masterSecretHash: masterHash,
+            publicKey: publicKeyJwk,
+          }),
+        ),
+        "saveKeyBackupBundle",
+      );
 
       // Update encrypted_private_key backup so cross-device recovery stays in sync
       const privJwkStr = new TextDecoder().decode(masterSecret);
       const encryptedPriv = await encryptPrivateKeyV2(privJwkStr, userId);
-      assertOk(await saveEncryptedPrivateKey(await withPrivyToken({ id: userId, encrypted_private_key: encryptedPriv })), "saveEncryptedPrivateKey");
+      assertOk(
+        await saveEncryptedPrivateKey(
+          await withPrivyToken({
+            id: userId,
+            encrypted_private_key: encryptedPriv,
+          }),
+        ),
+        "saveEncryptedPrivateKey",
+      );
 
       sessionStorage.setItem(SYNCED_KEY, userId);
       clearConflict();
@@ -1131,18 +1388,24 @@ export function useSyncKeys() {
           description: t("regenerateSuccessDesc"),
           duration: 5000,
         });
-      } catch { /* sileo not available in tests */ }
+      } catch {
+        /* sileo not available in tests */
+      }
       return true;
     } catch (e) {
       console.error("[useSyncKeys] regenerateKeys failed:", e);
       // Cooldown so the effect doesn't retry immediately
       try {
         sessionStorage.setItem("hp_keys_sync_error", String(Date.now()));
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       // Clean up partially saved local keys so the next sync starts fresh
       try {
         await deleteKeyPair(userId);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       try {
         const { sileo } = await import("sileo");
         sileo.error({
@@ -1150,7 +1413,9 @@ export function useSyncKeys() {
           description: t("regenerateFailedDesc"),
           duration: 5000,
         });
-      } catch { /* sileo not available in tests */ }
+      } catch {
+        /* sileo not available in tests */
+      }
       return false;
     }
   };
@@ -1165,5 +1430,10 @@ export function useSyncKeys() {
     });
   };
 
-  return { recoveryState, recoverWithCode, dismissRecoveryCode, regenerateKeys };
+  return {
+    recoveryState,
+    recoverWithCode,
+    dismissRecoveryCode,
+    regenerateKeys,
+  };
 }
