@@ -39,7 +39,7 @@ import {
 } from "@/lib/medical-constants";
 import { signMetaTransaction } from "@/lib/metatx/forwarder";
 import { slugify } from "@/lib/utils";
-import { isPdfFile } from "@/lib/validate-file";
+import { isUploadableFile } from "@/lib/validate-file";
 import { exportPublicKey } from "@/services/encryption/ecdh";
 import { getKeyPair } from "@/services/encryption/keystore";
 import type {
@@ -50,7 +50,7 @@ import type {
   ManualExamRow,
   ManualHeader,
 } from "@/services/fhir-rag/schema";
-import { extractPdfText } from "@/services/pdf/extract-text";
+import { extractDocumentText } from "@/services/pdf/extract-text";
 import type { HybridRecipient } from "@/services/storage/upload";
 import {
   uploadHybridEncryptedFile,
@@ -116,7 +116,7 @@ export default function UploadPage() {
       e.preventDefault();
       const dropped = e.dataTransfer.files?.[0];
       if (!dropped) return;
-      if (!isPdfFile(dropped)) {
+      if (!isUploadableFile(dropped)) {
         sileo.error({
           title: tModal("uploadFailed"),
           description: tModal("invalidFileType"),
@@ -195,7 +195,7 @@ export default function UploadPage() {
       });
       return;
     }
-    if (!isPdfFile(file)) {
+    if (!isUploadableFile(file)) {
       sileo.error({
         title: tModal("uploadFailed"),
         description: tModal("invalidFileType"),
@@ -208,7 +208,7 @@ export default function UploadPage() {
     }
     setUploading(true);
     try {
-      const { text, hasText, error } = await extractPdfText(file);
+      const { text, hasText, error } = await extractDocumentText(file);
       const newSessionId = crypto.randomUUID();
       setSessionId(newSessionId);
       const consent = await logConsent({ sessionId: newSessionId });
@@ -638,7 +638,7 @@ export default function UploadPage() {
           id="pdf-upload"
           ref={inputRef}
           type="file"
-          accept=".pdf,application/pdf"
+          accept=".pdf,application/pdf,image/*"
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
@@ -646,7 +646,7 @@ export default function UploadPage() {
               setFile(null);
               return;
             }
-            if (!isPdfFile(f)) {
+            if (!isUploadableFile(f)) {
               sileo.error({
                 title: tModal("uploadFailed"),
                 description: tModal("invalidFileType"),

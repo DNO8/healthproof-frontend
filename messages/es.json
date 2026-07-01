@@ -762,14 +762,18 @@
       "assignButton": "Asignar",
       "assigning": "Asignando…",
       "assignSuccess": "Orden asignada",
-      "assignError": "Error al asignar orden"
+      "assignError": "Error al asignar orden",
+      "completeOrder": "Completar orden",
+      "completing": "Completando…",
+      "completeError": "Error al completar orden",
+      "completeSuccess": "Orden completada"
     },
     "upload": {
       "title": "Subir Resultados",
       "patientLabel": "Paciente",
       "patientPlaceholder": "Selecciona un paciente…",
       "dropOrClick": "Arrastra un archivo aquí o haz clic para buscar",
-      "fileTypes": "PDF, imágenes, CSV hasta 10 MB",
+      "fileTypes": "PDF o imágenes hasta 10 MB",
       "fileTooLarge": "El archivo supera el límite de 10 MB. Reduce el tamaño o comprime el archivo.",
       "uploadSuccess": "Subida exitosa",
       "uploadError": "Error al subir",

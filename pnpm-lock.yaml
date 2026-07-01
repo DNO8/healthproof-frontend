@@ -172,6 +172,10 @@ importers:
         specifier: ^3.0.0
         version: 3.2.4(@types/debug@4.1.13)(@types/node@20.19.41)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)
 
+  ../../../infra/avalanche/contracts: {}
+
+  ../../backend: {}
+
 packages:
 
   '@adraffy/ens-normalize@1.11.1':
