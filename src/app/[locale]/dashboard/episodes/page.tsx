@@ -22,6 +22,7 @@ import { UserSelect } from "@/components/forms/UserSelect";
 import { EmptyState, SkeletonList } from "@/components/ui";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
+import { isVerifiedDoctor } from "@/lib/auth/permissions";
 import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import type { OnChainEpisode } from "@/lib/medical-constants";
 import { signGatewayMetaTx } from "@/lib/metatx/forwarder";
@@ -105,6 +106,20 @@ export default function EpisodesPage() {
       const doctorAddress = (await viemWallet.getAddresses())[0];
       if (!doctorAddress) throw new Error("No wallet address");
       console.log("[handleOpen] Doctor address:", doctorAddress);
+
+      const verifiedDoctor = await isVerifiedDoctor(doctorAddress);
+      if (!verifiedDoctor) {
+        console.error(
+          "[handleOpen] Wallet is not a verified doctor:",
+          doctorAddress,
+        );
+        sileo.error({
+          title: t("openError"),
+          description: "The connected wallet is not a verified doctor",
+        });
+        setLoading(false);
+        return;
+      }
 
       const episodeId = keccak256(
         toHex(`${trimmed}-${episodeType}-${Date.now()}`),
