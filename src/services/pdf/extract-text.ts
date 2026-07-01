@@ -54,6 +54,11 @@ async function ocrWithOpenAI(dataUrls: string[]): Promise<string> {
 }
 
 export async function extractDocumentText(file: File): Promise<PdfTextResult> {
+  console.log("[extractDocumentText] starting", {
+    type: file.type,
+    size: file.size,
+    name: file.name,
+  });
   try {
     const isImage = file.type.startsWith("image/");
 
@@ -90,6 +95,7 @@ export async function extractDocumentText(file: File): Promise<PdfTextResult> {
     }
 
     const trimmed = fullText.trim();
+    console.log("[extractDocumentText] native text length", trimmed.length);
     if (trimmed.length >= MIN_NATIVE_TEXT_LENGTH) {
       return {
         text: trimmed,
@@ -99,9 +105,12 @@ export async function extractDocumentText(file: File): Promise<PdfTextResult> {
     }
 
     // Fall back to OpenAI Vision OCR for scanned/image-only PDFs
+    console.log("[extractDocumentText] falling back to OpenAI Vision OCR");
     const pageDataUrls = await pdfToPageDataUrls(file);
+    console.log("[extractDocumentText] rendered pages", pageDataUrls.length);
     const ocrText = await ocrWithOpenAI(pageDataUrls);
 
+    console.log("[extractDocumentText] OCR result length", ocrText.length);
     return {
       text: ocrText,
       hasText: ocrText.length > 0,
@@ -109,6 +118,7 @@ export async function extractDocumentText(file: File): Promise<PdfTextResult> {
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    console.error("[extractDocumentText] failed", message);
     return {
       text: "",
       hasText: false,

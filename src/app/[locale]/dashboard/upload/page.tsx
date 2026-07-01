@@ -216,9 +216,10 @@ export default function UploadPage() {
         throw new Error("ConsentRequired");
       }
       if (!hasText || error) {
+        console.error("[handleStartProcessing] extraction failed", { text, hasText, error });
         sileo.warning({
           title: tModal("noTextTitle"),
-          description: tModal("noTextDesc"),
+          description: `${tModal("noTextDesc")}${error ? ` (${error})` : ""}`,
         });
         setStep("manual");
         return;

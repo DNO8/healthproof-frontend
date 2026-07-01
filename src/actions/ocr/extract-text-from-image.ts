@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { getOpenAIClient } from "@/services/fhir-rag/openai-client";
 
 export interface ExtractTextFromImageInput {
@@ -31,6 +32,8 @@ export async function extractTextFromImage(
       return { success: false, error: "No images provided" };
     }
 
+    logger.info({ imageCount: input.images.length }, "OCR request started");
+
     const openai = getOpenAIClient();
 
     const content = input.images.map((dataUrl) => ({
@@ -59,12 +62,18 @@ export async function extractTextFromImage(
 
     const text = response.choices[0]?.message?.content?.trim() ?? "";
 
+    logger.info(
+      { textLength: text.length, hasText: text.length > 0 },
+      "OCR request completed",
+    );
+
     return {
       success: true,
       text,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    logger.error({ error: message }, "OCR request failed");
     return {
       success: false,
       error: message,
