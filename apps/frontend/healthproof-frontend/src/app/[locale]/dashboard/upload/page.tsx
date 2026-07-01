@@ -25,6 +25,7 @@ import {
   updateOrderStatusOnChain,
 } from "@/actions/medical-orders/medical-orders-onchain";
 import { UserSelect } from "@/components/forms/UserSelect";
+import { useWithPrivyToken } from "@/lib/auth/privy-token-helper";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import { isAuthSuccess } from "@/lib/auth/with-auth";
@@ -80,6 +81,7 @@ export default function UploadPage() {
   const router = useRouter();
   const tModal = useTranslations("uploadModal");
   const walletAddress = useWalletAddress();
+  const withPrivyToken = useWithPrivyToken();
   const { user } = usePrivy();
   const { wallets } = useWallets();
   const labId = user?.id ?? "";
@@ -153,13 +155,17 @@ export default function UploadPage() {
       HealthProofGatewayAbi,
     );
 
-    await updateOrderStatusOnChain({ request, orderId, status: 2 });
+    await updateOrderStatusOnChain(
+      await withPrivyToken({ request, orderId, status: 2 }),
+    );
   }
 
   async function resolveEpisodeId(): Promise<`0x${string}`> {
     if (!linkedOrderId) return ZERO_BYTES32;
     try {
-      const orderResponse = await getOrderOnChain({ orderId: linkedOrderId });
+      const orderResponse = await getOrderOnChain(
+        await withPrivyToken({ orderId: linkedOrderId }),
+      );
       if (isAuthSuccess(orderResponse)) {
         const order = orderResponse.data;
         if (order?.episodeId && order.episodeId !== ZERO_BYTES32) {
@@ -177,7 +183,9 @@ export default function UploadPage() {
     const labKeys = await getKeyPair(labId);
     if (!labKeys?.publicKey || !labKeys?.privateKey)
       throw new Error(tModal("noLabKeys"));
-    const patientPubKeyJwk = await getUserPublicKey(patientId.trim());
+    const patientPubKeyJwk = await getUserPublicKey(
+      await withPrivyToken({ idOrWallet: patientId.trim() }),
+    );
     if (!patientPubKeyJwk) throw new Error(tModal("noPatientKey"));
     const labPubKeyJwk = await exportPublicKey(labKeys.publicKey);
     return [
@@ -211,7 +219,9 @@ export default function UploadPage() {
       const { text, hasText, error } = await extractDocumentText(file);
       const newSessionId = crypto.randomUUID();
       setSessionId(newSessionId);
-      const consent = await logConsent({ sessionId: newSessionId });
+      const consent = await logConsent(
+        await withPrivyToken({ sessionId: newSessionId }),
+      );
       if (!isAuthSuccess(consent) || !consent.data.success) {
         throw new Error("ConsentRequired");
       }
@@ -239,11 +249,13 @@ export default function UploadPage() {
   async function handleExtractAndAudit(sessionId: string, text: string) {
     setUploading(true);
     try {
-      const response = await extractAndAudit({
-        text,
-        sessionId,
-        labFilledFields: {},
-      });
+      const response = await extractAndAudit(
+        await withPrivyToken({
+          text,
+          sessionId,
+          labFilledFields: {},
+        }),
+      );
       if (isAuthSuccess(response)) {
         const { doc, audit } = response.data as unknown as {
           doc: ExtractedDoc;
@@ -299,7 +311,9 @@ export default function UploadPage() {
           confidence: 1,
         })),
       };
-      const response = await auditManual({ doc: manualDoc, sessionId });
+      const response = await auditManual(
+        await withPrivyToken({ doc: manualDoc, sessionId }),
+      );
       if (isAuthSuccess(response)) {
         const { doc, audit } = response.data as unknown as {
           doc: ExtractedDoc;
@@ -325,12 +339,14 @@ export default function UploadPage() {
     if (!doc || !audit || !sessionId) return;
     setUploading(true);
     try {
-      const response = await generateFhir({
-        doc,
-        audit,
-        labFilledFields,
-        sessionId,
-      });
+      const response = await generateFhir(
+        await withPrivyToken({
+          doc,
+          audit,
+          labFilledFields,
+          sessionId,
+        }),
+      );
       if (isAuthSuccess(response)) {
         setGenerateResult(response.data as GenerateResult);
         setStep("preview");
@@ -412,16 +428,18 @@ export default function UploadPage() {
         HealthProofGatewayAbi,
       );
 
-      await registerDocumentOnChain({
-        request: pdfRequest,
-        cid: pdfUpload.ipfs.cid,
-        fileHash: pdfUpload.fileHash,
-        documentType: DOC_TYPE.MEDICAL_RESULT,
-        standard: NO_STANDARD,
-        classification: NO_CLASSIFICATION,
-        patientWallet: patientId.trim(),
-        episodeId,
-      });
+      await registerDocumentOnChain(
+        await withPrivyToken({
+          request: pdfRequest,
+          cid: pdfUpload.ipfs.cid,
+          fileHash: pdfUpload.fileHash,
+          documentType: DOC_TYPE.MEDICAL_RESULT,
+          standard: NO_STANDARD,
+          classification: NO_CLASSIFICATION,
+          patientWallet: patientId.trim(),
+          episodeId,
+        }),
+      );
 
       const rawName = file.name?.trim() || "uploaded-document";
       const base = slugify(rawName.replace(/\.[^/.]+$/, "")) || "document";
@@ -459,46 +477,50 @@ export default function UploadPage() {
         HealthProofGatewayAbi,
       );
 
-      await registerDocumentOnChain({
-        request: fhirRequest,
-        cid: fhirUpload.ipfs.cid,
-        fileHash: fhirUpload.fileHash,
-        documentType: DOC_TYPE.FHIR_REPORT,
-        standard: FHIR_STANDARD.R4,
-        classification: DOC_CLASSIFICATION.LAB,
-        patientWallet: patientId.trim(),
-        episodeId,
-      });
+      await registerDocumentOnChain(
+        await withPrivyToken({
+          request: fhirRequest,
+          cid: fhirUpload.ipfs.cid,
+          fileHash: fhirUpload.fileHash,
+          documentType: DOC_TYPE.FHIR_REPORT,
+          standard: FHIR_STANDARD.R4,
+          classification: DOC_CLASSIFICATION.LAB,
+          patientWallet: patientId.trim(),
+          episodeId,
+        }),
+      );
 
-      const publishResponse = await publishFhirDocument({
-        pdf: {
-          documentId: pdfUpload.ipfs.cid,
-          iv: pdfUpload.iv,
-          encryptedKeys: normalizedPdfKeys,
-          uploaderPublicKey: labPubKeyJwk,
-          fileName: file.name,
-        },
-        fhir: {
-          documentId: fhirUpload.ipfs.cid,
-          iv: fhirUpload.iv,
-          encryptedKeys: normalizedFhirKeys,
-          uploaderPublicKey: labPubKeyJwk,
-          fileName: fhirFileName,
-        },
-        relatedCid: pdfUpload.ipfs.cid,
-        documentType: DOC_TYPE.FHIR_REPORT,
-        standard: FHIR_STANDARD.R4,
-        classification: DOC_CLASSIFICATION.LAB,
-        fhirCompliance: {
-          score: generateResult.compliance.score,
-          mustSupportTotal: generateResult.compliance.mustSupportTotal,
-          mustSupportFilled: generateResult.compliance.mustSupportFilled,
-          guiaVersion: generateResult.compliance.guiaVersion,
-        },
-        patientWallet: patientId.trim(),
-        episodeId,
-        sessionId,
-      });
+      const publishResponse = await publishFhirDocument(
+        await withPrivyToken({
+          pdf: {
+            documentId: pdfUpload.ipfs.cid,
+            iv: pdfUpload.iv,
+            encryptedKeys: normalizedPdfKeys,
+            uploaderPublicKey: labPubKeyJwk,
+            fileName: file.name,
+          },
+          fhir: {
+            documentId: fhirUpload.ipfs.cid,
+            iv: fhirUpload.iv,
+            encryptedKeys: normalizedFhirKeys,
+            uploaderPublicKey: labPubKeyJwk,
+            fileName: fhirFileName,
+          },
+          relatedCid: pdfUpload.ipfs.cid,
+          documentType: DOC_TYPE.FHIR_REPORT,
+          standard: FHIR_STANDARD.R4,
+          classification: DOC_CLASSIFICATION.LAB,
+          fhirCompliance: {
+            score: generateResult.compliance.score,
+            mustSupportTotal: generateResult.compliance.mustSupportTotal,
+            mustSupportFilled: generateResult.compliance.mustSupportFilled,
+            guiaVersion: generateResult.compliance.guiaVersion,
+          },
+          patientWallet: patientId.trim(),
+          episodeId,
+          sessionId,
+        }),
+      );
 
       if (
         !isAuthSuccess(publishResponse) ||
