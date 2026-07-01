@@ -762,14 +762,18 @@
       "assignButton": "Assign",
       "assigning": "Assigning…",
       "assignSuccess": "Order assigned",
-      "assignError": "Failed to assign order"
+      "assignError": "Failed to assign order",
+      "completeOrder": "Complete order",
+      "completing": "Completing…",
+      "completeError": "Failed to complete order",
+      "completeSuccess": "Order completed"
     },
     "upload": {
       "title": "Upload Results",
       "patientLabel": "Patient",
       "patientPlaceholder": "Select a patient…",
       "dropOrClick": "Drop a file here or click to browse",
-      "fileTypes": "PDF, images, CSV up to 10 MB",
+      "fileTypes": "PDF or images up to 10 MB",
       "fileTooLarge": "File exceeds the 10 MB limit. Reduce the size or compress it.",
       "uploadSuccess": "Upload successful",
       "uploadError": "Upload failed",
