@@ -1,8 +1,8 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { withAuth } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface PermissionInvitation {
   id: string;
@@ -31,7 +31,7 @@ type ListParams = ListByPatient | ListByGrantee;
 
 async function listInvitationsHandler(
   data: ListParams,
-  _auth: AuthContext
+  _auth: AuthContext,
 ): Promise<{ invitations: PermissionInvitation[] }> {
   const supabase = createAdminClient();
 

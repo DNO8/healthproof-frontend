@@ -1,7 +1,7 @@
 "use server";
 
+import { type AuthContext, withAuth } from "@/lib/auth/with-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { withAuth, type AuthContext } from "@/lib/auth/with-auth";
 
 async function savePermissionKeyHandler(
   data: {
@@ -17,7 +17,9 @@ async function savePermissionKeyHandler(
   const patient = data.patient_wallet.toLowerCase();
   const grantee = data.grantee_wallet.toLowerCase();
   if (caller !== patient && caller !== grantee) {
-    throw new Error("Unauthorized: only the patient or grantee can save permission keys");
+    throw new Error(
+      "Unauthorized: only the patient or grantee can save permission keys",
+    );
   }
 
   const supabase = createAdminClient();
@@ -65,7 +67,9 @@ async function getPermissionKeyHandler(
   const patient = (row.patient_wallet as string).toLowerCase();
   const grantee = (row.grantee_wallet as string).toLowerCase();
   if (caller !== patient && caller !== grantee) {
-    throw new Error("Unauthorized: not authorized to access this permission key");
+    throw new Error(
+      "Unauthorized: not authorized to access this permission key",
+    );
   }
 
   return row.encrypted_key as string;

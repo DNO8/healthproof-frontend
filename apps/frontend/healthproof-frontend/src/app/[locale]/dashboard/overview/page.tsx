@@ -1,38 +1,38 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import type { UserRole } from "@/types/domain.types";
-import { ROLES } from "@/types/domain.types";
-import { useDbUser } from "@/hooks/auth/useDbUser";
-import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
-import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
-import { useDashboardStats } from "@/hooks/dashboard/useDashboardStats";
-import { useOnboardingTour } from "@/hooks/onboarding/useOnboardingTour";
-import { WelcomeToast } from "../WelcomeToast";
-import { ProfileBanner } from "../ProfileBanner";
-import { DashboardActions } from "../DashboardActions";
 import { usePrivy } from "@privy-io/react-auth";
-import { ROLE_ICONS } from "@/lib/icons";
-import { LINKS_BY_ROLE } from "@/lib/navigation";
-import { useRouter } from "next/navigation";
-import { ArrowRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
-  LayoutDashboard,
+  ArrowRight,
+  Building2,
   ClipboardList,
   FileText,
-  Shield,
-  User,
-  Mail,
-  Share2,
   FolderOpen,
-  ScanLine,
-  Upload,
   Globe,
-  Building2,
-  Settings,
+  LayoutDashboard,
   Lock,
+  Mail,
+  ScanLine,
+  Settings,
+  Share2,
+  Shield,
+  Upload,
+  User,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useDbUser } from "@/hooks/auth/useDbUser";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { useDashboardStats } from "@/hooks/dashboard/useDashboardStats";
+import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
+import { useOnboardingTour } from "@/hooks/onboarding/useOnboardingTour";
+import { ROLE_ICONS } from "@/lib/icons";
+import { LINKS_BY_ROLE } from "@/lib/navigation";
+import type { UserRole } from "@/types/domain.types";
+import { ROLES } from "@/types/domain.types";
+import { DashboardActions } from "../DashboardActions";
+import { ProfileBanner } from "../ProfileBanner";
+import { WelcomeToast } from "../WelcomeToast";
 
 const NAV_ICON_MAP: Record<string, LucideIcon> = {
   LayoutDashboard,
@@ -69,7 +69,9 @@ const ROLE_METRIC_KEYS: Partial<Record<UserRole, MetricKey[]>> = {
   admin: ["ordersIssued", "verifiedResults", "activePatients"],
 };
 
-const ROLE_DESC_KEYS: Partial<Record<UserRole, "patient" | "laboratory" | "doctor">> = {
+const ROLE_DESC_KEYS: Partial<
+  Record<UserRole, "patient" | "laboratory" | "doctor">
+> = {
   patient: "patient",
   lab: "laboratory",
   doctor: "doctor",
@@ -97,7 +99,10 @@ export default function OverviewPage() {
   const { dbUser } = useDbUser();
   const walletAddress = useWalletAddress();
   const { role, loading: roleLoading } = useOnChainRole(walletAddress);
-  const { stats, loading: statsLoading } = useDashboardStats(walletAddress, role);
+  const { stats, loading: statsLoading } = useDashboardStats(
+    walletAddress,
+    role,
+  );
   useOnboardingTour(role, user?.id ?? null);
 
   if (roleLoading) {
@@ -108,18 +113,23 @@ export default function OverviewPage() {
     );
   }
 
-  const email = user?.email?.address ?? user?.google?.email ?? dbUser?.email ?? "";
+  const email =
+    user?.email?.address ?? user?.google?.email ?? dbUser?.email ?? "";
 
   // Fallback chain: on-chain role → DB role → localStorage intended role → patient
-  const intendedRole = typeof window !== "undefined"
-    ? (localStorage.getItem("hp_intended_role") as UserRole | null)
-    : null;
+  const intendedRole =
+    typeof window !== "undefined"
+      ? (localStorage.getItem("hp_intended_role") as UserRole | null)
+      : null;
   const dbRole = dbUser?.role?.toLowerCase() as UserRole | null;
   const effectiveRole: UserRole = role ?? dbRole ?? intendedRole ?? "patient";
-  const roleConfig = ROLES.find((r) => r.key === effectiveRole);
-  const metricKeys = ROLE_METRIC_KEYS[effectiveRole] ?? ROLE_METRIC_KEYS.patient!;
+  const _roleConfig = ROLES.find((r) => r.key === effectiveRole);
+  const metricKeys =
+    ROLE_METRIC_KEYS[effectiveRole] ?? ROLE_METRIC_KEYS.patient ?? [];
   const descKey = ROLE_DESC_KEYS[effectiveRole] ?? "patient";
-  const roleLabel = tRoles(effectiveRole === "lab" ? "laboratory" : effectiveRole);
+  const roleLabel = tRoles(
+    effectiveRole === "lab" ? "laboratory" : effectiveRole,
+  );
 
   const displayName = dbUser?.full_name ?? user?.google?.name ?? null;
   const isProfileComplete = Boolean(displayName && walletAddress);
@@ -129,7 +139,10 @@ export default function OverviewPage() {
       <WelcomeToast email={email} roleLabel={roleLabel} />
 
       {/* Header */}
-      <div data-tour="role-header" className="neu-shell border border-white/70 p-8 sm:p-10">
+      <div
+        data-tour="role-header"
+        className="neu-shell border border-white/70 p-8 sm:p-10"
+      >
         <div className="flex items-center gap-3">
           {(() => {
             const Icon = ROLE_ICONS[effectiveRole];
@@ -176,7 +189,7 @@ export default function OverviewPage() {
                 {statsLoading ? (
                   <span className="inline-block h-6 w-10 animate-pulse rounded-md bg-slate-200" />
                 ) : (
-                  stats[key] ?? 0
+                  (stats[key] ?? 0)
                 )}
               </p>
             </button>
@@ -207,9 +220,7 @@ export default function OverviewPage() {
                   onClick={() => router.push(link.href)}
                   type="button"
                 >
-                  {Icon && (
-                    <Icon className="h-5 w-5 shrink-0 text-sky-600" />
-                  )}
+                  {Icon && <Icon className="h-5 w-5 shrink-0 text-sky-600" />}
                   <span className="text-sm font-semibold text-slate-800">
                     {tSidebar(link.labelKey)}
                   </span>

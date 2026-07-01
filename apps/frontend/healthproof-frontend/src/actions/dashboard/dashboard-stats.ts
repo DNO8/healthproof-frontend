@@ -1,7 +1,7 @@
 "use server";
 
 import { createPublicClient, http, parseAbiItem } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { UserRole } from "@/types/domain.types";
 
@@ -34,7 +34,10 @@ async function countPermissionsForPatient(wallet: string): Promise<number> {
     .select("*", { count: "exact", head: true })
     .eq("patient_wallet", wallet.toLowerCase());
   if (error) {
-    console.error("[dashboard-stats] countPermissionsForPatient:", error.message);
+    console.error(
+      "[dashboard-stats] countPermissionsForPatient:",
+      error.message,
+    );
     return 0;
   }
   return count ?? 0;
@@ -69,7 +72,9 @@ async function countDistinctPatients(): Promise<number> {
 async function countPendingOrdersForLab(wallet: string): Promise<number> {
   try {
     const client = getPublicClient();
-    const MedicalOrderRegistryAbi = await import("@/lib/abis/MedicalOrderRegistry.json").then((m) => m.default ?? m);
+    const MedicalOrderRegistryAbi = await import(
+      "@/lib/abis/MedicalOrderRegistry.json"
+    ).then((m) => m.default ?? m);
 
     const [orderIds] = (await client.readContract({
       address: CONTRACT_ADDRESSES.MedicalOrderRegistry as `0x${string}`,

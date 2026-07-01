@@ -1,10 +1,10 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { withAuth } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
 import { executeForwardRequest } from "@/actions/relay/relay-core";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
 import type { SignedForwardRequest } from "@/lib/metatx/types";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface RespondInvitationData {
   invitationId: string;
@@ -13,7 +13,7 @@ export interface RespondInvitationData {
 
 async function respondInvitationHandler(
   data: RespondInvitationData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ txHash?: string }> {
   const supabase = createAdminClient();
 
@@ -74,7 +74,9 @@ async function respondInvitationHandler(
   for (const request of signedRequests) {
     const result = await executeForwardRequest(request);
     if (!result.success) {
-      throw new Error(`Meta-transaction failed for invitation ${data.invitationId}`);
+      throw new Error(
+        `Meta-transaction failed for invitation ${data.invitationId}`,
+      );
     }
     lastTxHash = result.txHash;
   }
@@ -92,7 +94,7 @@ async function respondInvitationHandler(
           grantee_wallet: granteeWallet,
           encrypted_key: encKey,
         },
-        { onConflict: "document_id,grantee_wallet" }
+        { onConflict: "document_id,grantee_wallet" },
       );
       if (keyError) {
         console.error("Failed to save permission key for", docId, keyError);

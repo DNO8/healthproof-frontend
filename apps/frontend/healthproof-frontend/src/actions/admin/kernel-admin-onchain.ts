@@ -1,12 +1,18 @@
 "use server";
 
-import { createPublicClient, createWalletClient, http, keccak256, toHex } from "viem";
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  keccak256,
+  toHex,
+} from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import HealthProofKernelAbi from "@/lib/abis/HealthProofKernel.json";
-import { withAuth, getDeployerPrivateKey } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
 import { isVerifiedAdmin } from "@/lib/auth/permissions";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { getDeployerPrivateKey, withAuth } from "@/lib/auth/with-auth";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
 
 async function getClients() {
   const pk = await getDeployerPrivateKey();
@@ -15,8 +21,15 @@ async function getClients() {
     `0x${pk.replace(/^0x/, "")}` as `0x${string}`,
   );
   return {
-    publicClient: createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() }),
-    walletClient: createWalletClient({ account, chain: HEALTHPROOF_CHAIN, transport: http() }),
+    publicClient: createPublicClient({
+      chain: HEALTHPROOF_CHAIN,
+      transport: http(),
+    }),
+    walletClient: createWalletClient({
+      account,
+      chain: HEALTHPROOF_CHAIN,
+      transport: http(),
+    }),
     account,
   };
 }
@@ -30,22 +43,20 @@ interface RegisterModuleData {
 
 async function registerModuleHandler(
   data: RegisterModuleData,
-  auth: AuthContext,
+  _auth: AuthContext,
 ): Promise<{ txHash: string }> {
   const { publicClient, walletClient } = await getClients();
 
-  const moduleId = data.moduleId.startsWith("0x") && data.moduleId.length === 66
-    ? (data.moduleId as `0x${string}`)
-    : keccak256(toHex(data.moduleId));
+  const moduleId =
+    data.moduleId.startsWith("0x") && data.moduleId.length === 66
+      ? (data.moduleId as `0x${string}`)
+      : keccak256(toHex(data.moduleId));
 
   const txHash = await walletClient.writeContract({
     address: CONTRACT_ADDRESSES.HealthProofKernel as `0x${string}`,
     abi: HealthProofKernelAbi,
     functionName: "registerModule",
-    args: [
-      moduleId,
-      data.moduleAddress as `0x${string}`,
-    ],
+    args: [moduleId, data.moduleAddress as `0x${string}`],
   });
 
   await publicClient.waitForTransactionReceipt({ hash: txHash });
@@ -67,22 +78,20 @@ interface UpgradeModuleData {
 
 async function upgradeModuleHandler(
   data: UpgradeModuleData,
-  auth: AuthContext,
+  _auth: AuthContext,
 ): Promise<{ txHash: string }> {
   const { publicClient, walletClient } = await getClients();
 
-  const moduleId = data.moduleId.startsWith("0x") && data.moduleId.length === 66
-    ? (data.moduleId as `0x${string}`)
-    : keccak256(toHex(data.moduleId));
+  const moduleId =
+    data.moduleId.startsWith("0x") && data.moduleId.length === 66
+      ? (data.moduleId as `0x${string}`)
+      : keccak256(toHex(data.moduleId));
 
   const txHash = await walletClient.writeContract({
     address: CONTRACT_ADDRESSES.HealthProofKernel as `0x${string}`,
     abi: HealthProofKernelAbi,
     functionName: "upgradeModule",
-    args: [
-      moduleId,
-      data.newAddress as `0x${string}`,
-    ],
+    args: [moduleId, data.newAddress as `0x${string}`],
   });
 
   await publicClient.waitForTransactionReceipt({ hash: txHash });
@@ -110,9 +119,10 @@ async function getModuleHandler(
     transport: http(),
   });
 
-  const moduleId = data.moduleId.startsWith("0x") && data.moduleId.length === 66
-    ? (data.moduleId as `0x${string}`)
-    : keccak256(toHex(data.moduleId));
+  const moduleId =
+    data.moduleId.startsWith("0x") && data.moduleId.length === 66
+      ? (data.moduleId as `0x${string}`)
+      : keccak256(toHex(data.moduleId));
 
   const moduleAddress = (await publicClient.readContract({
     address: CONTRACT_ADDRESSES.HealthProofKernel as `0x${string}`,
@@ -131,7 +141,7 @@ export const getModuleOnChain = withAuth(getModuleHandler, {
 // ─── getKernelInfo (read-only) ───
 
 async function getKernelInfoHandler(
-  _data: {},
+  _data: Record<string, never>,
   _auth: AuthContext,
 ): Promise<{
   admin: string;

@@ -1,21 +1,21 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useTranslations } from "next-intl";
 import { driver } from "driver.js";
+import { useTranslations } from "next-intl";
+import { useEffect, useRef } from "react";
 import "driver.js/dist/driver.css";
-import type { UserRole } from "@/types/domain.types";
 import type { Driver } from "driver.js";
+import { markOnboardingComplete } from "@/actions/auth/mark-onboarding-complete";
 import { getTourSteps } from "@/lib/onboarding/tour-config";
 import {
   TOUR_PENDING_EVENT,
   TOUR_PENDING_KEY,
 } from "@/lib/onboarding/tour-events";
-import { markOnboardingComplete } from "@/actions/auth/mark-onboarding-complete";
+import type { UserRole } from "@/types/domain.types";
 
 export function useOnboardingTour(
   role: UserRole | null,
-  userId: string | null
+  userId: string | null,
 ) {
   const t = useTranslations("onboardingTour");
   const hasRunRef = useRef(false);
@@ -35,10 +35,7 @@ export function useOnboardingTour(
 
       const steps = getTourSteps(role, t).filter((s) => {
         if (!s.element) return true;
-        const sel =
-          typeof s.element === "string"
-            ? s.element
-            : "";
+        const sel = typeof s.element === "string" ? s.element : "";
         if (!sel) return true;
         return document.querySelector(sel) !== null;
       });
@@ -47,8 +44,7 @@ export function useOnboardingTour(
 
       hasRunRef.current = true;
 
-      let drv: Driver;
-      drv = driver({
+      const drv: Driver = driver({
         showProgress: true,
         nextBtnText: t("buttons.next"),
         prevBtnText: t("buttons.previous"),

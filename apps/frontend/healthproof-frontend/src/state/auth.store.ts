@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import type { UserProfile } from "@/types/domain.types";
 import type { WalletState } from "@/types/blockchain.types";
+import type { UserProfile } from "@/types/domain.types";
 
 interface AuthState {
   user: UserProfile | null;

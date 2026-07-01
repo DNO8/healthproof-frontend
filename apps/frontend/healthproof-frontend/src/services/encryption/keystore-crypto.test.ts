@@ -1,10 +1,15 @@
 "use client";
 
-import { describe, it, expect } from "vitest";
-import { encryptShare1, decryptShare1, isEncryptedShare1 } from "./keystore-crypto";
+import { describe, expect, it } from "vitest";
+import {
+  decryptShare1,
+  encryptShare1,
+  isEncryptedShare1,
+} from "./keystore-crypto";
 
 const TEST_USER_ID = "did:privy:test-user-123";
-const TEST_SHARE1 = "a1b2c3d4e5f6789012345678abcdef0123456789abcdef0123456789abcdef01";
+const TEST_SHARE1 =
+  "a1b2c3d4e5f6789012345678abcdef0123456789abcdef0123456789abcdef01";
 
 describe("keystore-crypto (IndexedDB share1 encryption)", () => {
   it("encrypts and decrypts share1 roundtrip", async () => {

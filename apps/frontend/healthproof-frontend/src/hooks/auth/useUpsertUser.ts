@@ -1,7 +1,7 @@
 "use client";
 
+import { useLogout, usePrivy, useWallets } from "@privy-io/react-auth";
 import { useEffect, useRef } from "react";
-import { usePrivy, useLogout, useWallets } from "@privy-io/react-auth";
 import { sileo } from "sileo";
 import { upsertUser } from "@/actions/auth/upsert-user";
 import { clearDbUserCache } from "@/hooks/auth/useDbUser";
@@ -96,15 +96,18 @@ export function useUpsertUser() {
           return;
         }
 
-        const isAuthError = result.error?.toLowerCase().includes("authentication") ||
-                            result.error?.toLowerCase().includes("token");
+        const isAuthError =
+          result.error?.toLowerCase().includes("authentication") ||
+          result.error?.toLowerCase().includes("token");
 
         if (isAuthError && attempt < 3) {
-          const delay = 1000 * Math.pow(2, attempt); // 2s, 4s, 8s
-          console.warn(`[useUpsertUser] Auth failed, retrying in ${delay}ms (attempt ${attempt + 1}/3)`);
+          const delay = 1000 * 2 ** attempt; // 2s, 4s, 8s
+          console.warn(
+            `[useUpsertUser] Auth failed, retrying in ${delay}ms (attempt ${attempt + 1}/3)`,
+          );
           await new Promise((r) => setTimeout(r, delay));
           // Refresh token before retry
-          const freshToken = await getAccessToken();
+          const _freshToken = await getAccessToken();
           return tryUpsert(attempt + 1);
         }
 
@@ -119,5 +122,14 @@ export function useUpsertUser() {
         calledRef.current = false;
       }
     })();
-  }, [ready, authenticated, userId, email, fullName, walletAddress, logout]);
+  }, [
+    ready,
+    authenticated,
+    userId,
+    email,
+    fullName,
+    walletAddress,
+    logout,
+    getAccessToken,
+  ]);
 }

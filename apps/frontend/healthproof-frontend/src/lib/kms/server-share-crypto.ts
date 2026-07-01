@@ -9,11 +9,7 @@
  * The server never sees the DEK in plaintext after generation.
  */
 
-import {
-  GenerateDataKeyCommand,
-  DecryptCommand,
-  EncryptCommand,
-} from "@aws-sdk/client-kms";
+import { DecryptCommand, GenerateDataKeyCommand } from "@aws-sdk/client-kms";
 import { kmsClient } from "./client";
 
 function getKmsKeyId(): string {

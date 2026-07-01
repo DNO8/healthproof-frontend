@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  AlertTriangle,
+  CheckCircle,
+  CloudOff,
+  KeyRound,
+  Loader2,
+  RefreshCw,
+  Shield,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Shield, KeyRound, AlertTriangle, RefreshCw, CheckCircle, CloudOff, Loader2 } from "lucide-react";
-import { useKeyConflictStore } from "@/state/key-conflict.store";
-import { hasKeyPair, getLocalShare1 } from "@/services/encryption/keystore";
+import { useEffect, useState } from "react";
 import { getUserWithBackup } from "@/actions/auth/get-user-with-backup";
+import { getLocalShare1, hasKeyPair } from "@/services/encryption/keystore";
+import { useKeyConflictStore } from "@/state/key-conflict.store";
 
 interface SecuritySectionProps {
   userId: string;
@@ -13,12 +21,16 @@ interface SecuritySectionProps {
 
 export function SecuritySection({ userId }: SecuritySectionProps) {
   const t = useTranslations("dashboard.profile.security");
-  const [status, setStatus] = useState<"loading" | "ok" | "missing" | "mismatch">("loading");
+  const [status, setStatus] = useState<
+    "loading" | "ok" | "missing" | "mismatch"
+  >("loading");
   const [hasServerShare, setHasServerShare] = useState(false);
   const [hasBackup, setHasBackup] = useState(false);
   const [hasLocalShare1, setHasLocalShare1] = useState(false);
   const requestRegenerate = useKeyConflictStore((s) => s.requestRegenerate);
-  const setRequestRegenerate = useKeyConflictStore((s) => s.setRequestRegenerate);
+  const setRequestRegenerate = useKeyConflictStore(
+    (s) => s.setRequestRegenerate,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -35,7 +47,8 @@ export function SecuritySection({ userId }: SecuritySectionProps) {
         setHasLocalShare1(!!share1);
         setHasServerShare(!!userBackup?.server_share_ciphertext);
         setHasBackup(
-          !!userBackup?.server_share_ciphertext && !!userBackup?.recovery_code_hash
+          !!userBackup?.server_share_ciphertext &&
+            !!userBackup?.recovery_code_hash,
         );
 
         const conflict = useKeyConflictStore.getState().conflict;
@@ -52,7 +65,9 @@ export function SecuritySection({ userId }: SecuritySectionProps) {
     }
 
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [userId]);
 
   const handleRegenerate = () => {
@@ -97,11 +112,15 @@ export function SecuritySection({ userId }: SecuritySectionProps) {
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-amber-700/80">
               <span className="inline-flex items-center gap-1">
                 <KeyRound className="h-3 w-3" />
-                {hasLocalShare1 ? t("localSharePresent") : t("localShareMissing")}
+                {hasLocalShare1
+                  ? t("localSharePresent")
+                  : t("localShareMissing")}
               </span>
               <span className="inline-flex items-center gap-1">
                 <CloudOff className="h-3 w-3" />
-                {hasServerShare ? t("serverSharePresent") : t("serverShareMissing")}
+                {hasServerShare
+                  ? t("serverSharePresent")
+                  : t("serverShareMissing")}
               </span>
             </div>
           </div>

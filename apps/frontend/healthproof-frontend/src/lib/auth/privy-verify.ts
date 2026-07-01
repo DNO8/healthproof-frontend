@@ -18,7 +18,9 @@ const jwks = JWKS_URI ? createRemoteJWKSet(new URL(JWKS_URI)) : null;
  * @returns The verified JWT payload.
  * @throws Error if token is missing, invalid, or expired.
  */
-export async function verifyPrivyToken(privyToken?: string): Promise<JWTPayload> {
+export async function verifyPrivyToken(
+  privyToken?: string,
+): Promise<JWTPayload> {
   const cookieStore = await cookies();
   const token = privyToken ?? cookieStore.get("privy-token")?.value;
   if (!token) {
@@ -40,7 +42,10 @@ export async function verifyPrivyToken(privyToken?: string): Promise<JWTPayload>
  * Used for HIPAA-compliant access control on sensitive endpoints.
  * @throws Error if the authenticated user does not match the expected identity.
  */
-export async function verifySelf(expectedIdOrWallet: string, privyToken?: string): Promise<void> {
+export async function verifySelf(
+  expectedIdOrWallet: string,
+  privyToken?: string,
+): Promise<void> {
   const payload = await verifyPrivyToken(privyToken);
   const userId = (payload.sub ?? payload.userId) as string | undefined;
   const wallet = (payload.wallet_address as string | undefined)?.toLowerCase();

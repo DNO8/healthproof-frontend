@@ -2,10 +2,10 @@
 // Used when a patient shares access with a doctor
 
 import {
-  unwrapSessionKey,
-  wrapSessionKey,
   importPublicKey,
+  unwrapSessionKey,
   type WrappedKey,
+  wrapSessionKey,
 } from "@/services/encryption/ecdh";
 import { getKeyPair } from "@/services/encryption/keystore";
 
@@ -70,7 +70,7 @@ export async function batchRewrapForGrantee(opts: {
         secret.encrypted_keys[opts.myUserId];
       if (!myWrappedKey) continue;
 
-      let senderPublicKeyJwk = secret.uploader_public_key;
+      const senderPublicKeyJwk = secret.uploader_public_key;
       if (!senderPublicKeyJwk) {
         // Skip documents where we can't determine the sender public key
         // (would need an async lookup; caller should pre-populate)
@@ -89,9 +89,8 @@ export async function batchRewrapForGrantee(opts: {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn(
         `[batchRewrapForGrantee] skipping document ${secret.document_id}:`,
-        msg
+        msg,
       );
-      continue;
     }
   }
 

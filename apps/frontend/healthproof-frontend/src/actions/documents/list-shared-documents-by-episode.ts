@@ -1,9 +1,9 @@
 "use server";
 
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveWalletNames } from "@/lib/supabase/resolve-wallet-names";
-import { withAuth } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
 import type { SharedDocument } from "./list-shared-documents";
 
 interface ListSharedDocsByEpisodeParams {
@@ -21,7 +21,9 @@ async function handler(
   // 1. Get permission_keys for this grantee, joining with document_secrets filtered by episode
   const { data: permRows, error: permError } = await supabase
     .from("permission_keys")
-    .select("document_id, patient_wallet, grantee_wallet, encrypted_key, created_at")
+    .select(
+      "document_id, patient_wallet, grantee_wallet, encrypted_key, created_at",
+    )
     .eq("grantee_wallet", grantee);
 
   if (permError || !permRows || permRows.length === 0) {
@@ -33,7 +35,9 @@ async function handler(
   // 2. Get document_secrets in this episode among the allowed docs
   const { data: secrets, error: secretsError } = await supabase
     .from("document_secrets")
-    .select("document_id, file_name, uploader_wallet, iv, uploader_public_key, created_at")
+    .select(
+      "document_id, file_name, uploader_wallet, iv, uploader_public_key, created_at",
+    )
     .eq("episode_id", ep)
     .in("document_id", allowedDocIds);
 
@@ -81,8 +85,8 @@ async function handler(
     });
 
   // Enrich with names
-  const wallets = documents.flatMap((d) =>
-    [d.patient_wallet, d.uploader_wallet].filter(Boolean) as string[]
+  const wallets = documents.flatMap(
+    (d) => [d.patient_wallet, d.uploader_wallet].filter(Boolean) as string[],
   );
   const nameMap = await resolveWalletNames(wallets);
 

@@ -1,8 +1,8 @@
 import {
   createWalletClient,
   custom,
-  type WalletClient,
   type EIP1193Provider,
+  type WalletClient,
 } from "viem";
 import { HEALTHPROOF_CHAIN } from "@/lib/contracts";
 

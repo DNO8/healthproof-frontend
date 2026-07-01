@@ -1,13 +1,14 @@
 "use server";
 
 import { createPublicClient, http } from "viem";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import IdentityRegistryAbi from "@/lib/abis/IdentityRegistry.json";
 import HealthcareNetworkRegistryAbi from "@/lib/abis/HealthcareNetworkRegistry.json";
+import IdentityRegistryAbi from "@/lib/abis/IdentityRegistry.json";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { CONTRACT_TO_ROLE } from "@/types/domain.types";
 
-const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
+const ZERO_BYTES32 =
+  "0x0000000000000000000000000000000000000000000000000000000000000000";
 const RPC_CONCURRENCY = 4;
 const RPC_DELAY_MS = 80;
 
@@ -54,9 +55,16 @@ async function getLabInfo(
       }),
     ]);
 
-    const [, role, , , verified] = entityResult as [string, number, string, string, boolean];
+    const [, role, , , verified] = entityResult as [
+      string,
+      number,
+      string,
+      string,
+      boolean,
+    ];
     const resolvedRole = CONTRACT_TO_ROLE[role] ?? null;
-    if (resolvedRole !== "lab") return { isLab: false, verified: false, networkId: null };
+    if (resolvedRole !== "lab")
+      return { isLab: false, verified: false, networkId: null };
 
     const instId = institutionIdResult as `0x${string}`;
     let networkId: string | null = null;
@@ -68,7 +76,14 @@ async function getLabInfo(
         functionName: "institutions",
         args: [instId],
       });
-      const [, netId] = instResult as [string, string, string, number, string, boolean];
+      const [, netId] = instResult as [
+        string,
+        string,
+        string,
+        number,
+        string,
+        boolean,
+      ];
       if (netId && netId !== ZERO_BYTES32) {
         networkId = netId;
       }
@@ -80,7 +95,9 @@ async function getLabInfo(
   }
 }
 
-export async function getDoctorNetworkId(doctorWallet: string): Promise<string | null> {
+export async function getDoctorNetworkId(
+  doctorWallet: string,
+): Promise<string | null> {
   const publicClient = getPublicClient();
   try {
     const instId = (await publicClient.readContract({
@@ -98,7 +115,14 @@ export async function getDoctorNetworkId(doctorWallet: string): Promise<string |
       functionName: "institutions",
       args: [instId],
     });
-    const [, netId] = instResult as [string, string, string, number, string, boolean];
+    const [, netId] = instResult as [
+      string,
+      string,
+      string,
+      number,
+      string,
+      boolean,
+    ];
     return netId && netId !== ZERO_BYTES32 ? netId : null;
   } catch {
     return null;

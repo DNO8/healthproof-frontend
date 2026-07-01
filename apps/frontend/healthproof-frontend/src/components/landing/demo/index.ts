@@ -1,10 +1,10 @@
 export { BlockchainConfirmation } from "./BlockchainConfirmation";
-export { EncryptionDemo } from "./EncryptionDemo";
 export { DemoSummary } from "./DemoSummary";
-export { StepIndicator } from "./StepIndicator";
 export { DoctorOrderStep } from "./DoctorOrderStep";
+export { EncryptionDemo } from "./EncryptionDemo";
 export { LabUploadStep } from "./LabUploadStep";
+export * from "./mock-data";
 export { PatientSelectLabStep } from "./PatientSelectLabStep";
 export { PatientShareStep } from "./PatientShareStep";
+export { StepIndicator } from "./StepIndicator";
 export { TimelineStep } from "./TimelineStep";
-export * from "./mock-data";

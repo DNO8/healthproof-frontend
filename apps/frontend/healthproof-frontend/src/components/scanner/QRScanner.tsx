@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useTranslations } from "next-intl";
 import { Html5Qrcode } from "html5-qrcode";
+import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface QRScannerProps {
   onScan: (decodedText: string) => void;
@@ -19,12 +19,21 @@ function getBrowserName(): string {
   return "Browser";
 }
 
-function getPermissionInstructions(t: (key: string, values?: Record<string, string | number>) => string, errorMsg: string): string {
+function getPermissionInstructions(
+  t: (key: string, values?: Record<string, string | number>) => string,
+  errorMsg: string,
+): string {
   const browser = getBrowserName();
-  if (errorMsg.includes("Permission denied") || errorMsg.includes("NotAllowedError")) {
+  if (
+    errorMsg.includes("Permission denied") ||
+    errorMsg.includes("NotAllowedError")
+  ) {
     return t("permissionDenied", { browser });
   }
-  if (errorMsg.includes("NotFoundError") || errorMsg.includes("no cameras found")) {
+  if (
+    errorMsg.includes("NotFoundError") ||
+    errorMsg.includes("no cameras found")
+  ) {
     return t("noCamera");
   }
   if (errorMsg.includes("NotReadableError") || errorMsg.includes("in use")) {
@@ -41,7 +50,9 @@ export function QRScanner({ onScan, onError, className = "" }: QRScannerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const onScanRef = useRef(onScan);
   const onErrorRef = useRef(onError);
-  const [status, setStatus] = useState<"idle" | "starting" | "scanning" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "starting" | "scanning" | "error"
+  >("idle");
   const [error, setError] = useState<string | null>(null);
   const [isInsecure, setIsInsecure] = useState(false);
 
@@ -87,7 +98,7 @@ export function QRScanner({ onScan, onError, className = "" }: QRScannerProps) {
           setStatus("scanning");
           onScanRef.current(decodedText);
         },
-        () => {}
+        () => {},
       )
       .then(() => {
         setStatus("scanning");
@@ -134,7 +145,8 @@ export function QRScanner({ onScan, onError, className = "" }: QRScannerProps) {
       {error && (
         <div className="mt-3 space-y-3 rounded-xl bg-red-50 p-3">
           <p className="text-sm text-red-700">
-            <span className="font-semibold">{t("scannerErrorLabel")}</span> {error}
+            <span className="font-semibold">{t("scannerErrorLabel")}</span>{" "}
+            {error}
           </p>
           {!isInsecure && (
             <p className="text-xs text-red-600">

@@ -1,11 +1,11 @@
 "use server";
 
+import { type AuthContext, withAuth } from "@/lib/auth/with-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { withAuth, type AuthContext } from "@/lib/auth/with-auth";
 
 async function verifyRecoveryCodeHandler(
   data: { userId: string; recoveryCodeHash: string },
-  auth: AuthContext
+  auth: AuthContext,
 ) {
   if (auth.userId !== data.userId) {
     throw new Error("Unauthorized: userId mismatch");

@@ -1,8 +1,8 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { withAuth } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface PatientDocument {
   document_id: string;

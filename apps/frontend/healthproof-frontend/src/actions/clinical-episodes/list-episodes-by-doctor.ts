@@ -1,12 +1,12 @@
 "use server";
 
-import { createPublicClient, http, fromHex } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { createPublicClient, fromHex, http } from "viem";
 import ClinicalEpisodeRegistryAbi from "@/lib/abis/ClinicalEpisodeRegistry.json";
-import { withAuth } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
-import { resolveWalletNames } from "@/lib/supabase/resolve-wallet-names";
+import { withAuth } from "@/lib/auth/with-auth";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import type { OnChainEpisode } from "@/lib/medical-constants";
+import { resolveWalletNames } from "@/lib/supabase/resolve-wallet-names";
 
 interface ListEpisodesParams {
   doctorWallet: string;
@@ -16,10 +16,13 @@ interface ListEpisodesParams {
 
 async function handler(
   data: ListEpisodesParams,
-  _auth: AuthContext
+  _auth: AuthContext,
 ): Promise<{ episodes: OnChainEpisode[]; total: number }> {
   console.log("[listEpisodesByDoctor] Input:", data);
-  console.log("[listEpisodesByDoctor] ClinicalEpisodeRegistry address:", CONTRACT_ADDRESSES.ClinicalEpisodeRegistry);
+  console.log(
+    "[listEpisodesByDoctor] ClinicalEpisodeRegistry address:",
+    CONTRACT_ADDRESSES.ClinicalEpisodeRegistry,
+  );
 
   const publicClient = createPublicClient({
     chain: HEALTHPROOF_CHAIN,
@@ -41,9 +44,15 @@ async function handler(
       ],
     });
     [episodeIds, total] = result as [string[], bigint];
-    console.log("[listEpisodesByDoctor] Raw result:", { episodeIds, total: total.toString() });
+    console.log("[listEpisodesByDoctor] Raw result:", {
+      episodeIds,
+      total: total.toString(),
+    });
   } catch (err) {
-    console.error("[listEpisodesByDoctor] readContract getEpisodesByDoctor FAILED:", err);
+    console.error(
+      "[listEpisodesByDoctor] readContract getEpisodesByDoctor FAILED:",
+      err,
+    );
     throw err;
   }
 
@@ -67,7 +76,10 @@ async function handler(
         openedAt: bigint;
         active: boolean;
       };
-      console.log("[listEpisodesByDoctor] Episode detail:", { episodeId, openedAt: ep.openedAt.toString() });
+      console.log("[listEpisodesByDoctor] Episode detail:", {
+        episodeId,
+        openedAt: ep.openedAt.toString(),
+      });
       if (Number(ep.openedAt) !== 0) {
         episodes.push({
           episodeId,
@@ -75,30 +87,46 @@ async function handler(
           openedBy: ep.openedBy,
           institution: ep.institution,
           episodeType: fromHex(ep.episodeType, "string").replace(/\0+$/, ""),
-          classification: fromHex(ep.classification, "string").replace(/\0+$/, ""),
+          classification: fromHex(ep.classification, "string").replace(
+            /\0+$/,
+            "",
+          ),
           openedAt: Number(ep.openedAt),
           active: ep.active,
         });
       }
     } catch (epErr) {
-      console.error("[listEpisodesByDoctor] Error fetching episode", episodeId, epErr);
+      console.error(
+        "[listEpisodesByDoctor] Error fetching episode",
+        episodeId,
+        epErr,
+      );
     }
   }
 
   // Enrich with names from Supabase
-  const allWallets = episodes.flatMap((ep) => [ep.patient, ep.openedBy, ep.institution]);
+  const allWallets = episodes.flatMap((ep) => [
+    ep.patient,
+    ep.openedBy,
+    ep.institution,
+  ]);
   const nameMap = await resolveWalletNames(allWallets);
 
   const enriched = episodes.map((ep) => ({
     ...ep,
     patientName: nameMap.get(ep.patient.toLowerCase()) ?? null,
     openedByName: nameMap.get(ep.openedBy.toLowerCase()) ?? null,
-    institutionName: ep.institution && ep.institution !== "0x0000000000000000000000000000000000000000"
-      ? (nameMap.get(ep.institution.toLowerCase()) ?? null)
-      : null,
+    institutionName:
+      ep.institution &&
+      ep.institution !== "0x0000000000000000000000000000000000000000"
+        ? (nameMap.get(ep.institution.toLowerCase()) ?? null)
+        : null,
   }));
 
-  console.log("[listEpisodesByDoctor] Returning:", { count: enriched.length, total: Number(total) });
+  console.log("[listEpisodesByDoctor] Returning:", {
+    count: enriched.length,
+    total: Number(total),
+  });
   return { episodes: enriched, total: Number(total) };
 }
 

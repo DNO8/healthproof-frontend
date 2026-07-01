@@ -1,11 +1,11 @@
 "use client";
 
-import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { sileo } from "sileo";
-import { useTranslations } from "next-intl";
 import { updateProfile } from "@/actions/auth/update-profile";
 import { clearDbUserCache } from "@/hooks/auth/useDbUser";
+import { Link } from "@/i18n/navigation";
 
 type ProfileFormProps = {
   userId: string;

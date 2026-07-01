@@ -1,2 +1,2 @@
 export { buildPermissionPayload, encodeQRData } from "./generate-qr";
-export { parseQRData, isExpired, verifyPermission } from "./verify-qr";
+export { isExpired, parseQRData, verifyPermission } from "./verify-qr";

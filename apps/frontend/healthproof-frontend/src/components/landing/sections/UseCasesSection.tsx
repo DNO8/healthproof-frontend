@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useLayoutEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useTranslations } from "next-intl";
-import { FileSliderDrawer } from "@/components/cards/file-slider";
+import { useLayoutEffect, useRef } from "react";
 import type { FileSliderItem } from "@/components/cards/file-slider";
+import { FileSliderDrawer } from "@/components/cards/file-slider";
 import { ScrollReveal, SectionTitle } from "@/components/ui";
 
 gsap.registerPlugin(ScrollTrigger);

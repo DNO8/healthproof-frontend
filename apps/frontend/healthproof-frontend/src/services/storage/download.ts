@@ -1,12 +1,12 @@
 // Client-side download and decryption from IPFS using ECDH-wrapped keys
 
 import { decryptData } from "@/services/encryption/decrypt";
-import { decodeIv } from "@/services/encryption/key-management";
 import {
-  unwrapSessionKey,
   importPublicKey,
+  unwrapSessionKey,
   type WrappedKey,
 } from "@/services/encryption/ecdh";
+import { decodeIv } from "@/services/encryption/key-management";
 import { getKeyPair } from "@/services/encryption/keystore";
 
 const PINATA_GATEWAY =
@@ -21,7 +21,10 @@ const FALLBACK_GATEWAYS = [
   "https://cloudflare-ipfs.com",
 ];
 
-async function fetchFromGateway(cid: string, timeoutMs = 15000): Promise<ArrayBuffer> {
+async function fetchFromGateway(
+  cid: string,
+  timeoutMs = 15000,
+): Promise<ArrayBuffer> {
   const errors: string[] = [];
 
   for (const gateway of FALLBACK_GATEWAYS) {
@@ -43,7 +46,7 @@ async function fetchFromGateway(cid: string, timeoutMs = 15000): Promise<ArrayBu
   }
 
   throw new Error(
-    `Failed to fetch from IPFS after ${FALLBACK_GATEWAYS.length} gateways. Errors: ${errors.join("; ")}`
+    `Failed to fetch from IPFS after ${FALLBACK_GATEWAYS.length} gateways. Errors: ${errors.join("; ")}`,
   );
 }
 
@@ -64,7 +67,12 @@ export async function downloadAndDecrypt(opts: {
 
   // 1. Get my private key from IndexedDB
   const myKeys = await getKeyPair(opts.myUserId);
-  console.log("[downloadAndDecrypt] myKeys found:", !!myKeys, "privateKey:", !!myKeys?.privateKey);
+  console.log(
+    "[downloadAndDecrypt] myKeys found:",
+    !!myKeys,
+    "privateKey:",
+    !!myKeys?.privateKey,
+  );
   if (!myKeys?.privateKey) {
     throw new Error("Encryption keys not found in this browser.");
   }
@@ -85,14 +93,20 @@ export async function downloadAndDecrypt(opts: {
   // 4. Download encrypted blob from IPFS
   console.log("[downloadAndDecrypt] fetching from IPFS...");
   const encryptedBlob = await fetchFromGateway(opts.cid);
-  console.log("[downloadAndDecrypt] fetched encrypted blob, size:", encryptedBlob.byteLength);
+  console.log(
+    "[downloadAndDecrypt] fetched encrypted blob, size:",
+    encryptedBlob.byteLength,
+  );
 
   // 5. Decrypt with AES-GCM
   const iv = decodeIv(opts.iv);
   console.log("[downloadAndDecrypt] decoded IV, length:", iv.length);
   console.log("[downloadAndDecrypt] decrypting file data...");
   const decrypted = await decryptData(encryptedBlob, sessionKey, iv);
-  console.log("[downloadAndDecrypt] file decrypted, size:", decrypted.byteLength);
+  console.log(
+    "[downloadAndDecrypt] file decrypted, size:",
+    decrypted.byteLength,
+  );
 
   // 6. Create Blob and object URL
   const blob = new Blob([decrypted]);

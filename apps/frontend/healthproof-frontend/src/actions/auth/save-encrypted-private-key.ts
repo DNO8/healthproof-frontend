@@ -1,7 +1,7 @@
 "use server";
 
+import { type AuthContext, withAuth } from "@/lib/auth/with-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { withAuth, type AuthContext } from "@/lib/auth/with-auth";
 
 async function saveEncryptedPrivateKeyHandler(
   data: { id: string; encrypted_private_key: string },
@@ -29,6 +29,9 @@ async function saveEncryptedPrivateKeyHandler(
   return { success: true };
 }
 
-export const saveEncryptedPrivateKey = withAuth(saveEncryptedPrivateKeyHandler, {
-  rateLimit: { windowMs: 60000, maxRequests: 15 },
-});
+export const saveEncryptedPrivateKey = withAuth(
+  saveEncryptedPrivateKeyHandler,
+  {
+    rateLimit: { windowMs: 60000, maxRequests: 15 },
+  },
+);

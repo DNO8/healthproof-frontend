@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-  listUsersByOnChainRole,
   type FilteredUserOption,
+  listUsersByOnChainRole,
 } from "@/actions/healthcare-networks/list-users-by-onchain-role";
 import type { UserRole } from "@/types/domain.types";
 
@@ -36,7 +36,7 @@ export function UserSelect({
     listUsersByOnChainRole(roleFilter, excludeWallet)
       .then(setUsers)
       .finally(() => setLoading(false));
-  }, [JSON.stringify(roleFilter), excludeWallet]);
+  }, [excludeWallet, roleFilter]);
 
   function formatLabel(u: FilteredUserOption) {
     const name = u.full_name || u.email || "Unknown";
@@ -59,9 +59,7 @@ export function UserSelect({
         onChange={(e) => onChange(e.target.value)}
         disabled={loading}
       >
-        <option value="">
-          {loading ? "Loading…" : placeholder}
-        </option>
+        <option value="">{loading ? "Loading…" : placeholder}</option>
         {users.map((u) => (
           <option key={u.wallet_address} value={u.wallet_address}>
             {formatLabel(u)}

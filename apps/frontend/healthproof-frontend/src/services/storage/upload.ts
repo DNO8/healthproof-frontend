@@ -1,18 +1,19 @@
-import { encryptFile, hashFile, hashData } from "@/services/encryption/encrypt";
 import {
-  generateEncryptionKey,
-  encodeIv,
-} from "@/services/encryption/key-management";
-import {
-  uploadToIpfsAction,
   type IpfsUploadResult,
+  uploadToIpfsAction,
 } from "@/actions/documents/upload-to-ipfs";
+import { isPdfFile } from "@/lib/validate-file";
 import {
-  wrapSessionKey,
+  exportPublicKey,
   importPublicKey,
   type WrappedKey,
+  wrapSessionKey,
 } from "@/services/encryption/ecdh";
-import { isPdfFile } from "@/lib/validate-file";
+import { encryptFile, hashData, hashFile } from "@/services/encryption/encrypt";
+import {
+  encodeIv,
+  generateEncryptionKey,
+} from "@/services/encryption/key-management";
 
 export interface UploadResult {
   fileHash: string;
@@ -22,11 +23,45 @@ export interface UploadResult {
 
 export interface HybridUploadResult extends UploadResult {
   encryptedKeys: Record<string, WrappedKey>;
+  uploaderPublicKey: string;
 }
 
-export interface Recipient {
-  userId: string;
+export interface HybridRecipient {
+  wallet: string;
   publicKeyJwk: string;
+}
+
+const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
+
+function isValidEvmAddress(value: string): boolean {
+  return typeof value === "string" && EVM_ADDRESS_RE.test(value);
+}
+
+function isValidEcdhP256Jwk(
+  jwk: unknown,
+): jwk is { kty: "EC"; crv: "P-256"; x: string; y: string } {
+  if (typeof jwk !== "object" || jwk === null) return false;
+  const k = jwk as Record<string, unknown>;
+  return (
+    k.kty === "EC" &&
+    k.crv === "P-256" &&
+    typeof k.x === "string" &&
+    k.x.length > 0 &&
+    typeof k.y === "string" &&
+    k.y.length > 0
+  );
+}
+
+function validateRecipients(recipients: HybridRecipient[]): void {
+  if (!Array.isArray(recipients) || recipients.length === 0) {
+    throw new Error("AtLeastOneRecipientRequired");
+  }
+  for (const r of recipients) {
+    if (!r || typeof r !== "object") throw new Error("InvalidRecipient");
+    if (!isValidEvmAddress(r.wallet)) throw new Error("InvalidRecipient");
+    if (!isValidEcdhP256Jwk(JSON.parse(r.publicKeyJwk)))
+      throw new Error("InvalidRecipient");
+  }
 }
 
 async function sendToIpfs(
@@ -63,11 +98,17 @@ export async function uploadEncryptedFile(
 export async function uploadHybridEncryptedFile(
   file: File,
   myPrivateKey: CryptoKey,
-  recipients: Recipient[],
+  myPublicKey: CryptoKey,
+  recipients: HybridRecipient[],
 ): Promise<HybridUploadResult> {
   if (!isPdfFile(file)) {
     throw new Error("Only PDF files are allowed.");
   }
+  if (file.size === 0) {
+    throw new Error("InvalidPayload");
+  }
+  validateRecipients(recipients);
+
   // 1. Generate random AES-256 session key
   const sessionKey = await generateEncryptionKey();
 
@@ -78,22 +119,81 @@ export async function uploadHybridEncryptedFile(
   // 3. Upload encrypted blob to IPFS
   const ipfs = await sendToIpfs(encrypted, `${fileHash}-${file.name}.enc`);
 
-  // 4. Wrap session key for each recipient
+  // 4. Wrap session key for each recipient (normalized lowercase wallet)
   const encryptedKeys: Record<string, WrappedKey> = {};
   for (const r of recipients) {
     const recipientPubKey = await importPublicKey(r.publicKeyJwk);
-    encryptedKeys[r.userId] = await wrapSessionKey(
+    encryptedKeys[r.wallet.toLowerCase()] = await wrapSessionKey(
       sessionKey,
       myPrivateKey,
       recipientPubKey,
     );
   }
 
+  const uploaderPublicKey = await exportPublicKey(myPublicKey);
+
   return {
     fileHash,
     ipfs,
     iv: encodeIv(iv),
     encryptedKeys,
+    uploaderPublicKey,
+  };
+}
+
+export async function uploadHybridEncryptedJson(
+  data: object,
+  fileName: string,
+  myPrivateKey: CryptoKey,
+  myPublicKey: CryptoKey,
+  recipients: HybridRecipient[],
+): Promise<HybridUploadResult> {
+  if (
+    !data ||
+    typeof data !== "object" ||
+    Object.keys(data).length === 0 ||
+    (Array.isArray(data) && data.length === 0)
+  ) {
+    throw new Error("InvalidPayload");
+  }
+  validateRecipients(recipients);
+
+  const jsonString = JSON.stringify(data);
+  const encoder = new TextEncoder();
+  const buffer = encoder.encode(jsonString).buffer as ArrayBuffer;
+
+  // 1. Generate random AES-256 session key
+  const sessionKey = await generateEncryptionKey();
+
+  // 2. Encrypt JSON with AES-GCM
+  const fileHash = await hashData(buffer);
+  const { encrypted, iv } = await encryptFile(
+    new File([buffer], `${fileName}.json`),
+    sessionKey,
+  );
+
+  // 3. Upload encrypted blob to IPFS
+  const ipfs = await sendToIpfs(encrypted, `${fileHash}-${fileName}.enc`);
+
+  // 4. Wrap session key for each recipient (normalized lowercase wallet)
+  const encryptedKeys: Record<string, WrappedKey> = {};
+  for (const r of recipients) {
+    const recipientPubKey = await importPublicKey(r.publicKeyJwk);
+    encryptedKeys[r.wallet.toLowerCase()] = await wrapSessionKey(
+      sessionKey,
+      myPrivateKey,
+      recipientPubKey,
+    );
+  }
+
+  const uploaderPublicKey = await exportPublicKey(myPublicKey);
+
+  return {
+    fileHash,
+    ipfs,
+    iv: encodeIv(iv),
+    encryptedKeys,
+    uploaderPublicKey,
   };
 }
 

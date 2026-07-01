@@ -1,9 +1,13 @@
 import { createPublicClient, http } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import GuardianRegistryArtifact from "@/lib/abis/GuardianRegistry.json";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+
 const GuardianRegistryAbi = GuardianRegistryArtifact.abi;
+
 import PermissionManagerArtifact from "@/lib/abis/PermissionManager.json";
+
 const PermissionManagerAbi = PermissionManagerArtifact.abi;
+
 import IdentityRegistryAbi from "@/lib/abis/IdentityRegistry.json";
 
 const publicClient = createPublicClient({
@@ -16,7 +20,7 @@ const publicClient = createPublicClient({
  */
 export async function isGuardian(
   patientWallet: string,
-  callerWallet: string
+  callerWallet: string,
 ): Promise<boolean> {
   try {
     const result = await publicClient.readContract({
@@ -53,7 +57,7 @@ export async function isVerifiedDoctor(address: string): Promise<boolean> {
     ]);
 
     // Role 1 = DOCTOR (from IdentityRegistry.Role enum)
-    return isVerified as boolean && (role as number) === 1;
+    return (isVerified as boolean) && (role as number) === 1;
   } catch (error) {
     console.error("[isVerifiedDoctor] Error checking doctor status:", error);
     return false;
@@ -81,7 +85,7 @@ export async function isVerifiedLab(address: string): Promise<boolean> {
     ]);
 
     // Role 2 = LAB (from IdentityRegistry.Role enum)
-    return isVerified as boolean && (role as number) === 2;
+    return (isVerified as boolean) && (role as number) === 2;
   } catch (error) {
     console.error("[isVerifiedLab] Error checking lab status:", error);
     return false;
@@ -113,7 +117,7 @@ export async function isVerifiedAdmin(address: string): Promise<boolean> {
     ]);
 
     // Role 5 = ADMIN (from IdentityRegistry.Role enum)
-    return isVerified as boolean && (role as number) === 5;
+    return (isVerified as boolean) && (role as number) === 5;
   } catch (error) {
     console.error("[isVerifiedAdmin] Error checking admin status:", error);
     return false;
@@ -126,13 +130,14 @@ export async function isVerifiedAdmin(address: string): Promise<boolean> {
 export async function hasPermission(
   patientWallet: string,
   granteeWallet: string,
-  documentId: string
+  documentId: string,
 ): Promise<boolean> {
   try {
     // Hash documentId if it's a CID (not bytes32)
-    const resourceId = documentId.startsWith("0x") && documentId.length === 66
-      ? documentId
-      : documentId; // In real implementation, hash if needed
+    const resourceId =
+      documentId.startsWith("0x") && documentId.length === 66
+        ? documentId
+        : documentId; // In real implementation, hash if needed
 
     const result = await publicClient.readContract({
       address: CONTRACT_ADDRESSES.PermissionManager as `0x${string}`,
@@ -159,7 +164,7 @@ export async function hasPermission(
  */
 export async function validatePatientAccess(
   patientWallet: string,
-  callerWallet: string
+  callerWallet: string,
 ): Promise<boolean> {
   const normalizedPatient = patientWallet.toLowerCase();
   const normalizedCaller = callerWallet.toLowerCase();

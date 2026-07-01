@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
+import { ACTION_ICONS } from "@/lib/icons";
 import type { UserRole } from "@/types/domain.types";
 import { AdminPanel } from "./AdminPanel";
 import { EmergencyAccessModal } from "./EmergencyAccessModal";
-import { ACTION_ICONS } from "@/lib/icons";
 
 type ActionDef = {
   id: string;
@@ -19,20 +19,69 @@ type ActionDef = {
 
 const ROLE_ACTIONS: Partial<Record<UserRole, ActionDef[]>> = {
   patient: [
-    { id: "share-results", titleKey: "shareResults", descKey: "shareResultsDesc", iconKey: "share-results", disabled: false },
-    { id: "my-orders", titleKey: "myOrders", descKey: "myOrdersDesc", iconKey: "my-orders", disabled: false },
+    {
+      id: "share-results",
+      titleKey: "shareResults",
+      descKey: "shareResultsDesc",
+      iconKey: "share-results",
+      disabled: false,
+    },
+    {
+      id: "my-orders",
+      titleKey: "myOrders",
+      descKey: "myOrdersDesc",
+      iconKey: "my-orders",
+      disabled: false,
+    },
   ],
   lab: [
-    { id: "scan-qr", titleKey: "scanQr", descKey: "scanQrDescLab", iconKey: "scan-qr", disabled: false },
+    {
+      id: "scan-qr",
+      titleKey: "scanQr",
+      descKey: "scanQrDescLab",
+      iconKey: "scan-qr",
+      disabled: false,
+    },
   ],
   doctor: [
-    { id: "scan-qr", titleKey: "scanQr", descKey: "scanQrDescMc", iconKey: "scan-qr", disabled: false },
-    { id: "emergency-access", titleKey: "emergencyAccess", descKey: "emergencyAccessDesc", iconKey: "emergency-access", disabled: false, tagKey: "breakGlassTag" },
+    {
+      id: "scan-qr",
+      titleKey: "scanQr",
+      descKey: "scanQrDescMc",
+      iconKey: "scan-qr",
+      disabled: false,
+    },
+    {
+      id: "emergency-access",
+      titleKey: "emergencyAccess",
+      descKey: "emergencyAccessDesc",
+      iconKey: "emergency-access",
+      disabled: false,
+      tagKey: "breakGlassTag",
+    },
   ],
   admin: [
-    { id: "admin-panel", titleKey: "adminPanel", descKey: "adminPanelDesc", iconKey: "admin-panel", disabled: false },
-    { id: "create-order", titleKey: "createOrder", descKey: "createOrderDesc", iconKey: "create-order", disabled: false },
-    { id: "scan-qr", titleKey: "scanQr", descKey: "scanQrDescMc", iconKey: "scan-qr", disabled: false },
+    {
+      id: "admin-panel",
+      titleKey: "adminPanel",
+      descKey: "adminPanelDesc",
+      iconKey: "admin-panel",
+      disabled: false,
+    },
+    {
+      id: "create-order",
+      titleKey: "createOrder",
+      descKey: "createOrderDesc",
+      iconKey: "create-order",
+      disabled: false,
+    },
+    {
+      id: "scan-qr",
+      titleKey: "scanQr",
+      descKey: "scanQrDescMc",
+      iconKey: "scan-qr",
+      disabled: false,
+    },
   ],
 };
 
@@ -50,11 +99,7 @@ const NAVIGATION_MAP: Record<string, string> = {
   "results-history": "/dashboard/documents",
 };
 
-export function DashboardActions({
-  role,
-}: {
-  role: UserRole;
-}) {
+export function DashboardActions({ role }: { role: UserRole }) {
   const t = useTranslations("dashboard.actions");
   const router = useRouter();
   const actions = ROLE_ACTIONS[role] ?? [];
@@ -111,9 +156,7 @@ export function DashboardActions({
         </div>
       </div>
 
-      {isAdminOpen && (
-        <AdminPanel onClose={() => setIsAdminOpen(false)} />
-      )}
+      {isAdminOpen && <AdminPanel onClose={() => setIsAdminOpen(false)} />}
 
       {isEmergencyOpen && (
         <EmergencyAccessModal onClose={() => setIsEmergencyOpen(false)} />

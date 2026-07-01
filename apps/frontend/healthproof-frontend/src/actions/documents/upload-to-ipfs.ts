@@ -47,7 +47,9 @@ export async function uploadToIpfsAction(
     }
 
     if (file.size > SERVER_MAX_FILE_SIZE) {
-      throw new Error(`[uploadToIpfsAction] File too large. Max ${SERVER_MAX_FILE_SIZE / 1024 / 1024} MB allowed.`);
+      throw new Error(
+        `[uploadToIpfsAction] File too large. Max ${SERVER_MAX_FILE_SIZE / 1024 / 1024} MB allowed.`,
+      );
     }
 
     const result = await pinata.upload.public.file(file);

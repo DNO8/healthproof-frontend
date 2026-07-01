@@ -1,18 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
-import { sileo } from "sileo";
 import { usePrivy } from "@privy-io/react-auth";
-import { Modal } from "@/components/ui/Modal";
-import { useKeyConflictStore } from "@/state/key-conflict.store";
+import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
+import { sileo } from "sileo";
 import { getUserWithBackup } from "@/actions/auth/get-user-with-backup";
+import { Modal } from "@/components/ui/Modal";
+import { importPrivateKey } from "@/services/encryption/ecdh";
 import {
-  decryptPrivateKey,
   createRecoveryPassword,
+  decryptPrivateKey,
 } from "@/services/encryption/key-backup";
 import { saveKeyPair } from "@/services/encryption/keystore";
-import { importPrivateKey } from "@/services/encryption/ecdh";
+import { useKeyConflictStore } from "@/state/key-conflict.store";
 
 interface KeyRecoveryModalProps {
   isOpen: boolean;
@@ -67,6 +67,7 @@ export function KeyRecoveryModal({
 
     try {
       const token = (await getAccessToken().catch(() => null)) ?? undefined;
+      // biome-ignore lint/style/noNonNullAssertion: guarded above by !userId return
       const userWithBackup = await getUserWithBackup(userId!, token);
 
       if (!userWithBackup?.encrypted_private_key) {
@@ -110,6 +111,7 @@ export function KeyRecoveryModal({
         [],
       );
 
+      // biome-ignore lint/style/noNonNullAssertion: guarded above by !userId return
       await saveKeyPair(userId!, { privateKey, publicKey });
 
       // Success
@@ -141,7 +143,10 @@ export function KeyRecoveryModal({
         </div>
 
         <div className="mt-4">
-          <label htmlFor="recovery-password" className="mb-1.5 block text-xs font-medium text-slate-700">
+          <label
+            htmlFor="recovery-password"
+            className="mb-1.5 block text-xs font-medium text-slate-700"
+          >
             {t("passwordLabel")}
           </label>
           <input

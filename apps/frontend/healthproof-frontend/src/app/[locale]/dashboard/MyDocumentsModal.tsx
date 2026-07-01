@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { sileo } from "sileo";
-import { useTranslations } from "next-intl";
 import { usePrivy } from "@privy-io/react-auth";
+import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useState } from "react";
+import { sileo } from "sileo";
+import type { DocumentSecretRow } from "@/actions/documents/get-document-secret";
 import { listDocumentSecretsForWallet } from "@/actions/documents/get-document-secret";
+import {
+  FilePreview,
+  getExtensionFromMime,
+} from "@/components/documents/FilePreview";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { useDocumentDecrypt } from "@/hooks/documents/useDocumentDecrypt";
-import { FilePreview, getExtensionFromMime } from "@/components/documents/FilePreview";
-import type { DocumentSecretRow } from "@/actions/documents/get-document-secret";
-import { X } from "lucide-react";
 
 type MyDocumentsModalProps = {
   onClose: () => void;
@@ -28,11 +31,19 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
 
   const [docs, setDocs] = useState<DocumentSecretRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDoc, setSelectedDoc] = useState<DocumentSecretRow | null>(null);
+  const [selectedDoc, setSelectedDoc] = useState<DocumentSecretRow | null>(
+    null,
+  );
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [viewError, setViewError] = useState<string | null>(null);
 
-  const { decrypt, decryptedFile, loading: decryptLoading, error: decryptError, clear } = useDocumentDecrypt();
+  const {
+    decrypt,
+    decryptedFile,
+    loading: decryptLoading,
+    error: decryptError,
+    clear,
+  } = useDocumentDecrypt();
 
   const fetchDocs = useCallback(async () => {
     if (!walletAddress) return;
@@ -41,7 +52,10 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
       const rows = await listDocumentSecretsForWallet(walletAddress);
       setDocs(rows);
     } catch (e) {
-      sileo.error({ title: t("loadError"), description: String(e).slice(0, 120) });
+      sileo.error({
+        title: t("loadError"),
+        description: String(e).slice(0, 120),
+      });
     } finally {
       setLoading(false);
     }
@@ -51,7 +65,7 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
     fetchDocs();
   }, [fetchDocs]);
 
-  function handleSelect(doc: DocumentSecretRow) {
+  function _handleSelect(doc: DocumentSecretRow) {
     if (selectedDoc?.id === doc.id) {
       setSelectedDoc(null);
       setViewError(null);
@@ -83,7 +97,10 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
         a.click();
       }
     } catch (e) {
-      sileo.error({ title: t("downloadError"), description: String(e).slice(0, 120) });
+      sileo.error({
+        title: t("downloadError"),
+        description: String(e).slice(0, 120),
+      });
     } finally {
       setDownloadingId(null);
     }
@@ -91,7 +108,8 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
 
   async function performDecrypt(doc: DocumentSecretRow, silent = false) {
     if (!walletAddress || !userId) {
-      if (!silent) setViewError(t("missingWallet") ?? "Wallet or user not available.");
+      if (!silent)
+        setViewError(t("missingWallet") ?? "Wallet or user not available.");
       return null;
     }
     const wrappedKey =
@@ -99,7 +117,10 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
       doc.encrypted_keys[userId];
     if (!wrappedKey) {
       if (!silent) {
-        setViewError(t("noKeyDesc") ?? "You don't have a decryption key for this document.");
+        setViewError(
+          t("noKeyDesc") ??
+            "You don't have a decryption key for this document.",
+        );
         sileo.error({ title: t("noKey"), description: t("noKeyDesc") });
       }
       return null;
@@ -137,9 +158,13 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
         </div>
 
         {loading ? (
-          <p className="py-8 text-center text-sm text-slate-400">{t("loading")}</p>
+          <p className="py-8 text-center text-sm text-slate-400">
+            {t("loading")}
+          </p>
         ) : docs.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-400">{t("empty")}</p>
+          <p className="py-8 text-center text-sm text-slate-400">
+            {t("empty")}
+          </p>
         ) : (
           <div className="space-y-3">
             {docs.map((doc) => {
@@ -149,7 +174,9 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
                 <div
                   key={doc.id}
                   className={`rounded-xl p-4 space-y-2 transition-all ${
-                    isSelected ? "neu-pressed border-l-4 border-l-sky-500" : "neu-surface"
+                    isSelected
+                      ? "neu-pressed border-l-4 border-l-sky-500"
+                      : "neu-surface"
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -160,7 +187,9 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
                       <p className="text-[10px] font-mono text-slate-400">
                         {formatAddress(doc.document_id)}
                       </p>
-                      <p className="text-[10px] text-slate-400">{new Date(doc.created_at).toLocaleDateString()}</p>
+                      <p className="text-[10px] text-slate-400">
+                        {new Date(doc.created_at).toLocaleDateString()}
+                      </p>
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -177,13 +206,20 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
                         onClick={() => handleDownload(doc)}
                         type="button"
                       >
-                        {downloadingId === doc.id ? t("decrypting") : t("download")}
+                        {downloadingId === doc.id
+                          ? t("decrypting")
+                          : t("download")}
                       </button>
                     </div>
                   </div>
                   <div className="text-xs text-slate-500 space-y-0.5">
-                    <p className="font-mono text-[11px]">{formatAddress(doc.document_id)}</p>
-                    <p>{t("uploadedBy")}: {doc.uploader_name || formatAddress(doc.uploader_wallet)}</p>
+                    <p className="font-mono text-[11px]">
+                      {formatAddress(doc.document_id)}
+                    </p>
+                    <p>
+                      {t("uploadedBy")}:{" "}
+                      {doc.uploader_name || formatAddress(doc.uploader_wallet)}
+                    </p>
                   </div>
 
                   {/* Inline preview */}
@@ -194,10 +230,22 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
                   )}
                   {isSelected && (viewError || decryptError) && (
                     <div className="mt-2 flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 border border-red-100">
-                      <svg className="h-4 w-4 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                      <svg
+                        className="h-4 w-4 shrink-0 text-red-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                        />
                       </svg>
-                      <p className="text-xs text-red-600">{viewError || decryptError}</p>
+                      <p className="text-xs text-red-600">
+                        {viewError || decryptError}
+                      </p>
                     </div>
                   )}
                 </div>

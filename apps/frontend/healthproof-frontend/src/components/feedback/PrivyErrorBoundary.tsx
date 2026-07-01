@@ -1,7 +1,7 @@
 "use client";
 
-import { Component, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
+import { Component, type ReactNode } from "react";
 
 interface ErrorBoundaryMessages {
   privyTitle: string;
@@ -49,15 +49,20 @@ class PrivyErrorBoundaryClass extends Component<Props, State> {
       const isPrivyOriginError =
         this.state.error?.message?.includes("Origin not allowed") ?? false;
       const m = this.props.messages;
-      const origin = typeof window !== "undefined" ? window.location.origin : "localhost";
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "localhost";
 
       if (isPrivyOriginError) {
         return (
           <div className="mx-auto max-w-md px-4 py-12 text-center">
-            <h1 className="mb-4 text-xl font-bold text-slate-800">{m.privyTitle}</h1>
+            <h1 className="mb-4 text-xl font-bold text-slate-800">
+              {m.privyTitle}
+            </h1>
             <p className="mb-6 text-sm text-slate-600">
               {m.privyDesc.split("{{origin}}")[0]}
-              <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-xs">{origin}</code>
+              <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-xs">
+                {origin}
+              </code>
               {m.privyDesc.split("{{origin}}")[1] ?? ""}
             </p>
             <div className="rounded-xl bg-sky-50 p-4 text-left text-xs text-sky-800">
@@ -76,7 +81,9 @@ class PrivyErrorBoundaryClass extends Component<Props, State> {
 
       return (
         <div className="mx-auto max-w-md px-4 py-12 text-center">
-          <h1 className="mb-4 text-xl font-bold text-slate-800">{m.genericTitle}</h1>
+          <h1 className="mb-4 text-xl font-bold text-slate-800">
+            {m.genericTitle}
+          </h1>
           <p className="mb-4 text-sm text-slate-600">{m.genericDesc}</p>
           <pre className="max-h-48 overflow-auto rounded-xl bg-red-50 p-3 text-xs text-red-700">
             {this.state.error?.message}

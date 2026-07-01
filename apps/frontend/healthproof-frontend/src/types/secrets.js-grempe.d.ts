@@ -3,7 +3,7 @@ declare module "secrets.js-grempe" {
     secret: string,
     numShares: number,
     threshold: number,
-    padLength?: number
+    padLength?: number,
   ): string[];
 
   export function combine(shares: string[], at?: number): string;

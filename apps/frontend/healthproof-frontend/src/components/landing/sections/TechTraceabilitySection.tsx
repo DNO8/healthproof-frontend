@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useTranslations } from "next-intl";
 import { Activity, Check, Clock, FileText } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { ScrollReveal, SectionTitle } from "@/components/ui";
 
 export function TechTraceabilitySection() {
@@ -69,7 +69,9 @@ export function TechTraceabilitySection() {
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-slate-700">
                   <Clock className="h-5 w-5" />
-                  <span className="text-sm font-semibold">{t("auditTrail")}</span>
+                  <span className="text-sm font-semibold">
+                    {t("auditTrail")}
+                  </span>
                 </div>
                 <span className="text-xs text-slate-400">{t("immutable")}</span>
               </div>
@@ -92,25 +94,37 @@ export function TechTraceabilitySection() {
                           : "border-transparent bg-white/40 hover:bg-white/70"
                       }`}
                     >
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition ${
-                        isActive ? "border-sky-300 bg-white" : "border-slate-200 bg-slate-50"
-                      }`}>
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition ${
+                          isActive
+                            ? "border-sky-300 bg-white"
+                            : "border-slate-200 bg-slate-50"
+                        }`}
+                      >
                         {block.icon}
                       </div>
 
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono text-slate-400">{block.time}</span>
-                          <span className="text-xs text-slate-500">· {block.actor}</span>
+                          <span className="text-xs font-mono text-slate-400">
+                            {block.time}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            · {block.actor}
+                          </span>
                         </div>
-                        <p className="mt-0.5 text-sm font-medium text-slate-700">{block.title}</p>
+                        <p className="mt-0.5 text-sm font-medium text-slate-700">
+                          {block.title}
+                        </p>
 
                         {isActive && (
                           <div className="mt-2 rounded-xl bg-white/70 px-3 py-2">
                             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                               {t("txHashLabel")}
                             </p>
-                            <p className="font-mono text-xs text-slate-600">{block.hash}</p>
+                            <p className="font-mono text-xs text-slate-600">
+                              {block.hash}
+                            </p>
                           </div>
                         )}
                       </div>

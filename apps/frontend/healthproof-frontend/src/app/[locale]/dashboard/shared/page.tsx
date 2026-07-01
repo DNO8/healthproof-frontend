@@ -1,22 +1,23 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { sileo } from "sileo";
-import { useTranslations } from "next-intl";
 import { usePrivy } from "@privy-io/react-auth";
-import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { FileText } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useState } from "react";
+import { sileo } from "sileo";
+import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
+import type { SharedDocument } from "@/actions/documents/list-shared-documents";
 import { listSharedDocuments } from "@/actions/documents/list-shared-documents";
 import { listSharedDocumentsByEpisode } from "@/actions/documents/list-shared-documents-by-episode";
-import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
 import { checkAccessOnChain } from "@/actions/permissions/check-access-onchain";
-import { useDocumentDecrypt } from "@/hooks/documents/useDocumentDecrypt";
 import { FilePreview } from "@/components/documents/FilePreview";
-import { EmptyState, SkeletonList } from "@/components/ui";
-import { FileText } from "lucide-react";
-import { isAuthSuccess } from "@/lib/auth/with-auth";
 import { SharedErrorBoundary } from "@/components/feedback/SharedErrorBoundary";
-import type { SharedDocument } from "@/actions/documents/list-shared-documents";
+import { EmptyState, SkeletonList } from "@/components/ui";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { useDocumentDecrypt } from "@/hooks/documents/useDocumentDecrypt";
+import { isAuthSuccess } from "@/lib/auth/with-auth";
+import type { WrappedKey } from "@/services/encryption/ecdh";
 
 function formatAddress(addr: string): string {
   if (!addr || addr.length < 10) return addr;
@@ -32,20 +33,33 @@ export default function SharedDocumentsPage() {
   const searchParams = useSearchParams();
   const highlightDocId = searchParams.get("doc");
   const episodeId = searchParams.get("episode");
-  const patientWalletFromQR = searchParams.get("patient");
+  const _patientWalletFromQR = searchParams.get("patient");
 
   const [docs, setDocs] = useState<SharedDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDoc, setSelectedDoc] = useState<SharedDocument | null>(null);
-  const [patientKeys, setPatientKeys] = useState<Record<string, string | null>>({});
+  const [patientKeys, setPatientKeys] = useState<Record<string, string | null>>(
+    {},
+  );
   const [hasAttemptedAutoDecrypt, setHasAttemptedAutoDecrypt] = useState(false);
   const qrPatientKey = searchParams.get("pk");
 
-  const { decrypt, decryptedFile, loading: decryptLoading, error: decryptError, clear } = useDocumentDecrypt();
+  const {
+    decrypt,
+    decryptedFile,
+    loading: decryptLoading,
+    error: decryptError,
+    clear,
+  } = useDocumentDecrypt();
 
   const fetchDocs = useCallback(async () => {
     if (!walletAddress) return;
-    console.log("[SharedPage] fetchDocs start, wallet:", walletAddress, "episode:", episodeId);
+    console.log(
+      "[SharedPage] fetchDocs start, wallet:",
+      walletAddress,
+      "episode:",
+      episodeId,
+    );
     setLoading(true);
     try {
       let resultDocs: SharedDocument[] = [];
@@ -62,7 +76,9 @@ export default function SharedDocumentsPage() {
       }
       setDocs(resultDocs);
       // Pre-fetch patient public keys
-      const uniquePatients = [...new Set(resultDocs.map((d) => d.patient_wallet))];
+      const uniquePatients = [
+        ...new Set(resultDocs.map((d) => d.patient_wallet)),
+      ];
       const keyMap: Record<string, string | null> = {};
       await Promise.all(
         uniquePatients.map(async (pw) => {
@@ -71,20 +87,27 @@ export default function SharedDocumentsPage() {
           } catch {
             keyMap[pw] = null;
           }
-        })
+        }),
       );
       setPatientKeys(keyMap);
-      if (uniquePatients.length > 0 && Object.values(keyMap).every((v) => v === null)) {
+      if (
+        uniquePatients.length > 0 &&
+        Object.values(keyMap).every((v) => v === null)
+      ) {
         console.warn("[SharedPage] No patient public keys resolved");
         sileo.warning({
           title: "Claves de pacientes no disponibles",
-          description: "No se pudieron obtener las claves públicas de los pacientes. Es posible que las claves de cifrado aún se estén recuperando.",
+          description:
+            "No se pudieron obtener las claves públicas de los pacientes. Es posible que las claves de cifrado aún se estén recuperando.",
           duration: 5000,
         });
       }
     } catch (e) {
       console.error("[SharedPage] fetchDocs error:", e);
-      sileo.error({ title: t("loadError"), description: String(e).slice(0, 120) });
+      sileo.error({
+        title: t("loadError"),
+        description: String(e).slice(0, 120),
+      });
     } finally {
       setLoading(false);
     }
@@ -95,9 +118,15 @@ export default function SharedDocumentsPage() {
   }, [fetchDocs]);
 
   // Auto-select document from QR scan redirect
+  // biome-ignore lint/correctness/useExhaustiveDependencies: one-shot auto-decrypt from URL params
   useEffect(() => {
     if (!highlightDocId || docs.length === 0 || hasAttemptedAutoDecrypt) return;
-    console.log("[SharedPage] auto-decrypt trigger, docId:", highlightDocId, "qrPatientKey:", !!qrPatientKey);
+    console.log(
+      "[SharedPage] auto-decrypt trigger, docId:",
+      highlightDocId,
+      "qrPatientKey:",
+      !!qrPatientKey,
+    );
     const doc = docs.find((d) => d.document_id === highlightDocId);
     if (doc && doc.document_id !== selectedDoc?.document_id) {
       setSelectedDoc(doc);
@@ -107,14 +136,28 @@ export default function SharedDocumentsPage() {
     setHasAttemptedAutoDecrypt(true);
     // Clean URL so refresh doesn't retry with stale params
     router.replace("/dashboard/shared");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [highlightDocId, docs, qrPatientKey]);
+  }, [
+    highlightDocId,
+    docs,
+    qrPatientKey,
+    clear,
+    hasAttemptedAutoDecrypt,
+    performDecrypt,
+    router.replace,
+    selectedDoc?.document_id,
+  ]);
 
   async function performDecrypt(doc: SharedDocument, silent = false) {
     if (!walletAddress || !userId) return null;
-    console.log("[SharedPage] performDecrypt start, docId:", doc.document_id, "silent:", silent);
+    console.log(
+      "[SharedPage] performDecrypt start, docId:",
+      doc.document_id,
+      "silent:",
+      silent,
+    );
     if (!doc.iv) {
-      if (!silent) sileo.error({ title: t("noIv"), description: t("noIvDesc") });
+      if (!silent)
+        sileo.error({ title: t("noIv"), description: t("noIvDesc") });
       return null;
     }
 
@@ -126,36 +169,56 @@ export default function SharedDocumentsPage() {
         documentId: doc.document_id,
       });
       if (!accessResult.success || !accessResult.data) {
-        if (!silent) sileo.error({ title: t("accessRevoked"), description: t("accessRevokedDesc") });
+        if (!silent)
+          sileo.error({
+            title: t("accessRevoked"),
+            description: t("accessRevokedDesc"),
+          });
         return null;
       }
     } catch {
-      if (!silent) sileo.error({ title: t("accessCheckError"), description: t("accessCheckErrorDesc") });
+      if (!silent)
+        sileo.error({
+          title: t("accessCheckError"),
+          description: t("accessCheckErrorDesc"),
+        });
       return null;
     }
 
     // Resolve patient public key: QR param → pre-fetched map → on-demand fetch
     let senderKey = qrPatientKey ?? patientKeys[doc.patient_wallet] ?? null;
-    console.log("[SharedPage] senderKey source:", qrPatientKey ? "QR" : patientKeys[doc.patient_wallet] ? "prefetch" : "fetch");
+    console.log(
+      "[SharedPage] senderKey source:",
+      qrPatientKey
+        ? "QR"
+        : patientKeys[doc.patient_wallet]
+          ? "prefetch"
+          : "fetch",
+    );
     if (!senderKey) {
       try {
         senderKey = await getUserPublicKey(doc.patient_wallet);
         if (senderKey) {
-          setPatientKeys((prev) => ({ ...prev, [doc.patient_wallet]: senderKey }));
+          setPatientKeys((prev) => ({
+            ...prev,
+            [doc.patient_wallet]: senderKey,
+          }));
         }
       } catch {
         senderKey = null;
       }
     }
     if (!senderKey) {
-      if (!silent) sileo.error({ title: t("noKey"), description: t("noPatientKey") });
+      if (!silent)
+        sileo.error({ title: t("noKey"), description: t("noPatientKey") });
       return null;
     }
-    let wrappedKey;
+    let wrappedKey: WrappedKey;
     try {
-      wrappedKey = JSON.parse(doc.encrypted_key);
+      wrappedKey = JSON.parse(doc.encrypted_key) as WrappedKey;
     } catch {
-      if (!silent) sileo.error({ title: t("noKey"), description: t("invalidKey") });
+      if (!silent)
+        sileo.error({ title: t("noKey"), description: t("invalidKey") });
       return null;
     }
     const result = await decrypt({
@@ -165,9 +228,17 @@ export default function SharedDocumentsPage() {
       senderPublicKeyJwk: senderKey,
       myUserId: userId,
     });
-    console.log("[SharedPage] decrypt result:", result ? "success" : "failed", "error:", decryptError);
+    console.log(
+      "[SharedPage] decrypt result:",
+      result ? "success" : "failed",
+      "error:",
+      decryptError,
+    );
     if (!result && !silent) {
-      sileo.error({ title: t("decryptFailed"), description: t("decryptFailedDesc") });
+      sileo.error({
+        title: t("decryptFailed"),
+        description: t("decryptFailedDesc"),
+      });
     }
     return result;
   }
@@ -182,7 +253,9 @@ export default function SharedDocumentsPage() {
     if (!decryptedFile) return;
     const a = document.createElement("a");
     a.href = decryptedFile.url;
-    a.download = selectedDoc?.file_name ?? `document-${selectedDoc?.document_id.slice(0, 8) ?? "file"}`;
+    a.download =
+      selectedDoc?.file_name ??
+      `document-${selectedDoc?.document_id.slice(0, 8) ?? "file"}`;
     a.click();
   }
 
@@ -196,10 +269,7 @@ export default function SharedDocumentsPage() {
         {loading ? (
           <SkeletonList count={3} />
         ) : docs.length === 0 ? (
-          <EmptyState
-            icon={FileText}
-            title={t("empty")}
-          />
+          <EmptyState icon={FileText} title={t("empty")} />
         ) : (
           <div className="space-y-4">
             {docs.map((doc) => {
@@ -221,7 +291,8 @@ export default function SharedDocumentsPage() {
                         {formatAddress(doc.document_id)}
                       </p>
                       <p className="text-[10px] text-slate-400 mt-0.5">
-                        {t("sharedOn")}: {new Date(doc.created_at).toLocaleDateString()}
+                        {t("sharedOn")}:{" "}
+                        {new Date(doc.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     <button
@@ -235,12 +306,22 @@ export default function SharedDocumentsPage() {
                   </div>
 
                   <div className="text-xs text-slate-500 space-y-1">
-                    <p>{t("patient")}: {doc.patient_name || formatAddress(doc.patient_wallet)}</p>
+                    <p>
+                      {t("patient")}:{" "}
+                      {doc.patient_name || formatAddress(doc.patient_wallet)}
+                    </p>
                     {doc.uploader_wallet && (
-                      <p>{t("uploadedBy")}: {doc.uploader_name || formatAddress(doc.uploader_wallet)}</p>
+                      <p>
+                        {t("uploadedBy")}:{" "}
+                        {doc.uploader_name ||
+                          formatAddress(doc.uploader_wallet)}
+                      </p>
                     )}
                     {doc.doc_created_at && (
-                      <p>{t("uploadedOn")}: {new Date(doc.doc_created_at).toLocaleDateString()}</p>
+                      <p>
+                        {t("uploadedOn")}:{" "}
+                        {new Date(doc.doc_created_at).toLocaleDateString()}
+                      </p>
                     )}
                   </div>
 

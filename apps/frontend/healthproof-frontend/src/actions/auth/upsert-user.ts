@@ -1,8 +1,8 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { withAuth } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 interface UpsertUserData {
   id: string;
@@ -13,11 +13,12 @@ interface UpsertUserData {
 
 async function upsertUserHandler(
   data: UpsertUserData,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ success: true } | { error: string; code?: number }> {
   // Verify caller can only update their own record
   // Dev fallback: auth.userId is "dev-user" when Privy cookies are blocked on HTTP localhost
-  const isDevFallback = process.env.NODE_ENV === "development" && auth.userId === "dev-user";
+  const isDevFallback =
+    process.env.NODE_ENV === "development" && auth.userId === "dev-user";
   if (!isDevFallback && data.id !== auth.userId) {
     return { error: "Unauthorized", code: 403 };
   }
@@ -64,7 +65,8 @@ async function upsertUserHandler(
 
     if (existingByEmail) {
       return {
-        error: "An account with this email is already registered. Please sign in instead.",
+        error:
+          "An account with this email is already registered. Please sign in instead.",
         code: 409,
       };
     }

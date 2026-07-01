@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getDbUser } from "@/actions/auth/get-user";
 
 const CACHE_KEY = "hp_db_user";
@@ -63,11 +63,15 @@ export function useDbUser() {
     setLoading(true);
     try {
       // Inject explicit token to bypass stale cookie when switching accounts
-      let payload: { idOrWallet: string; _privyToken?: string } = { idOrWallet: userId };
+      let payload: { idOrWallet: string; _privyToken?: string } = {
+        idOrWallet: userId,
+      };
       try {
         const token = await getAccessToken();
         if (token) payload = { ...payload, _privyToken: token };
-      } catch { /* ignore token errors */ }
+      } catch {
+        /* ignore token errors */
+      }
 
       const result = await getDbUser(payload);
       if (result.success && result.data) {

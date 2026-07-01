@@ -1,8 +1,12 @@
 "use client";
 
-import { describe, it, expect } from "vitest";
-import { generateShares, reconstructSecret, validateReconstruction } from "./sss";
+import { describe, expect, it } from "vitest";
 import { hashMasterSecret } from "./integrity";
+import {
+  generateShares,
+  reconstructSecret,
+  validateReconstruction,
+} from "./sss";
 
 describe("SSS(2,3) over ECDH JWK-sized secrets", () => {
   const sampleSecret = new TextEncoder().encode(
@@ -50,7 +54,9 @@ describe("SSS(2,3) over ECDH JWK-sized secrets", () => {
     const hash = await hashMasterSecret(sampleSecret);
 
     // Valid reconstruction
-    expect(await validateReconstruction([shares[0], shares[1]], hash)).toBe(true);
+    expect(await validateReconstruction([shares[0], shares[1]], hash)).toBe(
+      true,
+    );
 
     // Tamper one byte of share1
     const tamperedShare = shares[0];
@@ -64,7 +70,9 @@ describe("SSS(2,3) over ECDH JWK-sized secrets", () => {
       tamperedStr += String.fromCharCode(tamperedBytes[i]);
     }
 
-    expect(await validateReconstruction([tamperedStr, shares[1]], hash)).toBe(false);
+    expect(await validateReconstruction([tamperedStr, shares[1]], hash)).toBe(
+      false,
+    );
   });
 
   it("roundtrip serialization of shares", () => {

@@ -33,7 +33,9 @@ export class SharedErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-          <h1 className="mb-4 text-2xl font-bold text-slate-800">Error cargando documentos</h1>
+          <h1 className="mb-4 text-2xl font-bold text-slate-800">
+            Error cargando documentos
+          </h1>
           <p className="text-sm text-slate-600">
             Se produjo un error inesperado. Revisa la consola para más detalles.
           </p>

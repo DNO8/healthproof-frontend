@@ -1,7 +1,7 @@
 "use server";
 
+import { type AuthContext, withAuth } from "@/lib/auth/with-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { withAuth, type AuthContext } from "@/lib/auth/with-auth";
 
 /**
  * Check if a user has a Shamir key share backup.
@@ -9,7 +9,7 @@ import { withAuth, type AuthContext } from "@/lib/auth/with-auth";
  */
 async function checkKeyBackupHandler(
   data: { userId: string },
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{
   hasBackup: boolean;
   backupVersion: number | null;

@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
-import { useRef, useLayoutEffect, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { useLayoutEffect, useRef, useState } from "react";
 import { WORKFLOW_STEPS } from "@/components/landing/constants";
 import { SectionTitle } from "@/components/ui";
 

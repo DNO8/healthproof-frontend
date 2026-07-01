@@ -8,6 +8,6 @@ import { NextResponse } from "next/server";
 export async function POST() {
   return NextResponse.json(
     { error: "Deprecated: use /api/server-share/fetch" },
-    { status: 410 }
+    { status: 410 },
   );
 }

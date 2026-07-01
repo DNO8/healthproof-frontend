@@ -1,11 +1,11 @@
+import { QR_EXPIRY_MINUTES } from "@/lib/constants";
+import { expiresIn, generateNonce } from "@/lib/utils";
 import type {
+  GrantedToRole,
   PermissionPayload,
   QRData,
-  GrantedToRole,
 } from "@/types/domain.types";
 import { PermissionScope } from "@/types/domain.types";
-import { generateNonce, expiresIn } from "@/lib/utils";
-import { QR_EXPIRY_MINUTES } from "@/lib/constants";
 
 export function buildPermissionPayload(opts: {
   patientWallet: string;

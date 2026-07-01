@@ -1,18 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { sileo } from "sileo";
-import { useTranslations } from "next-intl";
 import { useWallets } from "@privy-io/react-auth";
+import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useState } from "react";
+import { sileo } from "sileo";
 import { createWalletClient, custom, keccak256, toHex } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import { assignLabToOrder, getOrderOnChain } from "@/actions/medical-orders/medical-orders-onchain";
-import { listOrdersByPatient } from "@/actions/medical-orders/list-orders-by-patient";
-import { signMetaTransaction } from "@/lib/metatx/forwarder";
-import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import type { OrderRef } from "@/actions/medical-orders/list-orders-by-patient";
-import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { listOrdersByPatient } from "@/actions/medical-orders/list-orders-by-patient";
+import { assignLabToOrder } from "@/actions/medical-orders/medical-orders-onchain";
 import { LabSelect } from "@/components/forms/LabSelect";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import { signMetaTransaction } from "@/lib/metatx/forwarder";
 
 const STATUS_FILTERS = [
   { key: "all", labelKey: "filterAll" },
@@ -23,9 +23,16 @@ const STATUS_FILTERS = [
 
 type StatusFilter = (typeof STATUS_FILTERS)[number]["key"];
 
-async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
-  const provider = await wallet.getEthereumProvider();
-  return createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+async function getViemWalletClient(wallet: {
+  getEthereumProvider: () => Promise<unknown>;
+}) {
+  const provider = (await wallet.getEthereumProvider()) as {
+    request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  };
+  return createWalletClient({
+    chain: HEALTHPROOF_CHAIN,
+    transport: custom(provider),
+  });
 }
 
 function statusBadgeClass(status: number): string {
@@ -69,7 +76,10 @@ export default function MyOrdersPage() {
         setOrders([]);
       }
     } catch (e) {
-      sileo.error({ title: t("loadError"), description: String(e).slice(0, 120) });
+      sileo.error({
+        title: t("loadError"),
+        description: String(e).slice(0, 120),
+      });
     } finally {
       setLoadingOrders(false);
     }
@@ -92,7 +102,10 @@ export default function MyOrdersPage() {
 
     const activeWallet = wallets.find((w) => w.address);
     if (!activeWallet) {
-      sileo.error({ title: t("assignError"), description: "No active wallet found" });
+      sileo.error({
+        title: t("assignError"),
+        description: "No active wallet found",
+      });
       return;
     }
 
@@ -103,7 +116,8 @@ export default function MyOrdersPage() {
       if (!patientAddress) throw new Error("No wallet address");
 
       const orderIdBytes =
-        selectedOrder.orderId.startsWith("0x") && selectedOrder.orderId.length === 66
+        selectedOrder.orderId.startsWith("0x") &&
+        selectedOrder.orderId.length === 66
           ? (selectedOrder.orderId as `0x${string}`)
           : keccak256(toHex(selectedOrder.orderId));
 
@@ -123,7 +137,10 @@ export default function MyOrdersPage() {
       });
 
       if (!res.success) {
-        sileo.error({ title: t("assignError"), description: (res.error ?? "").slice(0, 120) });
+        sileo.error({
+          title: t("assignError"),
+          description: (res.error ?? "").slice(0, 120),
+        });
       } else {
         sileo.success({
           title: t("assignSuccess"),
@@ -134,7 +151,10 @@ export default function MyOrdersPage() {
         await fetchOrders();
       }
     } catch (e) {
-      sileo.error({ title: t("assignError"), description: String(e).slice(0, 120) });
+      sileo.error({
+        title: t("assignError"),
+        description: String(e).slice(0, 120),
+      });
     } finally {
       setAssigning(false);
     }
@@ -165,9 +185,13 @@ export default function MyOrdersPage() {
         </div>
 
         {loadingOrders ? (
-          <p className="py-8 text-center text-sm text-slate-400">{t("loading")}</p>
+          <p className="py-8 text-center text-sm text-slate-400">
+            {t("loading")}
+          </p>
         ) : filteredOrders.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-400">{t("empty")}</p>
+          <p className="py-8 text-center text-sm text-slate-400">
+            {t("empty")}
+          </p>
         ) : (
           <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
             {filteredOrders.map((o) => (
@@ -206,13 +230,17 @@ export default function MyOrdersPage() {
                   <span>
                     {t("doctor")}: {o.doctorName || formatAddress(o.doctor)}
                   </span>
-                  {o.assignedLab && o.assignedLab !== "0x0000000000000000000000000000000000000000" && (
-                    <span>
-                      {t("assignedLab")}: {o.assignedLabName || formatAddress(o.assignedLab)}
-                    </span>
-                  )}
+                  {o.assignedLab &&
+                    o.assignedLab !==
+                      "0x0000000000000000000000000000000000000000" && (
+                      <span>
+                        {t("assignedLab")}:{" "}
+                        {o.assignedLabName || formatAddress(o.assignedLab)}
+                      </span>
+                    )}
                   <span>
-                    {t("createdAt")}: {new Date(o.createdAt * 1000).toLocaleDateString()}
+                    {t("createdAt")}:{" "}
+                    {new Date(o.createdAt * 1000).toLocaleDateString()}
                   </span>
                 </div>
               </button>
@@ -240,18 +268,32 @@ export default function MyOrdersPage() {
             </div>
             <div className="space-y-1 text-xs text-slate-500">
               <p>
-                {t("doctor")}: {selectedOrder.doctorName || formatAddress(selectedOrder.doctor)}
+                {t("doctor")}:{" "}
+                {selectedOrder.doctorName ||
+                  formatAddress(selectedOrder.doctor)}
               </p>
               <p>
-                {t("status")}: {selectedOrder.status === 0 ? t("statusPending") : selectedOrder.status === 1 ? t("statusAssigned") : selectedOrder.status === 2 ? t("statusCompleted") : t("statusCancelled")}
+                {t("status")}:{" "}
+                {selectedOrder.status === 0
+                  ? t("statusPending")
+                  : selectedOrder.status === 1
+                    ? t("statusAssigned")
+                    : selectedOrder.status === 2
+                      ? t("statusCompleted")
+                      : t("statusCancelled")}
               </p>
-              {selectedOrder.assignedLab && selectedOrder.assignedLab !== "0x0000000000000000000000000000000000000000" && (
-                <p>
-                  {t("assignedLab")}: {selectedOrder.assignedLabName || formatAddress(selectedOrder.assignedLab)}
-                </p>
-              )}
+              {selectedOrder.assignedLab &&
+                selectedOrder.assignedLab !==
+                  "0x0000000000000000000000000000000000000000" && (
+                  <p>
+                    {t("assignedLab")}:{" "}
+                    {selectedOrder.assignedLabName ||
+                      formatAddress(selectedOrder.assignedLab)}
+                  </p>
+                )}
               <p>
-                {t("createdAt")}: {new Date(selectedOrder.createdAt * 1000).toLocaleString()}
+                {t("createdAt")}:{" "}
+                {new Date(selectedOrder.createdAt * 1000).toLocaleString()}
               </p>
             </div>
 

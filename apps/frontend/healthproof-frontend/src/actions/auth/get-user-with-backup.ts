@@ -1,7 +1,7 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
 import { verifySelf } from "@/lib/auth/privy-verify";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface UserWithBackup {
   id: string;
@@ -38,57 +38,64 @@ export async function getUserWithBackup(
   try {
     await verifySelf(idOrWallet, _privyToken);
   } catch (authErr) {
-    console.warn("[getUserWithBackup] auth failed:", authErr instanceof Error ? authErr.message : authErr);
+    console.warn(
+      "[getUserWithBackup] auth failed:",
+      authErr instanceof Error ? authErr.message : authErr,
+    );
     return null;
   }
 
   try {
-  const supabase = createAdminClient();
+    const supabase = createAdminClient();
 
-  // Try lookup by Privy DID first
-  const { data: row, error } = await supabase
-    .from("users")
-    .select(
-      "id, email, wallet_address, full_name, created_at, public_key, encrypted_private_key, key_share, key_version, server_share_ciphertext, server_share_dek_ciphertext, server_share_kms_key_id, recovery_code_hash, recovery_code_used_at, master_secret_hash, scheme_version",
-    )
-    .eq("id", idOrWallet)
-    .single();
+    // Try lookup by Privy DID first
+    const { data: row, error } = await supabase
+      .from("users")
+      .select(
+        "id, email, wallet_address, full_name, created_at, public_key, encrypted_private_key, key_share, key_version, server_share_ciphertext, server_share_dek_ciphertext, server_share_kms_key_id, recovery_code_hash, recovery_code_used_at, master_secret_hash, scheme_version",
+      )
+      .eq("id", idOrWallet)
+      .single();
 
-  if (!error && row) {
-    return {
-      id: row.id as string,
-      email: (row.email as string) ?? "",
-      wallet_address: row.wallet_address as string | null,
-      full_name: row.full_name as string | null,
-      created_at: row.created_at as string,
-      public_key: (row.public_key as string | null) ?? null,
-      encrypted_private_key:
-        (row.encrypted_private_key as string | null) ?? null,
-      key_share: (row.key_share as string | null) ?? null,
-      key_version: (row.key_version as number | null) ?? null,
-      server_share_ciphertext: (row.server_share_ciphertext as string | null) ?? null,
-      server_share_dek_ciphertext: (row.server_share_dek_ciphertext as string | null) ?? null,
-      server_share_kms_key_id: (row.server_share_kms_key_id as string | null) ?? null,
-      recovery_code_hash: (row.recovery_code_hash as string | null) ?? null,
-      recovery_code_used_at: (row.recovery_code_used_at as string | null) ?? null,
-      master_secret_hash: (row.master_secret_hash as string | null) ?? null,
-      scheme_version: (row.scheme_version as number | null) ?? null,
-    };
-  }
+    if (!error && row) {
+      return {
+        id: row.id as string,
+        email: (row.email as string) ?? "",
+        wallet_address: row.wallet_address as string | null,
+        full_name: row.full_name as string | null,
+        created_at: row.created_at as string,
+        public_key: (row.public_key as string | null) ?? null,
+        encrypted_private_key:
+          (row.encrypted_private_key as string | null) ?? null,
+        key_share: (row.key_share as string | null) ?? null,
+        key_version: (row.key_version as number | null) ?? null,
+        server_share_ciphertext:
+          (row.server_share_ciphertext as string | null) ?? null,
+        server_share_dek_ciphertext:
+          (row.server_share_dek_ciphertext as string | null) ?? null,
+        server_share_kms_key_id:
+          (row.server_share_kms_key_id as string | null) ?? null,
+        recovery_code_hash: (row.recovery_code_hash as string | null) ?? null,
+        recovery_code_used_at:
+          (row.recovery_code_used_at as string | null) ?? null,
+        master_secret_hash: (row.master_secret_hash as string | null) ?? null,
+        scheme_version: (row.scheme_version as number | null) ?? null,
+      };
+    }
 
-  // Fall back to wallet_address lookup (normalize to lowercase for case-insensitive match)
-  const walletLower = idOrWallet.toLowerCase();
-  const { data: byWallet, error: walletErr } = await supabase
-    .from("users")
-    .select(
-      "id, email, wallet_address, full_name, created_at, public_key, encrypted_private_key, key_share, key_version, server_share_ciphertext, server_share_dek_ciphertext, server_share_kms_key_id, recovery_code_hash, recovery_code_used_at, master_secret_hash, scheme_version",
-    )
-    .eq("wallet_address", walletLower)
-    .single();
+    // Fall back to wallet_address lookup (normalize to lowercase for case-insensitive match)
+    const walletLower = idOrWallet.toLowerCase();
+    const { data: byWallet, error: walletErr } = await supabase
+      .from("users")
+      .select(
+        "id, email, wallet_address, full_name, created_at, public_key, encrypted_private_key, key_share, key_version, server_share_ciphertext, server_share_dek_ciphertext, server_share_kms_key_id, recovery_code_hash, recovery_code_used_at, master_secret_hash, scheme_version",
+      )
+      .eq("wallet_address", walletLower)
+      .single();
 
-  if (walletErr || !byWallet) {
-    return null;
-  }
+    if (walletErr || !byWallet) {
+      return null;
+    }
 
     return {
       id: byWallet.id as string,
@@ -101,18 +108,25 @@ export async function getUserWithBackup(
         (byWallet.encrypted_private_key as string | null) ?? null,
       key_share: (byWallet.key_share as string | null) ?? null,
       key_version: (byWallet.key_version as number | null) ?? null,
-      server_share_ciphertext: (byWallet.server_share_ciphertext as string | null) ?? null,
-      server_share_dek_ciphertext: (byWallet.server_share_dek_ciphertext as string | null) ?? null,
-      server_share_kms_key_id: (byWallet.server_share_kms_key_id as string | null) ?? null,
-      recovery_code_hash: (byWallet.recovery_code_hash as string | null) ?? null,
-      recovery_code_used_at: (byWallet.recovery_code_used_at as string | null) ?? null,
-      master_secret_hash: (byWallet.master_secret_hash as string | null) ?? null,
+      server_share_ciphertext:
+        (byWallet.server_share_ciphertext as string | null) ?? null,
+      server_share_dek_ciphertext:
+        (byWallet.server_share_dek_ciphertext as string | null) ?? null,
+      server_share_kms_key_id:
+        (byWallet.server_share_kms_key_id as string | null) ?? null,
+      recovery_code_hash:
+        (byWallet.recovery_code_hash as string | null) ?? null,
+      recovery_code_used_at:
+        (byWallet.recovery_code_used_at as string | null) ?? null,
+      master_secret_hash:
+        (byWallet.master_secret_hash as string | null) ?? null,
       scheme_version: (byWallet.scheme_version as number | null) ?? null,
     };
   } catch (err) {
     console.error("[getUserWithBackup] failed", {
       idOrWallet,
-      error: err instanceof Error ? { message: err.message, stack: err.stack } : err,
+      error:
+        err instanceof Error ? { message: err.message, stack: err.stack } : err,
     });
     return null;
   }

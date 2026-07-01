@@ -24,3 +24,16 @@ export function formatDate(iso: string): string {
 export function expiresIn(minutes: number): number {
   return Math.floor(Date.now() / 1000) + minutes * 60;
 }
+
+export function slugify(input: string): string {
+  const value = input || "";
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9.-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 64);
+}

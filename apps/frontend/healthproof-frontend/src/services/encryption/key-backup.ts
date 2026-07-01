@@ -13,14 +13,17 @@ const KEY_LENGTH = 32; // 256 bits
 /**
  * Derive encryption key from password using PBKDF2.
  */
-async function deriveKey(password: string, salt: BufferSource): Promise<CryptoKey> {
+async function deriveKey(
+  password: string,
+  salt: BufferSource,
+): Promise<CryptoKey> {
   const encoder = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
     encoder.encode(password) as BufferSource,
     "PBKDF2",
     false,
-    ["deriveBits", "deriveKey"]
+    ["deriveBits", "deriveKey"],
   );
 
   return crypto.subtle.deriveKey(
@@ -33,7 +36,7 @@ async function deriveKey(password: string, salt: BufferSource): Promise<CryptoKe
     keyMaterial,
     { name: "AES-GCM", length: KEY_LENGTH * 8 },
     false,
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt"],
   );
 }
 
@@ -43,7 +46,7 @@ async function deriveKey(password: string, salt: BufferSource): Promise<CryptoKe
  */
 export async function encryptPrivateKey(
   privateKeyJwk: string,
-  password: string
+  password: string,
 ): Promise<string> {
   const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
@@ -55,11 +58,13 @@ export async function encryptPrivateKey(
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     key,
-    plaintext
+    plaintext,
   );
 
   // Combine: salt (16) + iv (12) + ciphertext
-  const combined = new Uint8Array(salt.length + iv.length + ciphertext.byteLength);
+  const combined = new Uint8Array(
+    salt.length + iv.length + ciphertext.byteLength,
+  );
   combined.set(salt, 0);
   combined.set(iv, salt.length);
   combined.set(new Uint8Array(ciphertext), salt.length + iv.length);
@@ -73,10 +78,12 @@ export async function encryptPrivateKey(
  */
 export async function decryptPrivateKey(
   encryptedBase64: string,
-  password: string
+  password: string,
 ): Promise<string | null> {
   try {
-    const combined = Uint8Array.from(atob(encryptedBase64), (c) => c.charCodeAt(0));
+    const combined = Uint8Array.from(atob(encryptedBase64), (c) =>
+      c.charCodeAt(0),
+    );
 
     if (combined.length < SALT_LENGTH + IV_LENGTH) {
       return null;
@@ -91,7 +98,7 @@ export async function decryptPrivateKey(
     const decrypted = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv },
       key,
-      ciphertext
+      ciphertext,
     );
 
     const decoder = new TextDecoder();
@@ -154,10 +161,15 @@ export async function deriveCrossDevicePassword(
 /**
  * Legacy V1 derivation (SHA-256 direct). Kept for decrypting old backups.
  */
-async function deriveCrossDevicePasswordLegacy(userId: string): Promise<string> {
+async function _deriveCrossDevicePasswordLegacy(
+  userId: string,
+): Promise<string> {
   const pepper = process.env.NEXT_PUBLIC_KEY_BACKUP_PEPPER ?? "";
   const raw = `${userId}|${pepper}`;
-  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw) as BufferSource);
+  const hash = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(raw) as BufferSource,
+  );
   return Array.from(new Uint8Array(hash))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
@@ -170,11 +182,14 @@ async function deriveCrossDevicePasswordLegacy(userId: string): Promise<string> 
  */
 export async function deriveBackupPassword(
   userId: string,
-  walletAddress: string
+  walletAddress: string,
 ): Promise<string> {
   const pepper = process.env.NEXT_PUBLIC_KEY_BACKUP_PEPPER ?? "";
   const raw = `${userId}|${walletAddress.toLowerCase()}|${pepper}`;
-  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
+  const hash = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(raw),
+  );
   return Array.from(new Uint8Array(hash))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
@@ -187,7 +202,7 @@ export async function deriveBackupPassword(
  */
 export async function deriveLegacyBackupPassword(
   userId: string,
-  walletAddress: string | null | undefined
+  walletAddress: string | null | undefined,
 ): Promise<[string, string]> {
   const { password } = await deriveCrossDevicePassword(userId);
   const oldPw = walletAddress
@@ -202,7 +217,7 @@ export async function deriveLegacyBackupPassword(
  */
 export async function deriveAllBackupPasswords(
   userId: string,
-  walletAddress: string | null | undefined
+  walletAddress: string | null | undefined,
 ): Promise<string[]> {
   const passwords = new Set<string>();
   passwords.add((await deriveCrossDevicePassword(userId)).password);
@@ -216,7 +231,7 @@ export async function deriveAllBackupPasswords(
 
 export function createRecoveryPassword(
   email: string,
-  secretToken: string
+  secretToken: string,
 ): string {
   // Combine email + secret token to create a stable password
   // This ensures the password is reproducible across sessions

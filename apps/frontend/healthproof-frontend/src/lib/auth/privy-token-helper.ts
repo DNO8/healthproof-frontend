@@ -15,7 +15,7 @@ export function useWithPrivyToken() {
   const { getAccessToken } = usePrivy();
 
   return async <T extends Record<string, unknown>>(
-    data: T
+    data: T,
   ): Promise<T & { _privyToken?: string }> => {
     try {
       const token = await getAccessToken();
@@ -32,7 +32,7 @@ export function useWithPrivyToken() {
  */
 export async function withPrivyToken<T extends Record<string, unknown>>(
   data: T,
-  getAccessToken: () => Promise<string | null>
+  getAccessToken: () => Promise<string | null>,
 ): Promise<T & { _privyToken?: string }> {
   try {
     const token = await getAccessToken();

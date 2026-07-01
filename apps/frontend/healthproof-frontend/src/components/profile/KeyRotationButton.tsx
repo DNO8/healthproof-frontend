@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useTranslations } from "next-intl";
 import { usePrivy } from "@privy-io/react-auth";
+import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { sileo } from "sileo";
 import { rotateUserKeys } from "@/actions/auth/rotate-user-keys";
 
@@ -23,7 +23,9 @@ export function KeyRotationButton() {
       if (result.success) {
         sileo.success({
           title: t("rotateSuccess"),
-          description: t("rotateSuccessDesc", { version: result.data.newVersion }),
+          description: t("rotateSuccessDesc", {
+            version: result.data.newVersion,
+          }),
         });
       } else {
         sileo.error({
@@ -43,7 +45,9 @@ export function KeyRotationButton() {
 
   return (
     <div className="neu-shell mt-4 p-4">
-      <h3 className="text-sm font-semibold text-slate-700">{t("keyManagement")}</h3>
+      <h3 className="text-sm font-semibold text-slate-700">
+        {t("keyManagement")}
+      </h3>
       <p className="mt-1 text-xs text-slate-500">{t("keyManagementDesc")}</p>
       <button
         type="button"

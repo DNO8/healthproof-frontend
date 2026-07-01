@@ -1,16 +1,16 @@
 "use server";
 
-import { createPublicClient, http, keccak256, toHex, fromHex } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { createPublicClient, fromHex, http, keccak256, toHex } from "viem";
 import ClinicalEpisodeRegistryAbi from "@/lib/abis/ClinicalEpisodeRegistry.json";
-import { withAuth, auditLog } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
-import { isVerifiedDoctor } from "@/lib/auth/permissions";
-import type { OnChainEpisode } from "@/lib/medical-constants";
 import { logAuditEvent } from "@/lib/audit-onchain";
+import { isVerifiedDoctor } from "@/lib/auth/permissions";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { auditLog, withAuth } from "@/lib/auth/with-auth";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import type { OnChainEpisode } from "@/lib/medical-constants";
 import { AuditAction } from "@/lib/medical-constants";
-import { executeForwardRequest } from "../relay/relay-core";
 import type { SignedForwardRequest } from "@/lib/metatx/types";
+import { executeForwardRequest } from "../relay/relay-core";
 
 interface OpenEpisodeMetaTx {
   request: SignedForwardRequest;
@@ -26,23 +26,40 @@ interface OpenEpisodeMetaTx {
 
 async function openEpisodeHandler(
   data: OpenEpisodeMetaTx,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ txHash: string; episodeId: string }> {
-  console.log("[openEpisodeHandler] Called with auth.wallet:", auth.wallet, "request.from:", data.request.from);
+  console.log(
+    "[openEpisodeHandler] Called with auth.wallet:",
+    auth.wallet,
+    "request.from:",
+    data.request.from,
+  );
   if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
-    console.error("[openEpisodeHandler] Signer mismatch! auth.wallet:", auth.wallet, "request.from:", data.request.from);
+    console.error(
+      "[openEpisodeHandler] Signer mismatch! auth.wallet:",
+      auth.wallet,
+      "request.from:",
+      data.request.from,
+    );
     throw new Error("Signer mismatch: request.from != authenticated wallet");
   }
 
   const result = await executeForwardRequest(data.request);
   console.log("[openEpisodeHandler] executeForwardRequest result:", result);
   if (!result.success) {
-    console.error("[openEpisodeHandler] Meta-transaction failed on-chain. txHash:", result.txHash);
+    console.error(
+      "[openEpisodeHandler] Meta-transaction failed on-chain. txHash:",
+      result.txHash,
+    );
     throw new Error("Meta-transaction failed on-chain");
   }
 
   try {
-    await logAuditEvent(data.patientWallet, data.episodeId, AuditAction.EPISODE_OPENED);
+    await logAuditEvent(
+      data.patientWallet,
+      data.episodeId,
+      AuditAction.EPISODE_OPENED,
+    );
   } catch {
     // On-chain audit logging is best-effort
   }
@@ -56,7 +73,10 @@ async function openEpisodeHandler(
   return { txHash: result.txHash, episodeId: data.episodeId };
 }
 
-async function validateOpenEpisode(data: OpenEpisodeMetaTx, auth: AuthContext): Promise<boolean> {
+async function validateOpenEpisode(
+  _data: OpenEpisodeMetaTx,
+  auth: AuthContext,
+): Promise<boolean> {
   return await isVerifiedDoctor(auth.wallet);
 }
 
@@ -75,16 +95,24 @@ interface CloseEpisodeMetaTx {
 
 async function closeEpisodeHandler(
   data: CloseEpisodeMetaTx,
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{ txHash: string }> {
-  console.log("[closeEpisodeHandler] Called with auth.wallet:", auth.wallet, "request.from:", data.request.from);
+  console.log(
+    "[closeEpisodeHandler] Called with auth.wallet:",
+    auth.wallet,
+    "request.from:",
+    data.request.from,
+  );
   if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
     console.error("[closeEpisodeHandler] Signer mismatch!");
     throw new Error("Signer mismatch: request.from != authenticated wallet");
   }
 
   // Pre-check: log episode state on-chain before attempting close
-  const publicClient = createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() });
+  const publicClient = createPublicClient({
+    chain: HEALTHPROOF_CHAIN,
+    transport: http(),
+  });
   const episodeIdBytes =
     data.episodeId.startsWith("0x") && data.episodeId.length === 66
       ? (data.episodeId as `0x${string}`)
@@ -113,12 +141,19 @@ async function closeEpisodeHandler(
       patient: ep.patient,
     });
     if (Number(ep.openedAt) === 0) {
-      console.error("[closeEpisodeHandler] Episode does not exist on-chain (openedAt === 0)");
+      console.error(
+        "[closeEpisodeHandler] Episode does not exist on-chain (openedAt === 0)",
+      );
     } else if (!ep.active) {
-      console.error("[closeEpisodeHandler] Episode already closed (active === false)");
+      console.error(
+        "[closeEpisodeHandler] Episode already closed (active === false)",
+      );
     } else if (ep.openedBy.toLowerCase() !== auth.wallet.toLowerCase()) {
       console.error(
-        "[closeEpisodeHandler] Caller is not the episode opener. openedBy:", ep.openedBy, "caller:", auth.wallet
+        "[closeEpisodeHandler] Caller is not the episode opener. openedBy:",
+        ep.openedBy,
+        "caller:",
+        auth.wallet,
       );
     }
   } catch (preErr) {
@@ -128,7 +163,10 @@ async function closeEpisodeHandler(
   const result = await executeForwardRequest(data.request);
   console.log("[closeEpisodeHandler] executeForwardRequest result:", result);
   if (!result.success) {
-    console.error("[closeEpisodeHandler] Meta-transaction failed on-chain. txHash:", result.txHash);
+    console.error(
+      "[closeEpisodeHandler] Meta-transaction failed on-chain. txHash:",
+      result.txHash,
+    );
     throw new Error("Meta-transaction failed on-chain");
   }
 
@@ -139,7 +177,10 @@ async function closeEpisodeHandler(
   return { txHash: result.txHash };
 }
 
-async function validateCloseEpisode(data: CloseEpisodeMetaTx, auth: AuthContext): Promise<boolean> {
+async function validateCloseEpisode(
+  _data: CloseEpisodeMetaTx,
+  auth: AuthContext,
+): Promise<boolean> {
   return await isVerifiedDoctor(auth.wallet);
 }
 
@@ -153,10 +194,13 @@ export const closeEpisodeOnChain = withAuth(closeEpisodeHandler, {
 
 async function getEpisodeHandler(
   data: { episodeId: string },
-  _auth: AuthContext
+  _auth: AuthContext,
 ): Promise<OnChainEpisode | null> {
   console.log("[getEpisodeHandler] Looking up episodeId:", data.episodeId);
-  const publicClient = createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() });
+  const publicClient = createPublicClient({
+    chain: HEALTHPROOF_CHAIN,
+    transport: http(),
+  });
 
   const episodeIdBytes =
     data.episodeId.startsWith("0x") && data.episodeId.length === 66
@@ -202,4 +246,3 @@ async function getEpisodeHandler(
 export const getEpisodeOnChain = withAuth(getEpisodeHandler, {
   rateLimit: { windowMs: 60000, maxRequests: 20 },
 });
-

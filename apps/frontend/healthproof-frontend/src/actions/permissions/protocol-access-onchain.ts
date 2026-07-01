@@ -6,14 +6,20 @@
  * No consumers import from this file.
  */
 
-import { createPublicClient, createWalletClient, http, keccak256, toHex } from "viem";
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  keccak256,
+  toHex,
+} from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import HealthProofProtocolAbi from "@/lib/abis/HealthProofProtocol.json";
-import { withAuth, getDeployerPrivateKey } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
-import { validatePatientAccess } from "@/lib/auth/permissions";
 import { logAuditEvent } from "@/lib/audit-onchain";
+import { validatePatientAccess } from "@/lib/auth/permissions";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { getDeployerPrivateKey, withAuth } from "@/lib/auth/with-auth";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import { AuditAction } from "@/lib/medical-constants";
 
 async function getClients() {
@@ -23,15 +29,23 @@ async function getClients() {
     `0x${pk.replace(/^0x/, "")}` as `0x${string}`,
   );
   return {
-    publicClient: createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() }),
-    walletClient: createWalletClient({ account, chain: HEALTHPROOF_CHAIN, transport: http() }),
+    publicClient: createPublicClient({
+      chain: HEALTHPROOF_CHAIN,
+      transport: http(),
+    }),
+    walletClient: createWalletClient({
+      account,
+      chain: HEALTHPROOF_CHAIN,
+      transport: http(),
+    }),
     account,
   };
 }
 
 const ZERO_BYTES32 =
   "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as `0x${string}`;
+const ZERO_ADDRESS =
+  "0x0000000000000000000000000000000000000000" as `0x${string}`;
 
 // ─── canAccessDocument (read-only) ───
 
@@ -52,14 +66,15 @@ async function canAccessHandler(
     transport: http(),
   });
 
-  const documentId = data.documentId.startsWith("0x") && data.documentId.length === 66
-    ? (data.documentId as `0x${string}`)
-    : keccak256(toHex(data.documentId));
+  const documentId =
+    data.documentId.startsWith("0x") && data.documentId.length === 66
+      ? (data.documentId as `0x${string}`)
+      : keccak256(toHex(data.documentId));
 
   const documentType = data.documentType
-    ? (data.documentType.startsWith("0x") && data.documentType.length === 66
-        ? (data.documentType as `0x${string}`)
-        : keccak256(toHex(data.documentType)))
+    ? data.documentType.startsWith("0x") && data.documentType.length === 66
+      ? (data.documentType as `0x${string}`)
+      : keccak256(toHex(data.documentType))
     : ZERO_BYTES32;
 
   const institution = (data.institution as `0x${string}`) ?? ZERO_ADDRESS;
@@ -93,28 +108,30 @@ interface LogAccessData {
 
 async function logAccessHandler(
   data: LogAccessData,
-  auth: AuthContext,
+  _auth: AuthContext,
 ): Promise<{ txHash: string }> {
   const { publicClient, walletClient } = await getClients();
 
-  const documentId = data.documentId.startsWith("0x") && data.documentId.length === 66
-    ? (data.documentId as `0x${string}`)
-    : keccak256(toHex(data.documentId));
+  const documentId =
+    data.documentId.startsWith("0x") && data.documentId.length === 66
+      ? (data.documentId as `0x${string}`)
+      : keccak256(toHex(data.documentId));
 
   const txHash = await walletClient.writeContract({
     address: CONTRACT_ADDRESSES.HealthProofProtocol as `0x${string}`,
     abi: HealthProofProtocolAbi,
     functionName: "logDocumentAccess",
-    args: [
-      data.patientWallet as `0x${string}`,
-      documentId,
-    ],
+    args: [data.patientWallet as `0x${string}`, documentId],
   });
 
   await publicClient.waitForTransactionReceipt({ hash: txHash });
 
   try {
-    await logAuditEvent(data.patientWallet, documentId, AuditAction.DOCUMENT_ACCESSED);
+    await logAuditEvent(
+      data.patientWallet,
+      documentId,
+      AuditAction.DOCUMENT_ACCESSED,
+    );
   } catch {
     // On-chain audit logging is best-effort
   }
@@ -122,7 +139,10 @@ async function logAccessHandler(
   return { txHash };
 }
 
-async function validateLogAccess(data: LogAccessData, auth: AuthContext): Promise<boolean> {
+async function validateLogAccess(
+  data: LogAccessData,
+  auth: AuthContext,
+): Promise<boolean> {
   return await validatePatientAccess(data.patientWallet, auth.wallet);
 }
 
@@ -143,13 +163,14 @@ interface GrantAccessData {
 
 async function grantAccessHandler(
   data: GrantAccessData,
-  auth: AuthContext,
+  _auth: AuthContext,
 ): Promise<{ txHash: string }> {
   const { publicClient, walletClient } = await getClients();
 
-  const resourceId = data.resourceId.startsWith("0x") && data.resourceId.length === 66
-    ? (data.resourceId as `0x${string}`)
-    : keccak256(toHex(data.resourceId));
+  const resourceId =
+    data.resourceId.startsWith("0x") && data.resourceId.length === 66
+      ? (data.resourceId as `0x${string}`)
+      : keccak256(toHex(data.resourceId));
 
   const txHash = await walletClient.writeContract({
     address: CONTRACT_ADDRESSES.HealthProofProtocol as `0x${string}`,
@@ -167,7 +188,11 @@ async function grantAccessHandler(
   await publicClient.waitForTransactionReceipt({ hash: txHash });
 
   try {
-    await logAuditEvent(data.patientWallet, resourceId, AuditAction.PERMISSION_GRANTED);
+    await logAuditEvent(
+      data.patientWallet,
+      resourceId,
+      AuditAction.PERMISSION_GRANTED,
+    );
   } catch {
     // On-chain audit logging is best-effort
   }
@@ -175,7 +200,10 @@ async function grantAccessHandler(
   return { txHash };
 }
 
-async function validateProtocolGrantAccess(data: GrantAccessData, auth: AuthContext): Promise<boolean> {
+async function validateProtocolGrantAccess(
+  data: GrantAccessData,
+  auth: AuthContext,
+): Promise<boolean> {
   return await validatePatientAccess(data.patientWallet, auth.wallet);
 }
 
@@ -193,7 +221,7 @@ interface RevokeAccessData {
 
 async function revokeAccessHandler(
   data: RevokeAccessData,
-  auth: AuthContext,
+  _auth: AuthContext,
 ): Promise<{ txHash: string }> {
   const { publicClient, walletClient } = await getClients();
 
@@ -210,7 +238,11 @@ async function revokeAccessHandler(
   await publicClient.waitForTransactionReceipt({ hash: txHash });
 
   try {
-    await logAuditEvent(data.patientWallet, data.granteeWallet, AuditAction.PERMISSION_REVOKED);
+    await logAuditEvent(
+      data.patientWallet,
+      data.granteeWallet,
+      AuditAction.PERMISSION_REVOKED,
+    );
   } catch {
     // On-chain audit logging is best-effort
   }
@@ -218,7 +250,10 @@ async function revokeAccessHandler(
   return { txHash };
 }
 
-async function validateRevokeAccess(data: RevokeAccessData, auth: AuthContext): Promise<boolean> {
+async function validateRevokeAccess(
+  data: RevokeAccessData,
+  auth: AuthContext,
+): Promise<boolean> {
   return await validatePatientAccess(data.patientWallet, auth.wallet);
 }
 
@@ -242,34 +277,35 @@ interface RegisterDocumentData {
 
 async function registerDocumentHandler(
   data: RegisterDocumentData,
-  auth: AuthContext,
+  _auth: AuthContext,
 ): Promise<{ txHash: string }> {
   const { publicClient, walletClient } = await getClients();
 
-  const documentId = data.documentId.startsWith("0x") && data.documentId.length === 66
-    ? (data.documentId as `0x${string}`)
-    : keccak256(toHex(data.documentId));
+  const documentId =
+    data.documentId.startsWith("0x") && data.documentId.length === 66
+      ? (data.documentId as `0x${string}`)
+      : keccak256(toHex(data.documentId));
 
   const institution = (data.institution as `0x${string}`) ?? ZERO_ADDRESS;
   const documentType = data.documentType
-    ? (data.documentType.startsWith("0x") && data.documentType.length === 66
-        ? (data.documentType as `0x${string}`)
-        : keccak256(toHex(data.documentType)))
+    ? data.documentType.startsWith("0x") && data.documentType.length === 66
+      ? (data.documentType as `0x${string}`)
+      : keccak256(toHex(data.documentType))
     : ZERO_BYTES32;
   const clinicalHash = data.clinicalHash
-    ? (data.clinicalHash.startsWith("0x") && data.clinicalHash.length === 66
-        ? (data.clinicalHash as `0x${string}`)
-        : keccak256(toHex(data.clinicalHash)))
+    ? data.clinicalHash.startsWith("0x") && data.clinicalHash.length === 66
+      ? (data.clinicalHash as `0x${string}`)
+      : keccak256(toHex(data.clinicalHash))
     : ZERO_BYTES32;
   const standard = data.standard
-    ? (data.standard.startsWith("0x") && data.standard.length === 66
-        ? (data.standard as `0x${string}`)
-        : keccak256(toHex(data.standard)))
+    ? data.standard.startsWith("0x") && data.standard.length === 66
+      ? (data.standard as `0x${string}`)
+      : keccak256(toHex(data.standard))
     : ZERO_BYTES32;
   const classification = data.classification
-    ? (data.classification.startsWith("0x") && data.classification.length === 66
-        ? (data.classification as `0x${string}`)
-        : keccak256(toHex(data.classification)))
+    ? data.classification.startsWith("0x") && data.classification.length === 66
+      ? (data.classification as `0x${string}`)
+      : keccak256(toHex(data.classification))
     : ZERO_BYTES32;
 
   const txHash = await walletClient.writeContract({
@@ -291,7 +327,11 @@ async function registerDocumentHandler(
   await publicClient.waitForTransactionReceipt({ hash: txHash });
 
   try {
-    await logAuditEvent(data.patientWallet, documentId, AuditAction.DOCUMENT_REGISTERED);
+    await logAuditEvent(
+      data.patientWallet,
+      documentId,
+      AuditAction.DOCUMENT_REGISTERED,
+    );
   } catch {
     // On-chain audit logging is best-effort
   }
@@ -299,6 +339,9 @@ async function registerDocumentHandler(
   return { txHash };
 }
 
-export const registerDocumentProtocolOnChain = withAuth(registerDocumentHandler, {
-  rateLimit: { windowMs: 60000, maxRequests: 5 },
-});
+export const registerDocumentProtocolOnChain = withAuth(
+  registerDocumentHandler,
+  {
+    rateLimit: { windowMs: 60000, maxRequests: 5 },
+  },
+);

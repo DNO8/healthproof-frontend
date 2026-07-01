@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo } from "react";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { useDbUser } from "@/hooks/auth/useDbUser";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
-import { useDbUser } from "@/hooks/auth/useDbUser";
 import type { UserRole } from "@/types/domain.types";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export default function DashboardLayout({
   children,
@@ -18,13 +18,15 @@ export default function DashboardLayout({
   const { ready, authenticated } = usePrivy();
   const { dbUser, loading: dbLoading } = useDbUser();
   const walletAddress = useWalletAddress();
-  const { role: onChainRole, loading: roleLoading } = useOnChainRole(walletAddress);
+  const { role: onChainRole, loading: roleLoading } =
+    useOnChainRole(walletAddress);
 
   // Fallback chain: on-chain role → DB role → localStorage intended role → patient
-  const effectiveRole: UserRole = useMemo(() => {
-    const intended = typeof window !== "undefined"
-      ? (localStorage.getItem("hp_intended_role") as UserRole | null)
-      : null;
+  const _effectiveRole: UserRole = useMemo(() => {
+    const intended =
+      typeof window !== "undefined"
+        ? (localStorage.getItem("hp_intended_role") as UserRole | null)
+        : null;
     const dbRole = dbUser?.role?.toLowerCase() as UserRole | null;
     return onChainRole ?? dbRole ?? intended ?? "patient";
   }, [onChainRole, dbUser?.role]);

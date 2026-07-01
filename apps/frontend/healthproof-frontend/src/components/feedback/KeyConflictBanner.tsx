@@ -1,10 +1,10 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { usePrivy } from "@privy-io/react-auth";
-import { useKeyConflictStore } from "@/state/key-conflict.store";
+import { KeyRound, Loader2, RotateCcw } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { deleteKeyPair } from "@/services/encryption/keystore";
-import { Loader2, RotateCcw, KeyRound } from "lucide-react";
+import { useKeyConflictStore } from "@/state/key-conflict.store";
 
 export function KeyConflictBanner() {
   const t = useTranslations("keyConflict");
@@ -12,7 +12,9 @@ export function KeyConflictBanner() {
   const conflict = useKeyConflictStore((s) => s.conflict);
   const isRecovering = useKeyConflictStore((s) => s.isRecovering);
   const clearConflict = useKeyConflictStore((s) => s.clearConflict);
-  const setRequestRegenerate = useKeyConflictStore((s) => s.setRequestRegenerate);
+  const setRequestRegenerate = useKeyConflictStore(
+    (s) => s.setRequestRegenerate,
+  );
 
   if (!conflict) return null;
 

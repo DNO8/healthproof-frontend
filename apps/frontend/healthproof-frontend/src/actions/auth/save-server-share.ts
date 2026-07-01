@@ -1,12 +1,12 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { withAuth, type AuthContext } from "@/lib/auth/with-auth";
+import { type AuthContext, withAuth } from "@/lib/auth/with-auth";
 import { encryptShareForServer } from "@/lib/kms/server-share-crypto";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 async function saveServerShareHandler(
   data: { userId: string; share2: string },
-  auth: AuthContext
+  auth: AuthContext,
 ) {
   if (auth.userId !== data.userId) {
     throw new Error("Unauthorized: userId mismatch");

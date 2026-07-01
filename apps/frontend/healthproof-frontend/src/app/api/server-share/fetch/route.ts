@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { decryptShareForServer } from "@/lib/kms/server-share-crypto";
-import { verifyPrivyToken, verifySelf } from "@/lib/auth/privy-verify";
 import type { JWTPayload } from "jose";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+import { verifyPrivyToken } from "@/lib/auth/privy-verify";
+import { decryptShareForServer } from "@/lib/kms/server-share-crypto";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * POST /api/server-share/fetch
@@ -25,21 +25,18 @@ export async function POST(request: Request) {
     }
 
     if (!privyToken) {
-      return NextResponse.json(
-        { error: "Auth required" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Auth required" }, { status: 401 });
     }
 
     // Verify JWT signature against Privy JWKS (use header token, not cookie)
     let payload: JWTPayload;
     try {
       payload = await verifyPrivyToken(privyToken);
-    } catch (verifyErr) {
+    } catch (_verifyErr) {
       console.error("[server-share/fetch] JWT verification failed");
       return NextResponse.json(
         { error: "Invalid or expired token" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -47,14 +44,16 @@ export async function POST(request: Request) {
     if (!userId) {
       return NextResponse.json(
         { error: "No wallet connected" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     const supabase = createAdminClient();
     const { data, error } = await supabase
       .from("users")
-      .select("server_share_ciphertext, server_share_dek_ciphertext, server_share_kms_key_id, scheme_version")
+      .select(
+        "server_share_ciphertext, server_share_dek_ciphertext, server_share_kms_key_id, scheme_version",
+      )
       .eq("id", userId)
       .single();
 
@@ -62,14 +61,14 @@ export async function POST(request: Request) {
       console.error("[server-share/fetch] No server_share_ciphertext");
       return NextResponse.json(
         { error: "No server share found for this user" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
     if (data.scheme_version !== 2) {
       return NextResponse.json(
         { error: "User not on SSS(2,3) scheme" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -99,7 +98,7 @@ export async function POST(request: Request) {
     console.error("[server-share/fetch] Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

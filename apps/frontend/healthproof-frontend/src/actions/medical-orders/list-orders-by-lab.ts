@@ -1,11 +1,11 @@
 "use server";
 
-import { createPublicClient, http, fromHex } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { createPublicClient, fromHex, http } from "viem";
 import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
-import { resolveWalletNames } from "@/lib/supabase/resolve-wallet-names";
-import { withAuth } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import { resolveWalletNames } from "@/lib/supabase/resolve-wallet-names";
 
 interface ListOrdersParams {
   labWallet: string;
@@ -26,7 +26,7 @@ export interface OrderRef {
 
 async function handler(
   data: ListOrdersParams,
-  _auth: AuthContext
+  _auth: AuthContext,
 ): Promise<{ orders: OrderRef[]; total: number }> {
   const publicClient = createPublicClient({
     chain: HEALTHPROOF_CHAIN,

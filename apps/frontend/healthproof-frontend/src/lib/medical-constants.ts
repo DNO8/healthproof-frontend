@@ -1,3 +1,27 @@
+// ─── Document types and FHIR constants (RAG MVP) ───
+
+export const DOC_TYPE = {
+  MEDICAL_RESULT: "MEDICAL_RESULT",
+  FHIR_REPORT: "FHIR_REPORT",
+} as const;
+
+export const FHIR_STANDARD = {
+  R4: "FHIR-R4",
+} as const;
+
+export const DOC_CLASSIFICATION = {
+  LAB: "LAB",
+  DIAGNOSTIC: "DIAGNOSTIC",
+} as const;
+
+export const NO_STANDARD = "NONE";
+export const NO_CLASSIFICATION = "NONE";
+
+export const REGISTER_DOCUMENT_ACTION = "registerMedicalDocument";
+
+export const ZERO_BYTES32 =
+  "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
+
 // ─── Order status enum (matches MedicalOrderRegistry.OrderStatus) ───
 
 export const OrderStatus = {

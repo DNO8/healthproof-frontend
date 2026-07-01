@@ -1,7 +1,7 @@
 "use server";
 
+import { type AuthContext, withAuth } from "@/lib/auth/with-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { withAuth, type AuthContext } from "@/lib/auth/with-auth";
 
 /**
  * Rotate user's encryption keys: generates new keypair and re-encrypts all documents.
@@ -9,7 +9,7 @@ import { withAuth, type AuthContext } from "@/lib/auth/with-auth";
  */
 async function rotateKeysHandler(
   data: { userId: string },
-  auth: AuthContext
+  auth: AuthContext,
 ): Promise<{
   success: boolean;
   rotatedDocs: number;

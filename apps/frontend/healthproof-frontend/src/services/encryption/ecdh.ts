@@ -8,7 +8,9 @@ const HKDF_INFO = new TextEncoder().encode("HealthProof-ECDH-v1");
 
 // ─── Key Pair Generation ────────────────────────────────
 
-export async function generateKeyPair(extractable = false): Promise<CryptoKeyPair> {
+export async function generateKeyPair(
+  extractable = false,
+): Promise<CryptoKeyPair> {
   return crypto.subtle.generateKey(
     { name: "ECDH", namedCurve: ECDH_CURVE },
     extractable, // private key extractability
@@ -129,14 +131,24 @@ export async function unwrapSessionKey(
   senderPublicKey: CryptoKey,
 ): Promise<CryptoKey> {
   console.log("[unwrapSessionKey] starting unwrap...");
-  console.log("[unwrapSessionKey] wrapped.data length:", wrapped.data.length, "wrapped.iv length:", wrapped.iv.length);
+  console.log(
+    "[unwrapSessionKey] wrapped.data length:",
+    wrapped.data.length,
+    "wrapped.iv length:",
+    wrapped.iv.length,
+  );
 
   const wrappingKey = await deriveWrappingKey(myPrivateKey, senderPublicKey);
   console.log("[unwrapSessionKey] wrappingKey ready");
 
   const encryptedData = base64ToArrayBuffer(wrapped.data);
   const iv = new Uint8Array(base64ToArrayBuffer(wrapped.iv));
-  console.log("[unwrapSessionKey] encryptedData length:", encryptedData.byteLength, "iv length:", iv.length);
+  console.log(
+    "[unwrapSessionKey] encryptedData length:",
+    encryptedData.byteLength,
+    "iv length:",
+    iv.length,
+  );
 
   console.log("[unwrapSessionKey] decrypting wrapped key...");
   const rawKey = await crypto.subtle.decrypt(
@@ -144,7 +156,10 @@ export async function unwrapSessionKey(
     wrappingKey,
     encryptedData,
   );
-  console.log("[unwrapSessionKey] rawKey decrypted, length:", rawKey.byteLength);
+  console.log(
+    "[unwrapSessionKey] rawKey decrypted, length:",
+    rawKey.byteLength,
+  );
 
   const sessionKey = await crypto.subtle.importKey(
     "raw",

@@ -1,7 +1,7 @@
 "use client";
 
-import { describe, it, expect } from "vitest";
-import { encodeRecoveryCode, decodeRecoveryCode } from "./recovery-code";
+import { describe, expect, it } from "vitest";
+import { decodeRecoveryCode, encodeRecoveryCode } from "./recovery-code";
 
 describe("recovery-code encode/decode", () => {
   it("roundtrip: encode then decode returns original bytes", () => {
@@ -22,7 +22,7 @@ describe("recovery-code encode/decode", () => {
     const original = new Uint8Array([0xab, 0xcd, 0xef]);
     const encoded = encodeRecoveryCode(original);
     // Inject whitespace (spaces and newlines) into the encoded string
-    const tampered = encoded.slice(0, 3) + " " + encoded.slice(3, 6) + "\n" + encoded.slice(6);
+    const tampered = `${encoded.slice(0, 3)} ${encoded.slice(3, 6)}\n${encoded.slice(6)}`;
     const decoded = decodeRecoveryCode(tampered);
     expect(decoded).toEqual(original);
   });

@@ -139,6 +139,7 @@ export default function GlobalError({
                 textDecoration: "none",
               }}
             >
+              {/* biome-ignore lint/performance/noImgElement: static error page logo */}
               <img
                 alt="HealthProof"
                 height={36}

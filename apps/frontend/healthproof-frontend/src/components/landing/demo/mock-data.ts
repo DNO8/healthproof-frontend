@@ -36,7 +36,7 @@ export function generateMockHash(): string {
   return `0x${crypto.randomUUID().replace(/-/g, "").slice(0, 40)}`;
 }
 
-let blockBase = Math.floor(28000 + Math.random() * 2000);
+const blockBase = Math.floor(28000 + Math.random() * 2000);
 const blockRef = { current: blockBase };
 
 export function getNextBlockNumber(): number {

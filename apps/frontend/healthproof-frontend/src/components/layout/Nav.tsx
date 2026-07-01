@@ -1,17 +1,17 @@
 "use client";
 
-import Image from "next/image";
-import { sileo } from "sileo";
 import { usePrivy } from "@privy-io/react-auth";
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
+import { sileo } from "sileo";
+import { clearDbUserCache } from "@/hooks/auth/useDbUser";
 import {
   Link,
-  useRouter as useIntlRouter,
   usePathname as useIntlPathname,
+  useRouter as useIntlRouter,
 } from "@/i18n/navigation";
-import { useUiStore } from "@/state/ui.store";
-import { clearDbUserCache } from "@/hooks/auth/useDbUser";
 import { clearUserSession } from "@/lib/auth/clear-session";
+import { useUiStore } from "@/state/ui.store";
 
 export function Nav() {
   const t = useTranslations("nav");
@@ -128,46 +128,41 @@ export function Nav() {
               {t("contact")}
             </Link>
 
-            {!loading && (
-              <>
-                {authenticated ? (
-                  <>
-                    <Link
-                      className={linkClass(
-                        intlPathname === "/dashboard" ||
-                          (intlPathname.startsWith("/dashboard") &&
-                            !intlPathname.startsWith("/dashboard/profile")),
-                      )}
-                      href="/dashboard"
-                    >
-                      {t("dashboard")}
-                    </Link>
-                    <Link
-                      className={linkClass(
-                        intlPathname === "/dashboard/profile",
-                      )}
-                      href="/dashboard/profile"
-                    >
-                      {t("profile")}
-                    </Link>
-                    <button
-                      className="rounded-full px-4 py-1.5 text-sm font-medium text-slate-500 transition-all duration-200 hover:bg-white/50 hover:text-slate-800"
-                      onClick={handleLogout}
-                      type="button"
-                    >
-                      {t("logout")}
-                    </button>
-                  </>
-                ) : (
+            {!loading &&
+              (authenticated ? (
+                <>
                   <Link
-                    className={linkClass(intlPathname === "/auth")}
-                    href="/auth"
+                    className={linkClass(
+                      intlPathname === "/dashboard" ||
+                        (intlPathname.startsWith("/dashboard") &&
+                          !intlPathname.startsWith("/dashboard/profile")),
+                    )}
+                    href="/dashboard"
                   >
-                    {t("login")}
+                    {t("dashboard")}
                   </Link>
-                )}
-              </>
-            )}
+                  <Link
+                    className={linkClass(intlPathname === "/dashboard/profile")}
+                    href="/dashboard/profile"
+                  >
+                    {t("profile")}
+                  </Link>
+                  <button
+                    className="rounded-full px-4 py-1.5 text-sm font-medium text-slate-500 transition-all duration-200 hover:bg-white/50 hover:text-slate-800"
+                    onClick={handleLogout}
+                    type="button"
+                  >
+                    {t("logout")}
+                  </button>
+                </>
+              ) : (
+                <Link
+                  className={linkClass(intlPathname === "/auth")}
+                  href="/auth"
+                >
+                  {t("login")}
+                </Link>
+              ))}
 
             {localePill}
           </div>

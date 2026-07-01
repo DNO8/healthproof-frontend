@@ -1,25 +1,36 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { sileo } from "sileo";
-import { useTranslations } from "next-intl";
 import { useWallets } from "@privy-io/react-auth";
-import { createWalletClient, custom, keccak256, toHex } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
-import { assignLabToOrder, getOrderOnChain, updateOrderStatusOnChain } from "@/actions/medical-orders/medical-orders-onchain";
-import { listOrdersByLab } from "@/actions/medical-orders/list-orders-by-lab";
-import { signGatewayMetaTx, signMetaTransaction } from "@/lib/metatx/forwarder";
-import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
-import type { OrderRef } from "@/actions/medical-orders/list-orders-by-lab";
-import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
-import { truncateAddress } from "@/lib/utils";
-import { EmptyState, SkeletonList } from "@/components/ui";
 import { ClipboardList } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useState } from "react";
+import { sileo } from "sileo";
+import { createWalletClient, custom, keccak256, toHex } from "viem";
+import type { OrderRef } from "@/actions/medical-orders/list-orders-by-lab";
+import { listOrdersByLab } from "@/actions/medical-orders/list-orders-by-lab";
+import {
+  assignLabToOrder,
+  getOrderOnChain,
+  updateOrderStatusOnChain,
+} from "@/actions/medical-orders/medical-orders-onchain";
+import { EmptyState, SkeletonList } from "@/components/ui";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import { signGatewayMetaTx, signMetaTransaction } from "@/lib/metatx/forwarder";
+import { truncateAddress } from "@/lib/utils";
 
-async function getViemWalletClient(wallet: { getEthereumProvider: () => Promise<any> }) {
-  const provider = await wallet.getEthereumProvider();
-  return createWalletClient({ chain: HEALTHPROOF_CHAIN, transport: custom(provider) });
+async function getViemWalletClient(wallet: {
+  getEthereumProvider: () => Promise<unknown>;
+}) {
+  const provider = (await wallet.getEthereumProvider()) as {
+    request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  };
+  return createWalletClient({
+    chain: HEALTHPROOF_CHAIN,
+    transport: custom(provider),
+  });
 }
 
 const STATUS_FILTERS = [
@@ -56,10 +67,20 @@ export default function LabOrdersPage() {
   const [orderId, setOrderId] = useState("");
   const [labWallet, setLabWallet] = useState("");
   const [lookupId, setLookupId] = useState("");
-  const [order, setOrder] = useState<{ orderId: string; patient: string; doctor: string; examType: string; status: number; episodeId: string; assignedLab: string } | null>(null);
+  const [order, setOrder] = useState<{
+    orderId: string;
+    patient: string;
+    doctor: string;
+    examType: string;
+    status: number;
+    episodeId: string;
+    assignedLab: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [assigning, setAssigning] = useState(false);
-  const [completingOrderId, setCompletingOrderId] = useState<string | null>(null);
+  const [completingOrderId, setCompletingOrderId] = useState<string | null>(
+    null,
+  );
 
   const fetchOrders = useCallback(async () => {
     if (!walletAddress) return;
@@ -72,7 +93,10 @@ export default function LabOrdersPage() {
         setOrders([]);
       }
     } catch (e) {
-      sileo.error({ title: t("loadError"), description: String(e).slice(0, 120) });
+      sileo.error({
+        title: t("loadError"),
+        description: String(e).slice(0, 120),
+      });
     } finally {
       setLoadingOrders(false);
     }
@@ -102,7 +126,10 @@ export default function LabOrdersPage() {
         sileo.error({ title: t("lookupError"), description: t("notFound") });
       }
     } catch (e) {
-      sileo.error({ title: t("lookupError"), description: String(e).slice(0, 120) });
+      sileo.error({
+        title: t("lookupError"),
+        description: String(e).slice(0, 120),
+      });
     } finally {
       setLoading(false);
     }
@@ -115,7 +142,10 @@ export default function LabOrdersPage() {
 
     const activeWallet = wallets.find((w) => w.address);
     if (!activeWallet) {
-      sileo.error({ title: t("assignError"), description: "No active wallet found" });
+      sileo.error({
+        title: t("assignError"),
+        description: "No active wallet found",
+      });
       return;
     }
 
@@ -123,7 +153,10 @@ export default function LabOrdersPage() {
     try {
       const orderRes = await getOrderOnChain({ orderId: trimmedOrderId });
       if (!orderRes.success || !orderRes.data) {
-        sileo.error({ title: t("assignError"), description: "Order not found" });
+        sileo.error({
+          title: t("assignError"),
+          description: "Order not found",
+        });
         return;
       }
       const patientWallet = orderRes.data.patient;
@@ -151,15 +184,24 @@ export default function LabOrdersPage() {
         patientWallet,
       });
       if (!res.success) {
-        sileo.error({ title: t("assignError"), description: (res.error ?? "").slice(0, 120) });
+        sileo.error({
+          title: t("assignError"),
+          description: (res.error ?? "").slice(0, 120),
+        });
       } else {
-        sileo.success({ title: t("assignSuccess"), description: `TX: ${res.data?.txHash?.slice(0, 16)}…` });
+        sileo.success({
+          title: t("assignSuccess"),
+          description: `TX: ${res.data?.txHash?.slice(0, 16)}…`,
+        });
         setOrderId("");
         setLabWallet("");
         fetchOrders();
       }
     } catch (e) {
-      sileo.error({ title: t("assignError"), description: String(e).slice(0, 120) });
+      sileo.error({
+        title: t("assignError"),
+        description: String(e).slice(0, 120),
+      });
     } finally {
       setAssigning(false);
     }
@@ -175,7 +217,10 @@ export default function LabOrdersPage() {
   async function handleCompleteOrder(order: OrderRef) {
     const activeWallet = wallets.find((w) => w.address);
     if (!activeWallet) {
-      sileo.error({ title: t("completeError"), description: "No active wallet found" });
+      sileo.error({
+        title: t("completeError"),
+        description: "No active wallet found",
+      });
       return;
     }
 
@@ -195,15 +240,28 @@ export default function LabOrdersPage() {
         HealthProofGatewayAbi,
       );
 
-      const res = await updateOrderStatusOnChain({ request, orderId: order.orderId, status: 2 });
+      const res = await updateOrderStatusOnChain({
+        request,
+        orderId: order.orderId,
+        status: 2,
+      });
       if (!res.success) {
-        sileo.error({ title: t("completeError"), description: (res.error ?? "").slice(0, 120) });
+        sileo.error({
+          title: t("completeError"),
+          description: (res.error ?? "").slice(0, 120),
+        });
       } else {
-        sileo.success({ title: t("completeSuccess"), description: `TX: ${res.data?.txHash?.slice(0, 16)}…` });
+        sileo.success({
+          title: t("completeSuccess"),
+          description: `TX: ${res.data?.txHash?.slice(0, 16)}…`,
+        });
         fetchOrders();
       }
     } catch (e) {
-      sileo.error({ title: t("completeError"), description: String(e).slice(0, 120) });
+      sileo.error({
+        title: t("completeError"),
+        description: String(e).slice(0, 120),
+      });
     } finally {
       setCompletingOrderId(null);
     }
@@ -215,7 +273,9 @@ export default function LabOrdersPage() {
 
       {/* Auto-list: My Orders */}
       <div className="neu-shell border border-white/70 p-6 sm:p-8 mb-6">
-        <h2 className="text-sm font-semibold text-slate-700 mb-4">{t("myOrders")}</h2>
+        <h2 className="text-sm font-semibold text-slate-700 mb-4">
+          {t("myOrders")}
+        </h2>
 
         {/* Status filters */}
         <div className="flex flex-wrap gap-2 mb-4">
@@ -247,15 +307,33 @@ export default function LabOrdersPage() {
                 className="neu-surface rounded-xl p-4 space-y-2 transition hover:neu-pressed"
               >
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-slate-800">{o.examType || t("orderCardTitle")}</p>
-                  <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${statusBadgeClass(o.status)}`}>
-                    {o.status === 0 ? t("statusPending") : o.status === 1 ? t("statusAssigned") : o.status === 2 ? t("statusCompleted") : t("statusCancelled")}
+                  <p className="text-sm font-semibold text-slate-800">
+                    {o.examType || t("orderCardTitle")}
+                  </p>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${statusBadgeClass(o.status)}`}
+                  >
+                    {o.status === 0
+                      ? t("statusPending")
+                      : o.status === 1
+                        ? t("statusAssigned")
+                        : o.status === 2
+                          ? t("statusCompleted")
+                          : t("statusCancelled")}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                  <span>{t("patient")}: {o.patientName || truncateAddress(o.patient)}</span>
-                  <span>{t("doctor")}: {o.doctorName || truncateAddress(o.doctor)}</span>
-                  <span>{t("createdAt")}: {new Date(o.createdAt * 1000).toLocaleDateString()}</span>
+                  <span>
+                    {t("patient")}:{" "}
+                    {o.patientName || truncateAddress(o.patient)}
+                  </span>
+                  <span>
+                    {t("doctor")}: {o.doctorName || truncateAddress(o.doctor)}
+                  </span>
+                  <span>
+                    {t("createdAt")}:{" "}
+                    {new Date(o.createdAt * 1000).toLocaleDateString()}
+                  </span>
                 </div>
                 {(o.status === 0 || o.status === 1) && (
                   <button
@@ -273,7 +351,9 @@ export default function LabOrdersPage() {
                     onClick={() => handleCompleteOrder(o)}
                     type="button"
                   >
-                    {completingOrderId === o.orderId ? t("completing") : t("completeOrder")}
+                    {completingOrderId === o.orderId
+                      ? t("completing")
+                      : t("completeOrder")}
                   </button>
                 )}
               </div>
@@ -284,7 +364,9 @@ export default function LabOrdersPage() {
 
       {/* Manual Tools */}
       <div className="neu-shell border border-white/70 p-6 sm:p-8 space-y-4 mb-6">
-        <h2 className="text-sm font-semibold text-slate-700">{t("lookupTitle")}</h2>
+        <h2 className="text-sm font-semibold text-slate-700">
+          {t("lookupTitle")}
+        </h2>
         <input
           className="neu-pressed w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none"
           placeholder={t("lookupPlaceholder")}
@@ -301,16 +383,34 @@ export default function LabOrdersPage() {
         </button>
         {order && (
           <div className="neu-inset rounded-xl p-4 space-y-1">
-            <p className="text-sm font-semibold text-slate-800">{order.examType}</p>
-            <p className="text-xs text-slate-500">{t("patient")}: {order.patient.slice(0, 8)}…{order.patient.slice(-4)}</p>
-            <p className="text-xs text-slate-500">{t("doctor")}: {order.doctor.slice(0, 8)}…{order.doctor.slice(-4)}</p>
-            <p className="text-xs text-slate-500">{t("status")}: {order.status === 0 ? t("statusPending") : order.status === 1 ? t("statusAssigned") : order.status === 2 ? t("statusCompleted") : t("statusCancelled")}</p>
+            <p className="text-sm font-semibold text-slate-800">
+              {order.examType}
+            </p>
+            <p className="text-xs text-slate-500">
+              {t("patient")}: {order.patient.slice(0, 8)}…
+              {order.patient.slice(-4)}
+            </p>
+            <p className="text-xs text-slate-500">
+              {t("doctor")}: {order.doctor.slice(0, 8)}…{order.doctor.slice(-4)}
+            </p>
+            <p className="text-xs text-slate-500">
+              {t("status")}:{" "}
+              {order.status === 0
+                ? t("statusPending")
+                : order.status === 1
+                  ? t("statusAssigned")
+                  : order.status === 2
+                    ? t("statusCompleted")
+                    : t("statusCancelled")}
+            </p>
           </div>
         )}
       </div>
 
       <div className="neu-shell border border-white/70 p-6 sm:p-8 space-y-3">
-        <h2 className="text-sm font-semibold text-slate-700">{t("assignTitle")}</h2>
+        <h2 className="text-sm font-semibold text-slate-700">
+          {t("assignTitle")}
+        </h2>
         <input
           className="neu-pressed w-full rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none"
           placeholder={t("orderIdPlaceholder")}

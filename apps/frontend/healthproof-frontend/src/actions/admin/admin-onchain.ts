@@ -1,17 +1,17 @@
 "use server";
 
-import {
-  createPublicClient,
-  createWalletClient,
-  http,
-} from "viem";
+import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import HealthProofKernelAbi from "@/lib/abis/HealthProofKernel.json";
 import IdentityRegistryAbi from "@/lib/abis/IdentityRegistry.json";
-import { withAuth, getDeployerPrivateKey, auditLog } from "@/lib/auth/with-auth";
-import type { AuthContext } from "@/lib/auth/with-auth";
 import { isVerifiedAdmin } from "@/lib/auth/permissions";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import {
+  auditLog,
+  getDeployerPrivateKey,
+  withAuth,
+} from "@/lib/auth/with-auth";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import type { ContractRole } from "@/types/domain.types";
 
 const ZERO_ADDRESS =
@@ -24,8 +24,15 @@ async function getClients() {
     `0x${pk.replace(/^0x/, "")}` as `0x${string}`,
   );
   return {
-    publicClient: createPublicClient({ chain: HEALTHPROOF_CHAIN, transport: http() }),
-    walletClient: createWalletClient({ account, chain: HEALTHPROOF_CHAIN, transport: http() }),
+    publicClient: createPublicClient({
+      chain: HEALTHPROOF_CHAIN,
+      transport: http(),
+    }),
+    walletClient: createWalletClient({
+      account,
+      chain: HEALTHPROOF_CHAIN,
+      transport: http(),
+    }),
     account,
   };
 }
@@ -43,7 +50,10 @@ export async function isProtocolPaused(): Promise<boolean> {
   return result as boolean;
 }
 
-async function pauseProtocolHandler(_data: {}, auth: AuthContext): Promise<{ txHash: string }> {
+async function pauseProtocolHandler(
+  _data: Record<string, never>,
+  auth: AuthContext,
+): Promise<{ txHash: string }> {
   const { publicClient, walletClient } = await getClients();
   const txHash = await walletClient.writeContract({
     address: CONTRACT_ADDRESSES.HealthProofKernel as `0x${string}`,
@@ -51,7 +61,7 @@ async function pauseProtocolHandler(_data: {}, auth: AuthContext): Promise<{ txH
     functionName: "pauseProtocol",
   });
   await publicClient.waitForTransactionReceipt({ hash: txHash });
-  
+
   auditLog("pauseProtocol", auth, true, {});
   return { txHash };
 }
@@ -61,7 +71,10 @@ export const pauseProtocol = withAuth(pauseProtocolHandler, {
   requireOnChainPermission: async (_data, auth) => isVerifiedAdmin(auth.wallet),
 });
 
-async function resumeProtocolHandler(_data: {}, auth: AuthContext): Promise<{ txHash: string }> {
+async function resumeProtocolHandler(
+  _data: Record<string, never>,
+  auth: AuthContext,
+): Promise<{ txHash: string }> {
   const { publicClient, walletClient } = await getClients();
   const txHash = await walletClient.writeContract({
     address: CONTRACT_ADDRESSES.HealthProofKernel as `0x${string}`,
@@ -69,7 +82,7 @@ async function resumeProtocolHandler(_data: {}, auth: AuthContext): Promise<{ tx
     functionName: "resumeProtocol",
   });
   await publicClient.waitForTransactionReceipt({ hash: txHash });
-  
+
   auditLog("resumeProtocol", auth, true, {});
   return { txHash };
 }
@@ -163,4 +176,3 @@ export async function adminGetEntity(wallet: string): Promise<{
     return null;
   }
 }
-

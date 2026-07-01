@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { getDashboardStats, type DashboardStats } from "@/actions/dashboard/dashboard-stats";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  type DashboardStats,
+  getDashboardStats,
+} from "@/actions/dashboard/dashboard-stats";
 import type { UserRole } from "@/types/domain.types";
 
 const CACHE_KEY = "hp_dashboard_stats";
@@ -32,7 +35,12 @@ function setCache(wallet: string, role: string, stats: DashboardStats) {
   try {
     sessionStorage.setItem(
       CACHE_KEY,
-      JSON.stringify({ wallet: wallet.toLowerCase(), role, stats, ts: Date.now() }),
+      JSON.stringify({
+        wallet: wallet.toLowerCase(),
+        role,
+        stats,
+        ts: Date.now(),
+      }),
     );
   } catch {
     /* ignore */
@@ -96,13 +104,17 @@ export function useDashboardStats(
       setCache(wallet, role, result);
       try {
         sessionStorage.removeItem("hp_dashboard_stats_error");
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     } catch (err) {
       console.error("[useDashboardStats]", err);
       setStats({});
       try {
         sessionStorage.setItem("hp_dashboard_stats_error", String(Date.now()));
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       // Remove from fetched set so we can retry after cooldown
       fetchedForRef.current.delete(cacheKey);
     } finally {

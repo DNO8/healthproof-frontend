@@ -1,10 +1,10 @@
 "use client";
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  encryptPrivateKeyV2,
   decryptPrivateKeyV2,
   deriveCrossDevicePassword,
+  encryptPrivateKeyV2,
 } from "./key-backup";
 
 const TEST_USER_ID = "did:privy:test-user-456";
@@ -33,10 +33,12 @@ describe("key-backup V2 (PBKDF2 + salt)", () => {
 
   it("decrypts legacy format (no v2: prefix)", async () => {
     // Legacy encrypt without V2 wrapper
-    const { encryptPrivateKey, deriveCrossDevicePassword } = await import("./key-backup");
     // We can't easily test legacy without the old deriveCrossDevicePassword,
     // but we can verify the V2 decrypt path rejects an invalid legacy string gracefully
-    const decrypted = await decryptPrivateKeyV2("invalid-legacy-string", TEST_USER_ID);
+    const decrypted = await decryptPrivateKeyV2(
+      "invalid-legacy-string",
+      TEST_USER_ID,
+    );
     expect(decrypted).toBeNull();
   });
 
@@ -47,11 +49,15 @@ describe("key-backup V2 (PBKDF2 + salt)", () => {
     expect(salt.length).toBe(16);
 
     // Re-deriving with same salt gives same password
-    const { password: password2 } = await deriveCrossDevicePassword(TEST_USER_ID, salt);
+    const { password: password2 } = await deriveCrossDevicePassword(
+      TEST_USER_ID,
+      salt,
+    );
     expect(password2).toBe(password);
 
     // Different salt gives different password
-    const { password: password3 } = await deriveCrossDevicePassword(TEST_USER_ID);
+    const { password: password3 } =
+      await deriveCrossDevicePassword(TEST_USER_ID);
     expect(password3).not.toBe(password);
   });
 });

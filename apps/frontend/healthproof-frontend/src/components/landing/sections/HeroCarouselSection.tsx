@@ -11,8 +11,8 @@ import {
   POST_BLOCKCHAIN_ASSETS,
   PRE_BLOCKCHAIN_ASSETS,
 } from "@/components/landing/constants";
-import { HeroDemoModal } from "@/components/landing/HeroDemoModal";
 import { DemoSummary } from "@/components/landing/demo/DemoSummary";
+import { HeroDemoModal } from "@/components/landing/HeroDemoModal";
 import { Button, DecorativeCircle, DecorativeCross } from "@/components/ui";
 import { useHeroPathAnimation } from "@/hooks/ui/useHeroPathAnimation";
 
@@ -150,7 +150,14 @@ export function HeroCarouselSection() {
               strokeWidth="3"
             />
             <defs>
-              <marker id="arrowhead" markerHeight="10" markerWidth="10" orient="auto" refX="5" refY="5">
+              <marker
+                id="arrowhead"
+                markerHeight="10"
+                markerWidth="10"
+                orient="auto"
+                refX="5"
+                refY="5"
+              >
                 <path d="M0,0 L10,5 L0,10 L3,5 Z" fill="#93C5FD" />
               </marker>
             </defs>
@@ -310,14 +317,15 @@ export function HeroCarouselSection() {
           {/* Animated icons traveling along paths */}
           <div className="pointer-events-none absolute inset-0 z-20">
             {Array.from({ length: ICON_COUNT }, (_, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: icon list is static and order never changes
               <div
                 className="absolute left-0 top-0 opacity-0"
+                // biome-ignore lint/suspicious/noArrayIndexKey: icon list is static and order never changes
                 key={`icon-${i}`}
                 ref={(node) => {
                   iconRefs.current[i] = node;
                 }}
               >
+                {/* biome-ignore lint/performance/noImgElement: animated icons require native img refs */}
                 <img
                   alt="asset"
                   className="object-contain drop-shadow-[0_6px_12px_rgba(104,120,156,0.25)]"
@@ -357,7 +365,9 @@ export function HeroCarouselSection() {
             <div className="absolute inset-x-0 bottom-[-30px] p-8 z-50 hidden flex-col items-center gap-2 sm:flex">
               <p className="max-w-xl px-4 text-center text-sm text-slate-500">
                 {t("captionBase")}{" "}
-                <strong className="text-slate-700">{t("captionBaseBold")}</strong>
+                <strong className="text-slate-700">
+                  {t("captionBaseBold")}
+                </strong>
                 .
               </p>
               <Button
@@ -377,7 +387,8 @@ export function HeroCarouselSection() {
           <div className="mt-12 flex flex-col items-center gap-2 sm:hidden">
             <p className="max-w-[280px] px-4 text-center text-xs text-slate-500">
               {t("captionBase")}{" "}
-              <strong className="text-slate-700">{t("captionBaseBold")}</strong>.
+              <strong className="text-slate-700">{t("captionBaseBold")}</strong>
+              .
             </p>
             <Button
               className="min-w-[200px]"

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { AlertTriangle, KeyRound, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, Loader2, KeyRound } from "lucide-react";
+import { useState } from "react";
 
 interface RegenerateKeysModalProps {
   onRegenerate: () => Promise<boolean>;
@@ -10,7 +10,11 @@ interface RegenerateKeysModalProps {
   onSwitchToRecovery?: () => void;
 }
 
-export function RegenerateKeysModal({ onRegenerate, onDismiss, onSwitchToRecovery }: RegenerateKeysModalProps) {
+export function RegenerateKeysModal({
+  onRegenerate,
+  onDismiss,
+  onSwitchToRecovery,
+}: RegenerateKeysModalProps) {
   const t = useTranslations("keyRecovery.regenerate");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,9 +47,7 @@ export function RegenerateKeysModal({ onRegenerate, onDismiss, onSwitchToRecover
             <h2 className="text-base font-semibold sm:text-lg">{t("title")}</h2>
           </div>
 
-          <p className="text-sm text-gray-600">
-            {t("body")}
-          </p>
+          <p className="text-sm text-gray-600">{t("body")}</p>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 sm:px-6">
@@ -54,9 +56,9 @@ export function RegenerateKeysModal({ onRegenerate, onDismiss, onSwitchToRecover
           </div>
 
           <div className="mb-3 space-y-1">
-            <label className="block text-xs font-medium text-gray-700">
+            <span className="block text-xs font-medium text-gray-700">
               {t("confirmLabel")}
-            </label>
+            </span>
             <input
               type="text"
               value={confirmText}
@@ -66,9 +68,7 @@ export function RegenerateKeysModal({ onRegenerate, onDismiss, onSwitchToRecover
             />
           </div>
 
-          {error && (
-            <p className="mb-3 text-sm text-red-600">{error}</p>
-          )}
+          {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
         </div>
 
         <div className="sticky bottom-0 bg-white p-4 sm:p-6 sm:pt-3">

@@ -3,11 +3,11 @@
 import { createAdminClient } from "./admin";
 
 export async function resolveWalletNames(
-  wallets: string[]
+  wallets: string[],
 ): Promise<Map<string, string | null>> {
   const map = new Map<string, string | null>();
   const unique = [...new Set(wallets.map((w) => w.toLowerCase()))].filter(
-    (w) => w && w !== "0x0000000000000000000000000000000000000000"
+    (w) => w && w !== "0x0000000000000000000000000000000000000000",
   );
   if (unique.length === 0) return map;
 
@@ -20,7 +20,10 @@ export async function resolveWalletNames(
   if (users) {
     for (const u of users) {
       if (u.wallet_address) {
-        map.set(u.wallet_address.toLowerCase(), (u.full_name as string) || null);
+        map.set(
+          u.wallet_address.toLowerCase(),
+          (u.full_name as string) || null,
+        );
       }
     }
   }

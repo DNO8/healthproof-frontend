@@ -27,7 +27,7 @@ export interface UserBackupInfo {
  */
 export function isOAuthUser(
   userEmail: string | undefined | null,
-  hasPassword: boolean | undefined
+  hasPassword: boolean | undefined,
 ): boolean {
   return !hasPassword && !!userEmail;
 }
@@ -38,7 +38,7 @@ export function isOAuthUser(
 export function getBackupMethod(
   userEmail: string | undefined | null,
   walletAddress: string | undefined | null,
-  hasPassword: boolean | undefined
+  hasPassword: boolean | undefined,
 ): BackupMethod {
   if (isOAuthUser(userEmail, hasPassword) && walletAddress) {
     return BACKUP_METHOD.WALLET;
@@ -53,7 +53,7 @@ export function getBackupMethod(
  */
 export function createRecoveryPassword(
   identifier: string,
-  secret: string
+  secret: string,
 ): string {
   return `${identifier.toLowerCase().trim()}|${secret}`;
 }

@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const PRIVY_VERIFY_URL = "https://auth.privy.io/api/v1/sessions/verify";
@@ -21,12 +21,12 @@ interface PrivySession {
  * The link is HMAC-signed and contains a unique jti.
  * No Privy session validation on the show endpoint (supports cross-device email).
  */
-export async function POST(request: Request) {
+export async function POST(_request: Request) {
   try {
     if (!MAGIC_LINK_SECRET) {
       return NextResponse.json(
         { error: "Server configuration error" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     if (!privyToken) {
       return NextResponse.json(
         { error: "Authentication required" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     if (!privyRes.ok) {
       return NextResponse.json(
         { error: "Invalid or expired authentication" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -59,10 +59,7 @@ export async function POST(request: Request) {
     const userId = session.user?.id;
 
     if (!userId) {
-      return NextResponse.json(
-        { error: "No user connected" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "No user connected" }, { status: 401 });
     }
 
     const supabase = createAdminClient();
@@ -77,7 +74,7 @@ export async function POST(request: Request) {
     if (userErr || !user?.recovery_code_hash) {
       return NextResponse.json(
         { error: "No recovery code found for user" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -91,36 +88,43 @@ export async function POST(request: Request) {
       encoder.encode(MAGIC_LINK_SECRET),
       { name: "HMAC", hash: "SHA-256" },
       false,
-      ["sign"]
+      ["sign"],
     );
 
     const signatureBuffer = await crypto.subtle.sign(
       "HMAC",
       keyMaterial,
-      encoder.encode(tokenData)
+      encoder.encode(tokenData),
     );
-    const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
+    const signature = btoa(
+      String.fromCharCode(...new Uint8Array(signatureBuffer)),
+    );
     const token = `${btoa(tokenData)}.${signature}`;
 
-    const tokenHash = await crypto.subtle.digest("SHA-256", encoder.encode(token));
+    const tokenHash = await crypto.subtle.digest(
+      "SHA-256",
+      encoder.encode(token),
+    );
     const tokenHashHex = Array.from(new Uint8Array(tokenHash))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
 
     // Store in DB with 15-minute expiry
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-    const { error: insertErr } = await supabase.from("recovery_magic_links").insert({
-      user_id: userId,
-      token_hash: tokenHashHex,
-      jti,
-      expires_at: expiresAt.toISOString(),
-    });
+    const { error: insertErr } = await supabase
+      .from("recovery_magic_links")
+      .insert({
+        user_id: userId,
+        token_hash: tokenHashHex,
+        jti,
+        expires_at: expiresAt.toISOString(),
+      });
 
     if (insertErr) {
       console.error("[issue-magic-link] DB error:", insertErr);
       return NextResponse.json(
         { error: "Failed to create magic link" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -138,7 +142,7 @@ export async function POST(request: Request) {
     console.error("[issue-magic-link] Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

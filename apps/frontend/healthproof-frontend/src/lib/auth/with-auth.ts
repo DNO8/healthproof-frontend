@@ -1,7 +1,16 @@
-import { verifyPrivyAuth, AuthContext, AuthError } from "./server-auth";
-import { checkRateLimit, RateLimitOptions, RateLimitError } from "./rate-limit";
 import { PermissionError } from "./permissions";
-import { getDeployerPrivateKey, getShamirKey, clearKeyCache, SecureKeyError } from "./secure-key";
+import {
+  checkRateLimit,
+  RateLimitError,
+  type RateLimitOptions,
+} from "./rate-limit";
+import {
+  clearKeyCache,
+  getDeployerPrivateKey,
+  getShamirKey,
+  SecureKeyError,
+} from "./secure-key";
+import { type AuthContext, AuthError, verifyPrivyAuth } from "./server-auth";
 
 export { getDeployerPrivateKey, getShamirKey, clearKeyCache };
 export type { AuthContext } from "./server-auth";
@@ -26,11 +35,15 @@ export interface AuthErrorResult {
 export type AuthResponse<T> = AuthResult<T> | AuthErrorResult;
 
 // Type guard helpers
-export function isAuthSuccess<T>(result: AuthResponse<T>): result is AuthResult<T> {
+export function isAuthSuccess<T>(
+  result: AuthResponse<T>,
+): result is AuthResult<T> {
   return result.success === true;
 }
 
-export function isAuthError<T>(result: AuthResponse<T>): result is AuthErrorResult {
+export function isAuthError<T>(
+  result: AuthResponse<T>,
+): result is AuthErrorResult {
   return result.success === false;
 }
 
@@ -41,18 +54,17 @@ type WithPrivyToken<T> = T & { _privyToken?: string };
 
 export function withAuth<T, R>(
   handler: (data: T, auth: AuthContext) => Promise<R>,
-  options: WithAuthOptions<T> = {}
+  options: WithAuthOptions<T> = {},
 ): (data: WithPrivyToken<T>) => Promise<AuthResponse<R>> {
-  const { 
-    rateLimit, 
-    requireOnChainPermission, 
-    requireAuth = true 
-  } = options;
+  const { rateLimit, requireOnChainPermission, requireAuth = true } = options;
 
   return async (data: WithPrivyToken<T>): Promise<AuthResponse<R>> => {
     try {
       // Extract optional explicit token (needed for local dev without Secure cookies)
-      const { _privyToken, ...cleanData } = data as unknown as Record<string, unknown>;
+      const { _privyToken, ...cleanData } = data as unknown as Record<
+        string,
+        unknown
+      >;
 
       // Authentication
       let auth: AuthContext | null = null;
@@ -80,10 +92,13 @@ export function withAuth<T, R>(
         const walletFromPayload =
           (cleanData as unknown as Record<string, unknown>)?.wallet ??
           (cleanData as unknown as Record<string, unknown>)?.wallet_address;
-        if (typeof walletFromPayload === "string" && walletFromPayload.startsWith("0x")) {
+        if (
+          typeof walletFromPayload === "string" &&
+          walletFromPayload.startsWith("0x")
+        ) {
           console.warn(
             "[withAuth] DEV BYPASS ACTIVE: using wallet from payload instead of Privy token. " +
-            "This is insecure and should only be used on localhost.",
+              "This is insecure and should only be used on localhost.",
           );
           auth = {
             userId: "dev-user",
@@ -105,7 +120,10 @@ export function withAuth<T, R>(
 
       // On-chain permission validation
       if (requireOnChainPermission && auth) {
-        const hasPermission = await requireOnChainPermission(cleanData as T, auth);
+        const hasPermission = await requireOnChainPermission(
+          cleanData as T,
+          auth,
+        );
         if (!hasPermission) {
           console.warn(`[withAuth] Permission denied for ${auth.wallet}`, {
             action: handler.name,
@@ -116,23 +134,24 @@ export function withAuth<T, R>(
       }
 
       // Execute handler
+      // biome-ignore lint/style/noNonNullAssertion: auth is validated above when required
       const result = await handler(cleanData as T, auth!);
-      
+
       return { success: true, data: result };
     } catch (error) {
       // Handle specific error types
       if (error instanceof AuthError) {
         return { success: false, error: error.message, code: error.statusCode };
       }
-      
+
       if (error instanceof RateLimitError) {
         return { success: false, error: error.message, code: 429 };
       }
-      
+
       if (error instanceof PermissionError) {
         return { success: false, error: error.message, code: 403 };
       }
-      
+
       if (error instanceof SecureKeyError) {
         console.error("[withAuth] Secure key error:", error.message);
         return { success: false, error: "Internal error", code: 500 };
@@ -150,8 +169,8 @@ export function withAuth<T, R>(
  */
 export function withBasicAuth<T, R>(
   handler: (data: T, auth: AuthContext) => Promise<R>,
-  actionName: string,
-  rateLimit?: RateLimitOptions
+  _actionName: string,
+  rateLimit?: RateLimitOptions,
 ): (data: WithPrivyToken<T>) => Promise<AuthResponse<R>> {
   return withAuth(handler, {
     requireAuth: true,
@@ -171,7 +190,7 @@ export function auditLog(
   auth: AuthContext,
   success: boolean,
   metadata?: Record<string, unknown>,
-  error?: string
+  error?: string,
 ): void {
   const logEntry = {
     timestamp: new Date().toISOString(),

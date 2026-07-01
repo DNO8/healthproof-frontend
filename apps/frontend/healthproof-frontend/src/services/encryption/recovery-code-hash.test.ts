@@ -1,6 +1,6 @@
 "use client";
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { hashRecoveryCode, verifyRecoveryCodeHash } from "./recovery-code";
 
 describe("recovery-code hash with salt", () => {
@@ -31,7 +31,10 @@ describe("recovery-code hash with salt", () => {
   it("verify supports legacy plain hash (no salt)", async () => {
     // Manually compute legacy SHA-256
     const encoder = new TextEncoder();
-    const digest = await crypto.subtle.digest("SHA-256", encoder.encode("legacy-code") as BufferSource);
+    const digest = await crypto.subtle.digest(
+      "SHA-256",
+      encoder.encode("legacy-code") as BufferSource,
+    );
     const legacyHash = Array.from(new Uint8Array(digest))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");

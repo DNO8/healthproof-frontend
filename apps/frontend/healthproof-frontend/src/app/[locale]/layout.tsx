@@ -1,8 +1,8 @@
+import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
-import { notFound } from "next/navigation";
-import { Nav } from "@/components/layout/Nav";
 import { MobileSheet } from "@/components/layout/MobileSheet";
+import { Nav } from "@/components/layout/Nav";
 import { ToastProvider } from "@/components/providers/ToastProvider";
 import { routing } from "@/i18n/routing";
 import { Providers } from "../providers";

@@ -1,12 +1,11 @@
 "use server";
 
-import { createPublicClient, http, fromHex } from "viem";
-import { HEALTHPROOF_CHAIN, CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { createPublicClient, fromHex, http } from "viem";
 import MedicalOrderRegistryAbi from "@/lib/abis/MedicalOrderRegistry.json";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { resolveWalletNames } from "@/lib/supabase/resolve-wallet-names";
-import { withAuth } from "@/lib/auth/with-auth";
 import type { AuthContext } from "@/lib/auth/with-auth";
+import { withAuth } from "@/lib/auth/with-auth";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import { resolveWalletNames } from "@/lib/supabase/resolve-wallet-names";
 
 interface ListOrdersParams {
   patientWallet: string;
@@ -29,7 +28,7 @@ export interface OrderRef {
 
 async function handler(
   data: ListOrdersParams,
-  _auth: AuthContext
+  _auth: AuthContext,
 ): Promise<{ orders: OrderRef[]; total: number }> {
   const publicClient = createPublicClient({
     chain: HEALTHPROOF_CHAIN,
@@ -86,16 +85,22 @@ async function handler(
   }
 
   // Enrich with names from Supabase
-  const allWallets = orders.flatMap((o) => [o.patient, o.doctor, o.assignedLab]);
+  const allWallets = orders.flatMap((o) => [
+    o.patient,
+    o.doctor,
+    o.assignedLab,
+  ]);
   const nameMap = await resolveWalletNames(allWallets);
 
   const enrichedOrders = orders.map((o) => ({
     ...o,
     patientName: nameMap.get(o.patient.toLowerCase()) ?? null,
     doctorName: nameMap.get(o.doctor.toLowerCase()) ?? null,
-    assignedLabName: o.assignedLab && o.assignedLab !== "0x0000000000000000000000000000000000000000"
-      ? (nameMap.get(o.assignedLab.toLowerCase()) ?? null)
-      : null,
+    assignedLabName:
+      o.assignedLab &&
+      o.assignedLab !== "0x0000000000000000000000000000000000000000"
+        ? (nameMap.get(o.assignedLab.toLowerCase()) ?? null)
+        : null,
   }));
 
   return { orders: enrichedOrders, total: Number(total) };

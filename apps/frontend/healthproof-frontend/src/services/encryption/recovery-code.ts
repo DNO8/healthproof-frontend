@@ -65,7 +65,9 @@ export async function hashRecoveryCode(
   if (!salt) {
     salt = crypto.getRandomValues(new Uint8Array(16));
   }
-  const combined = new Uint8Array(salt.length + encoder.encode(normalizedCode).length);
+  const combined = new Uint8Array(
+    salt.length + encoder.encode(normalizedCode).length,
+  );
   combined.set(salt, 0);
   combined.set(encoder.encode(normalizedCode), salt.length);
 

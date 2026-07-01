@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { sileo } from "sileo";
+import { CheckCircle, Mail, XCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { useCallback, useEffect, useState } from "react";
+import { sileo } from "sileo";
+import type { PermissionInvitation } from "@/actions/permissions/list-permission-invitations";
 import { listPermissionInvitations } from "@/actions/permissions/list-permission-invitations";
 import { respondPermissionInvitation } from "@/actions/permissions/respond-permission-invitation";
-import type { PermissionInvitation } from "@/actions/permissions/list-permission-invitations";
 import { EmptyState, SkeletonList } from "@/components/ui";
-import { Mail, CheckCircle, XCircle } from "lucide-react";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 
 export default function InvitationsPage() {
   const t = useTranslations("dashboard.invitations");
@@ -17,7 +17,7 @@ export default function InvitationsPage() {
   const [loading, setLoading] = useState(true);
   const [respondingId, setRespondingId] = useState<string | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!walletAddress) return;
     setLoading(true);
     try {
@@ -31,23 +31,32 @@ export default function InvitationsPage() {
         throw new Error(res.error);
       }
     } catch (e) {
-      sileo.error({ title: t("loadError") ?? "Error", description: String(e).slice(0, 120) });
+      sileo.error({
+        title: t("loadError") ?? "Error",
+        description: String(e).slice(0, 120),
+      });
     } finally {
       setLoading(false);
     }
-  }
+  }, [walletAddress, t]);
 
   useEffect(() => {
     load();
-  }, [walletAddress]);
+  }, [load]);
 
   async function handleRespond(id: string, action: "accept" | "reject") {
     setRespondingId(id);
     try {
-      const res = await respondPermissionInvitation({ invitationId: id, action });
+      const res = await respondPermissionInvitation({
+        invitationId: id,
+        action,
+      });
       if (res.success) {
         sileo.success({
-          title: action === "accept" ? (t("acceptSuccess") ?? "Accepted") : (t("rejectSuccess") ?? "Rejected"),
+          title:
+            action === "accept"
+              ? (t("acceptSuccess") ?? "Accepted")
+              : (t("rejectSuccess") ?? "Rejected"),
           description:
             action === "accept"
               ? (t("acceptSuccessDesc") ?? "Permission invitation accepted.")
@@ -58,19 +67,26 @@ export default function InvitationsPage() {
         throw new Error(res.error);
       }
     } catch (e) {
-      sileo.error({ title: t("respondError") ?? "Error", description: String(e).slice(0, 120) });
+      sileo.error({
+        title: t("respondError") ?? "Error",
+        description: String(e).slice(0, 120),
+      });
     } finally {
       setRespondingId(null);
     }
   }
 
   const pendingInvitations = invitations.filter((i) => i.status === "pending");
-  const respondedInvitations = invitations.filter((i) => i.status !== "pending");
+  const respondedInvitations = invitations.filter(
+    (i) => i.status !== "pending",
+  );
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">{t("title") ?? "Invitations"}</h1>
+        <h1 className="text-2xl font-bold text-slate-800">
+          {t("title") ?? "Invitations"}
+        </h1>
         <p className="mt-1 text-sm text-slate-500">{t("description")}</p>
       </div>
 
@@ -83,7 +99,10 @@ export default function InvitationsPage() {
           {loading ? (
             <SkeletonList count={3} />
           ) : pendingInvitations.length === 0 ? (
-            <EmptyState icon={Mail} title={t("noPending") ?? "No pending invitations."} />
+            <EmptyState
+              icon={Mail}
+              title={t("noPending") ?? "No pending invitations."}
+            />
           ) : (
             <div className="space-y-3">
               {pendingInvitations.map((inv) => (
@@ -93,14 +112,17 @@ export default function InvitationsPage() {
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-800 truncate">
-                      {t("from") ?? "From"}: {inv.patient_wallet.slice(0, 10)}…{inv.patient_wallet.slice(-4)}
+                      {t("from") ?? "From"}: {inv.patient_wallet.slice(0, 10)}…
+                      {inv.patient_wallet.slice(-4)}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {t("scope")}: {inv.scope} · {inv.document_ids.length} {t("documents") ?? "docs"}
+                      {t("scope")}: {inv.scope} · {inv.document_ids.length}{" "}
+                      {t("documents") ?? "docs"}
                     </p>
                     {inv.expires_at_unix > 0 && (
                       <p className="text-xs text-slate-400 mt-0.5">
-                        {t("expires")}: {new Date(inv.expires_at_unix * 1000).toLocaleString()}
+                        {t("expires")}:{" "}
+                        {new Date(inv.expires_at_unix * 1000).toLocaleString()}
                       </p>
                     )}
                   </div>
@@ -138,7 +160,10 @@ export default function InvitationsPage() {
           {loading ? (
             <SkeletonList count={3} />
           ) : respondedInvitations.length === 0 ? (
-            <EmptyState icon={Mail} title={t("noHistory") ?? "No past invitations."} />
+            <EmptyState
+              icon={Mail}
+              title={t("noHistory") ?? "No past invitations."}
+            />
           ) : (
             <div className="space-y-3">
               {respondedInvitations.map((inv) => (
@@ -148,17 +173,36 @@ export default function InvitationsPage() {
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-800 truncate">
-                      {t("from") ?? "From"}: {inv.patient_wallet.slice(0, 10)}…{inv.patient_wallet.slice(-4)}
+                      {t("from") ?? "From"}: {inv.patient_wallet.slice(0, 10)}…
+                      {inv.patient_wallet.slice(-4)}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {t("scope")}: {inv.scope} · {inv.document_ids.length} {t("documents") ?? "docs"}
+                      {t("scope")}: {inv.scope} · {inv.document_ids.length}{" "}
+                      {t("documents") ?? "docs"}
                     </p>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      {inv.status === "accepted" && <span className="text-green-600">{t("accepted") ?? "Accepted"}</span>}
-                      {inv.status === "rejected" && <span className="text-red-500">{t("rejected") ?? "Rejected"}</span>}
-                      {inv.status === "cancelled" && <span className="text-slate-500">{t("cancelled") ?? "Cancelled"}</span>}
-                      {inv.status === "expired" && <span className="text-slate-500">{t("expired") ?? "Expired"}</span>}
-                      {inv.responded_at && ` · ${new Date(inv.responded_at).toLocaleString()}`}
+                      {inv.status === "accepted" && (
+                        <span className="text-green-600">
+                          {t("accepted") ?? "Accepted"}
+                        </span>
+                      )}
+                      {inv.status === "rejected" && (
+                        <span className="text-red-500">
+                          {t("rejected") ?? "Rejected"}
+                        </span>
+                      )}
+                      {inv.status === "cancelled" && (
+                        <span className="text-slate-500">
+                          {t("cancelled") ?? "Cancelled"}
+                        </span>
+                      )}
+                      {inv.status === "expired" && (
+                        <span className="text-slate-500">
+                          {t("expired") ?? "Expired"}
+                        </span>
+                      )}
+                      {inv.responded_at &&
+                        ` · ${new Date(inv.responded_at).toLocaleString()}`}
                     </p>
                   </div>
                   {inv.tx_hash && (
