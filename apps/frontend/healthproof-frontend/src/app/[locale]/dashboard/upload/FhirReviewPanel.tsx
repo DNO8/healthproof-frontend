@@ -1,14 +1,20 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { HelpCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { useDriverTour } from "@/hooks/use-driver-tour";
+import {
+  ANALYTICAL_METHODS,
+  OBSERVATION_INTERPRETATIONS,
+  UCUM_UNITS,
+} from "@/services/fhir-rag/fhir-options";
 import type {
   AuditReport,
   ExtractedDoc,
   LabFilledFields,
 } from "@/services/fhir-rag/schema";
+import { LoincSelector } from "./LoincSelector";
 
 interface FhirReviewPanelProps {
   doc: ExtractedDoc;
@@ -17,6 +23,47 @@ interface FhirReviewPanelProps {
   onChange: (fields: LabFilledFields) => void;
   onGenerate: () => void;
   generating: boolean;
+}
+
+const NA_VALUE = "N/A";
+
+function setField(
+  fields: LabFilledFields,
+  key: string,
+  value: string | undefined | null,
+): LabFilledFields {
+  const next = { ...fields };
+  if (value === undefined || value === null || value === "") {
+    delete next[key];
+  } else {
+    next[key] = value;
+  }
+  return next;
+}
+
+function FieldLabel({
+  field,
+  children,
+}: {
+  field: string;
+  children: React.ReactNode;
+}) {
+  const t = useTranslations("fhirReview");
+  return (
+    <span className="text-xs text-slate-600 min-w-[140px] flex items-center gap-1">
+      {children}
+      {t(`fieldHelp.${field}` as const) && (
+        <button
+          type="button"
+          className="text-slate-400 hover:text-sky-600 transition-colors"
+          aria-label={t(`fieldHelp.${field}` as const)}
+          title={t(`fieldHelp.${field}` as const)}
+        >
+          <HelpCircle className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </span>
+  );
 }
 
 export function FhirReviewPanel({
@@ -28,7 +75,6 @@ export function FhirReviewPanel({
   generating,
 }: FhirReviewPanelProps) {
   const t = useTranslations("fhirReview");
-  const NA_VALUE = "N/A";
   const naCount =
     audit.missing?.filter(
       (item) => labFilledFields[`${item.examIndex}.${item.field}`] === NA_VALUE,
@@ -68,6 +114,185 @@ export function FhirReviewPanel({
 
   const { start } = useDriverTour(tourSteps, { startWhen: true });
 
+  const groupedMissing = useMemo(() => {
+    return (
+      audit.missing?.reduce<Record<number, typeof audit.missing>>(
+        (acc, item) => {
+          if (!acc[item.examIndex]) acc[item.examIndex] = [];
+          acc[item.examIndex].push(item);
+          return acc;
+        },
+        {},
+      ) ?? {}
+    );
+  }, [audit.missing]);
+
+  function renderFieldControl(item: {
+    examIndex: number;
+    field: string;
+    reason: string;
+  }) {
+    const fieldKey = `${item.examIndex}.${item.field}`;
+    const isNa = labFilledFields[fieldKey] === NA_VALUE;
+    const currentValue = isNa ? "" : (labFilledFields[fieldKey] ?? "");
+    const disabled = isNa;
+
+    const baseWrapper =
+      "flex flex-col gap-1 sm:flex-row sm:gap-2 sm:items-start";
+    const baseSelect =
+      "neu-pressed flex-1 rounded-lg px-3 py-1.5 text-xs text-slate-700 disabled:opacity-50 bg-white";
+    const baseInput =
+      "neu-pressed flex-1 rounded-lg px-3 py-1.5 text-xs text-slate-700 disabled:opacity-50";
+
+    switch (item.field) {
+      case "unit":
+        return (
+          <div className={baseWrapper}>
+            <FieldLabel field={item.field}>
+              {t(`fieldLabel.${item.field}` as const, {
+                defaultValue: item.field,
+              })}
+            </FieldLabel>
+            <select
+              value={currentValue}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange(setField(labFilledFields, fieldKey, e.target.value))
+              }
+              className={baseSelect}
+            >
+              <option value="">{t("selectOption")}</option>
+              {UCUM_UNITS.map((u) => (
+                <option key={u.value} value={u.value}>
+                  {u.label}
+                </option>
+              ))}
+            </select>
+            <NaCheckbox
+              checked={isNa}
+              onChange={(v) =>
+                onChange(setField(labFilledFields, fieldKey, v ? NA_VALUE : ""))
+              }
+            />
+          </div>
+        );
+      case "method":
+        return (
+          <div className={baseWrapper}>
+            <FieldLabel field={item.field}>
+              {t(`fieldLabel.${item.field}` as const, {
+                defaultValue: item.field,
+              })}
+            </FieldLabel>
+            <select
+              value={currentValue}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange(setField(labFilledFields, fieldKey, e.target.value))
+              }
+              className={baseSelect}
+            >
+              <option value="">{t("selectOption")}</option>
+              {ANALYTICAL_METHODS.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <NaCheckbox
+              checked={isNa}
+              onChange={(v) =>
+                onChange(setField(labFilledFields, fieldKey, v ? NA_VALUE : ""))
+              }
+            />
+          </div>
+        );
+      case "interpretation":
+        return (
+          <div className={baseWrapper}>
+            <FieldLabel field={item.field}>
+              {t(`fieldLabel.${item.field}` as const, {
+                defaultValue: item.field,
+              })}
+            </FieldLabel>
+            <select
+              value={currentValue}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange(setField(labFilledFields, fieldKey, e.target.value))
+              }
+              className={baseSelect}
+            >
+              <option value="">{t("selectOption")}</option>
+              {OBSERVATION_INTERPRETATIONS.map((i) => (
+                <option key={i.value} value={i.value}>
+                  {i.label}
+                </option>
+              ))}
+            </select>
+            <NaCheckbox
+              checked={isNa}
+              onChange={(v) =>
+                onChange(setField(labFilledFields, fieldKey, v ? NA_VALUE : ""))
+              }
+            />
+          </div>
+        );
+      case "referenceRange":
+        return (
+          <div className={baseWrapper}>
+            <FieldLabel field={item.field}>
+              {t(`fieldLabel.${item.field}` as const, {
+                defaultValue: item.field,
+              })}
+            </FieldLabel>
+            <input
+              type="text"
+              value={currentValue}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange(setField(labFilledFields, fieldKey, e.target.value))
+              }
+              placeholder={t("referenceRangePlaceholder")}
+              className={baseInput}
+            />
+            <NaCheckbox
+              checked={isNa}
+              onChange={(v) =>
+                onChange(setField(labFilledFields, fieldKey, v ? NA_VALUE : ""))
+              }
+            />
+          </div>
+        );
+      default:
+        return (
+          <div className={baseWrapper}>
+            <FieldLabel field={item.field}>
+              {t(`fieldLabel.${item.field}` as const, {
+                defaultValue: item.field,
+              })}
+            </FieldLabel>
+            <input
+              type="text"
+              value={isNa ? NA_VALUE : currentValue}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange(setField(labFilledFields, fieldKey, e.target.value))
+              }
+              placeholder={item.reason}
+              className={baseInput}
+            />
+            <NaCheckbox
+              checked={isNa}
+              onChange={(v) =>
+                onChange(setField(labFilledFields, fieldKey, v ? NA_VALUE : ""))
+              }
+            />
+          </div>
+        );
+    }
+  }
+
   return (
     <div className="neu-surface rounded-xl p-5 space-y-4">
       <div className="flex items-center justify-between">
@@ -94,27 +319,53 @@ export function FhirReviewPanel({
         id="review-exams-list"
         className="space-y-2 max-h-64 overflow-y-auto"
       >
-        {doc.exams.map((exam, index) => (
-          <div
-            key={`${index}-${exam.rawName}`}
-            className="neu-inset rounded-lg p-3 text-sm"
-          >
-            <p className="font-semibold text-slate-700">{exam.rawName}</p>
-            <p className="text-slate-500">
-              {exam.value} {exam.unit ?? ""}
-            </p>
-            {audit.mappings.find((m) => m.rawName === exam.rawName) && (
-              <p className="text-xs text-slate-400 mt-1">
-                LOINC:{" "}
-                {audit.mappings.find((m) => m.rawName === exam.rawName)
-                  ?.loincCode ?? t("unconfirmed")}{" "}
-                —{" "}
-                {audit.mappings.find((m) => m.rawName === exam.rawName)
-                  ?.display ?? exam.rawName}
-              </p>
-            )}
-          </div>
-        ))}
+        {doc.exams.map((exam, index) => {
+          const proposed = audit.mappings.find(
+            (m) => m.rawName === exam.rawName,
+          );
+          const loincKey = `${index}.loinc`;
+          const confirmedLoinc = labFilledFields[loincKey] ?? null;
+          return (
+            <div
+              key={`${index}-${exam.rawName}`}
+              className="neu-inset rounded-lg p-3 text-sm space-y-2"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="font-semibold text-slate-700">{exam.rawName}</p>
+                  <p className="text-slate-500">
+                    {exam.value} {exam.unit ?? ""}
+                  </p>
+                </div>
+                {proposed && !proposed.confirmed && (
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-amber-50 text-amber-700 whitespace-nowrap">
+                    {t("unconfirmed")}
+                  </span>
+                )}
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-slate-500">{t("loincLabel")}</p>
+                <LoincSelector
+                  value={confirmedLoinc}
+                  onChange={(code) =>
+                    onChange(setField(labFilledFields, loincKey, code))
+                  }
+                  placeholder={t("loincPlaceholder")}
+                  disabled={generating}
+                  noMatchesLabel={t("loincNoMatches")}
+                  clearLabel={t("loincClear")}
+                />
+                {proposed && !confirmedLoinc && (
+                  <p className="text-xs text-slate-400">
+                    {t("loincProposed")}:{" "}
+                    {proposed.loincCode ?? t("unconfirmed")} —{" "}
+                    {proposed.display ?? exam.rawName}
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div id="review-missing-fields" className="space-y-3">
@@ -125,17 +376,14 @@ export function FhirReviewPanel({
           <p className="text-xs text-slate-500">{t("missingHint")}</p>
         </div>
         {audit.missing && audit.missing.length > 0 ? (
-          Object.entries(
-            audit.missing.reduce<Record<number, typeof audit.missing>>((acc, item) => {
-              if (!acc[item.examIndex]) acc[item.examIndex] = [];
-              acc[item.examIndex].push(item);
-              return acc;
-            }, {}),
-          ).map(([examIndex, items]) => {
+          Object.entries(groupedMissing).map(([examIndex, items]) => {
             const index = Number(examIndex);
             const exam = doc.exams[index];
             return (
-              <div key={examIndex} className="neu-inset rounded-lg p-3 space-y-2">
+              <div
+                key={examIndex}
+                className="neu-inset rounded-lg p-3 space-y-2"
+              >
                 <div className="flex items-center gap-2 text-sm">
                   <span className="font-semibold text-slate-700">
                     {exam?.rawName ?? t("unknownExam", { index: index + 1 })}
@@ -146,59 +394,11 @@ export function FhirReviewPanel({
                     </span>
                   )}
                 </div>
-                {items.map((item) => {
-                  const fieldId = `${item.examIndex}-${item.field}`;
-                  const fieldKey = `${item.examIndex}.${item.field}`;
-                  const isNa = labFilledFields[fieldKey] === NA_VALUE;
-                  return (
-                    <div
-                      key={fieldId}
-                      className="flex flex-col gap-1 sm:flex-row sm:gap-2 sm:items-center"
-                    >
-                      <label
-                        htmlFor={`missing-field-${fieldId}`}
-                        className="text-xs text-slate-600 min-w-[140px] flex items-center gap-1"
-                      >
-                        {t(`fieldLabel.${item.field}` as const, { defaultValue: item.field })}
-                        <span
-                          className="text-slate-400 hover:text-sky-600 transition-colors cursor-help"
-                          aria-label={t(`fieldHelp.${item.field}` as const)}
-                          title={t(`fieldHelp.${item.field}` as const)}
-                        >
-                          <HelpCircle className="h-3.5 w-3.5" />
-                        </span>
-                      </label>
-                      <input
-                        id={`missing-field-${fieldId}`}
-                        type="text"
-                        value={isNa ? NA_VALUE : (labFilledFields[fieldKey] ?? "")}
-                        onChange={(e) =>
-                          onChange({
-                            ...labFilledFields,
-                            [fieldKey]: e.target.value,
-                          })
-                        }
-                        disabled={isNa}
-                        placeholder={item.reason}
-                        className="neu-pressed flex-1 rounded-lg px-3 py-1.5 text-xs disabled:opacity-50"
-                      />
-                      <label className="flex items-center gap-1 text-xs text-slate-600 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={isNa}
-                          onChange={(e) =>
-                            onChange({
-                              ...labFilledFields,
-                              [fieldKey]: e.target.checked ? NA_VALUE : "",
-                            })
-                          }
-                          className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                        />
-                        {t("naLabel")}
-                      </label>
-                    </div>
-                  );
-                })}
+                {items.map((item) => (
+                  <div key={`${item.examIndex}-${item.field}`}>
+                    {renderFieldControl(item)}
+                  </div>
+                ))}
               </div>
             );
           })
@@ -219,5 +419,26 @@ export function FhirReviewPanel({
         {generating ? t("generating") : t("generateFhir")}
       </button>
     </div>
+  );
+}
+
+function NaCheckbox({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  const t = useTranslations("fhirReview");
+  return (
+    <label className="flex items-center gap-1 text-xs text-slate-600 cursor-pointer select-none min-w-[80px]">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+      />
+      {t("naLabel")}
+    </label>
   );
 }
