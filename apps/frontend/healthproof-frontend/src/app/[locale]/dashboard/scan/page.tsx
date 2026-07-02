@@ -1,8 +1,8 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { useRef, useState } from "react";
 import { sileo } from "sileo";
 import { checkAccessOnChain } from "@/actions/permissions/check-access-onchain";

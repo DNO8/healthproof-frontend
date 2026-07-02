@@ -2,8 +2,9 @@
 
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { Upload } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { useCallback, useRef, useState } from "react";
 import { sileo } from "sileo";
 import {

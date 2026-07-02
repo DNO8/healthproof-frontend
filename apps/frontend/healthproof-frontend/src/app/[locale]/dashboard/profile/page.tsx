@@ -1,8 +1,8 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import { getEntityOnChain } from "@/actions/healthcare-networks/register-entity-onchain";
 import { TourTrigger } from "@/components/onboarding/TourTrigger";

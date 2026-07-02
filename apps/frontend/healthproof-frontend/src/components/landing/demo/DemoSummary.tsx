@@ -1,8 +1,8 @@
 "use client";
 
 import { Check, FlaskConical, Shield, User, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui";
 
 interface DemoSummaryProps {

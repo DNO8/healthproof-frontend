@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useRouter } from "@/i18n/navigation";
 
 export default function DashboardPage() {
   const router = useRouter();

@@ -1,8 +1,8 @@
 import gsap from "gsap";
 import { Check, MousePointerClick } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   ACTORS,
