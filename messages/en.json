@@ -1665,6 +1665,12 @@
     "unconfirmed": "unconfirmed",
     "completeFields": "Complete missing fields",
     "missingHint": "Required data the AI did not detect",
+    "fieldLabel": {
+      "unit": "Unit",
+      "method": "Method",
+      "referenceRange": "Reference range"
+    },
+    "unknownExam": "Exam {index}",
     "noMissingFields": "No required fields are missing. You can generate the FHIR bundle.",
     "tourStart": "View this screen's tour",
     "tourExamsTitle": "Detected results",

@@ -109,7 +109,7 @@ export function FhirReviewPanel({
         ))}
       </div>
 
-      <div id="review-missing-fields" className="space-y-2">
+      <div id="review-missing-fields" className="space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-slate-700">
             {t("completeFields")}
@@ -117,29 +117,56 @@ export function FhirReviewPanel({
           <p className="text-xs text-slate-500">{t("missingHint")}</p>
         </div>
         {audit.missing && audit.missing.length > 0 ? (
-          audit.missing.map((item) => {
-            const fieldId = `${item.examIndex}-${item.field}`;
+          Object.entries(
+            audit.missing.reduce<Record<number, typeof audit.missing>>((acc, item) => {
+              if (!acc[item.examIndex]) acc[item.examIndex] = [];
+              acc[item.examIndex].push(item);
+              return acc;
+            }, {}),
+          ).map(([examIndex, items]) => {
+            const index = Number(examIndex);
+            const exam = doc.exams[index];
             return (
-              <div key={fieldId} className="flex flex-col gap-1 sm:flex-row sm:gap-2 sm:items-center">
-                <label
-                  htmlFor={`missing-field-${fieldId}`}
-                  className="text-xs text-slate-600 min-w-[120px]"
-                >
-                  {item.examIndex + 1}.{item.field}
-                </label>
-                <input
-                  id={`missing-field-${fieldId}`}
-                  type="text"
-                  value={labFilledFields[`${item.examIndex}.${item.field}`] ?? ""}
-                  onChange={(e) =>
-                    onChange({
-                      ...labFilledFields,
-                      [`${item.examIndex}.${item.field}`]: e.target.value,
-                    })
-                  }
-                  placeholder={item.reason}
-                  className="neu-pressed flex-1 rounded-lg px-3 py-1.5 text-xs"
-                />
+              <div key={examIndex} className="neu-inset rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-semibold text-slate-700">
+                    {exam?.rawName ?? t("unknownExam", { index: index + 1 })}
+                  </span>
+                  {exam?.value && (
+                    <span className="text-slate-500">
+                      {exam.value} {exam.unit ?? ""}
+                    </span>
+                  )}
+                </div>
+                {items.map((item) => {
+                  const fieldId = `${item.examIndex}-${item.field}`;
+                  return (
+                    <div
+                      key={fieldId}
+                      className="flex flex-col gap-1 sm:flex-row sm:gap-2 sm:items-center"
+                    >
+                      <label
+                        htmlFor={`missing-field-${fieldId}`}
+                        className="text-xs text-slate-600 min-w-[140px]"
+                      >
+                        {t(`fieldLabel.${item.field}` as const, { defaultValue: item.field })}
+                      </label>
+                      <input
+                        id={`missing-field-${fieldId}`}
+                        type="text"
+                        value={labFilledFields[`${item.examIndex}.${item.field}`] ?? ""}
+                        onChange={(e) =>
+                          onChange({
+                            ...labFilledFields,
+                            [`${item.examIndex}.${item.field}`]: e.target.value,
+                          })
+                        }
+                        placeholder={item.reason}
+                        className="neu-pressed flex-1 rounded-lg px-3 py-1.5 text-xs"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             );
           })
