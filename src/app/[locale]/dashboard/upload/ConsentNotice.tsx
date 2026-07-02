@@ -8,6 +8,7 @@ interface ConsentNoticeProps {
   onAccept: () => void;
   onManual: () => void;
   disabled?: boolean;
+  aiStatus?: string | null;
 }
 
 function Accordion({
@@ -44,8 +45,9 @@ function Accordion({
   );
 }
 
-export function ConsentNotice({ onAccept, onManual, disabled }: ConsentNoticeProps) {
+export function ConsentNotice({ onAccept, onManual, disabled, aiStatus }: ConsentNoticeProps) {
   const t = useTranslations("fhirReview");
+  const isAiProcessing = !!aiStatus;
   return (
     <div className="neu-surface rounded-xl p-5 space-y-4">
       <h3 className="text-base font-semibold text-slate-800">
@@ -79,8 +81,17 @@ export function ConsentNotice({ onAccept, onManual, disabled }: ConsentNoticePro
           onClick={onAccept}
           className="neu-surface hover:neu-pressed flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 disabled:opacity-50"
         >
-          <Bot className="h-4 w-4" />
-          {t("consentAccept")}
+          {isAiProcessing ? (
+            <>
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+              <span className="truncate">{aiStatus}</span>
+            </>
+          ) : (
+            <>
+              <Bot className="h-4 w-4" />
+              {t("consentAccept")}
+            </>
+          )}
         </button>
         <button
           type="button"

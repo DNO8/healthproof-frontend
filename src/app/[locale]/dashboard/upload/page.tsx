@@ -104,6 +104,7 @@ export default function UploadPage() {
   const [step, setStep] = useState<
     "select" | "consent" | "manual" | "review" | "preview" | "publish"
   >("select");
+  const [aiStatus, setAiStatus] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string>("");
   const [extractedText, setExtractedText] = useState<string>("");
   const [doc, setDoc] = useState<ExtractedDoc | null>(null);
@@ -229,6 +230,7 @@ export default function UploadPage() {
   async function handleAiProcessing() {
     if (!file) return;
     setUploading(true);
+    setAiStatus(t("aiStatusExtracting"));
     try {
       const { text, hasText, error } = await extractDocumentText(file);
       console.log("[upload] extracted text", { hasText, length: text.length, error });
@@ -244,6 +246,7 @@ export default function UploadPage() {
         return;
       }
       setExtractedText(text);
+      setAiStatus(t("aiStatusConsent"));
       console.log("[upload] logging consent", { sessionId: newSessionId });
       const consent = await logConsent(
         await withPrivyToken({ sessionId: newSessionId }),
@@ -252,6 +255,7 @@ export default function UploadPage() {
       if (!isAuthSuccess(consent) || !consent.data.success) {
         throw new Error("ConsentRequired");
       }
+      setAiStatus(t("aiStatusOpenAI"));
       console.log("[upload] moving to review step");
       await handleExtractAndAudit(newSessionId, text);
     } catch (e) {
@@ -262,11 +266,12 @@ export default function UploadPage() {
       setStep("consent");
     } finally {
       setUploading(false);
+      setAiStatus(null);
     }
   }
 
   async function handleExtractAndAudit(sessionId: string, text: string) {
-    setUploading(true);
+    setAiStatus(t("aiStatusAuditing"));
     try {
       console.log("[upload] extractAndAudit starting", { sessionId, textLength: text.length });
       const response = await extractAndAudit(
@@ -284,6 +289,7 @@ export default function UploadPage() {
         };
         setDoc(doc);
         setAudit(audit);
+        setAiStatus(t("aiStatusPreparing"));
         console.log("[upload] moving to review step from extractAndAudit");
         setStep("review");
       } else {
@@ -296,8 +302,6 @@ export default function UploadPage() {
         description: formatUploadError(e),
       });
       setStep("select");
-    } finally {
-      setUploading(false);
     }
   }
 
@@ -748,7 +752,8 @@ export default function UploadPage() {
           <ConsentNotice
             onAccept={handleAiProcessing}
             onManual={() => setStep("manual")}
-            disabled={uploading}
+            disabled={uploading || !!aiStatus}
+            aiStatus={aiStatus}
           />
         )}
 
