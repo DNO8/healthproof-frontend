@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { HelpCircle } from "lucide-react";
-import { useState } from "react";
+import { useMemo } from "react";
 import { useDriverTour } from "@/hooks/use-driver-tour";
 import type {
   AuditReport,
@@ -30,16 +30,15 @@ export function FhirReviewPanel({
   const t = useTranslations("fhirReview");
   const remaining =
     (audit.missing?.length ?? 0) + (audit.warnings?.length ?? 0);
-  const [openFieldHelp, setOpenFieldHelp] = useState<string | null>(null);
 
-  const { start } = useDriverTour(
-    [
+  const tourSteps = useMemo(
+    () => [
       {
         element: "#review-exams-list",
         popover: {
           title: t("tourExamsTitle"),
           description: t("tourExamsDesc"),
-          side: "bottom",
+          side: "bottom" as const,
         },
       },
       {
@@ -47,7 +46,7 @@ export function FhirReviewPanel({
         popover: {
           title: t("tourMissingTitle"),
           description: t("tourMissingDesc"),
-          side: "top",
+          side: "top" as const,
         },
       },
       {
@@ -55,12 +54,14 @@ export function FhirReviewPanel({
         popover: {
           title: t("tourGenerateTitle"),
           description: t("tourGenerateDesc"),
-          side: "top",
+          side: "top" as const,
         },
       },
     ],
-    { startWhen: true },
+    [t],
   );
+
+  const { start } = useDriverTour(tourSteps, { startWhen: true });
 
   return (
     <div className="neu-surface rounded-xl p-5 space-y-4">
@@ -142,47 +143,37 @@ export function FhirReviewPanel({
                 </div>
                 {items.map((item) => {
                   const fieldId = `${item.examIndex}-${item.field}`;
-                  const helpKey = `fieldHelp.${item.field}` as const;
-                  const isOpen = openFieldHelp === fieldId;
                   return (
-                    <div key={fieldId} className="space-y-1">
-                      <div className="flex flex-col gap-1 sm:flex-row sm:gap-2 sm:items-center">
-                        <label
-                          htmlFor={`missing-field-${fieldId}`}
-                          className="text-xs text-slate-600 min-w-[140px] flex items-center gap-1"
+                    <div
+                      key={fieldId}
+                      className="flex flex-col gap-1 sm:flex-row sm:gap-2 sm:items-center"
+                    >
+                      <label
+                        htmlFor={`missing-field-${fieldId}`}
+                        className="text-xs text-slate-600 min-w-[140px] flex items-center gap-1"
+                      >
+                        {t(`fieldLabel.${item.field}` as const, { defaultValue: item.field })}
+                        <span
+                          className="text-slate-400 hover:text-sky-600 transition-colors cursor-help"
+                          aria-label={t(`fieldHelp.${item.field}` as const)}
+                          title={t(`fieldHelp.${item.field}` as const)}
                         >
-                          {t(`fieldLabel.${item.field}` as const, { defaultValue: item.field })}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setOpenFieldHelp(isOpen ? null : fieldId)
-                            }
-                            className="text-slate-400 hover:text-sky-600 transition-colors"
-                            aria-label={t("showFieldHelp")}
-                            title={t("showFieldHelp")}
-                          >
-                            <HelpCircle className="h-3.5 w-3.5" />
-                          </button>
-                        </label>
-                        <input
-                          id={`missing-field-${fieldId}`}
-                          type="text"
-                          value={labFilledFields[`${item.examIndex}.${item.field}`] ?? ""}
-                          onChange={(e) =>
-                            onChange({
-                              ...labFilledFields,
-                              [`${item.examIndex}.${item.field}`]: e.target.value,
-                            })
-                          }
-                          placeholder={item.reason}
-                          className="neu-pressed flex-1 rounded-lg px-3 py-1.5 text-xs"
-                        />
-                      </div>
-                      {isOpen && (
-                        <p className="text-xs text-sky-700 bg-sky-50 rounded-lg p-2 sm:ml-[152px]">
-                          {t(helpKey, { defaultValue: "" })}
-                        </p>
-                      )}
+                          <HelpCircle className="h-3.5 w-3.5" />
+                        </span>
+                      </label>
+                      <input
+                        id={`missing-field-${fieldId}`}
+                        type="text"
+                        value={labFilledFields[`${item.examIndex}.${item.field}`] ?? ""}
+                        onChange={(e) =>
+                          onChange({
+                            ...labFilledFields,
+                            [`${item.examIndex}.${item.field}`]: e.target.value,
+                          })
+                        }
+                        placeholder={item.reason}
+                        className="neu-pressed flex-1 rounded-lg px-3 py-1.5 text-xs"
+                      />
                     </div>
                   );
                 })}
