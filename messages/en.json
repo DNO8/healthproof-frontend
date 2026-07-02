@@ -1677,15 +1677,24 @@
     "unconfirmed": "unconfirmed",
     "completeFields": "Complete missing fields",
     "missingHint": "Required data the AI did not detect",
+    "selectOption": "Select an option…",
+    "loincLabel": "LOINC code",
+    "loincPlaceholder": "Search LOINC code…",
+    "loincNoMatches": "No matches",
+    "loincClear": "Clear LOINC",
+    "loincProposed": "Proposed",
+    "referenceRangePlaceholder": "e.g. 70-110 mg/dL",
     "fieldLabel": {
       "unit": "Unit",
       "method": "Method",
-      "referenceRange": "Reference range"
+      "referenceRange": "Reference range",
+      "interpretation": "Interpretation"
     },
     "fieldHelp": {
       "unit": "Indicates the unit of measurement for the result (e.g., mg/dL, U/L, mmol/L). FHIR uses this in Observation.valueQuantity.unit so the result is comparable.",
       "method": "Describes the analytical technique used (e.g., chemiluminescence, enzymatic, immunofluorescence). FHIR records this in Observation.method to provide context for the result.",
-      "referenceRange": "The range of values considered normal for this test (e.g., 70-110 mg/dL). FHIR stores this in Observation.referenceRange to interpret whether the result is normal or abnormal."
+      "referenceRange": "The range of values considered normal for this test (e.g., 70-110 mg/dL). FHIR stores this in Observation.referenceRange to interpret whether the result is normal or abnormal.",
+      "interpretation": "Clinical interpretation of the result (e.g., normal, low, high). FHIR stores this in Observation.interpretation using the standard v3 code system."
     },
     "showFieldHelp": "What is this field?",
     "naLabel": "Not applicable",

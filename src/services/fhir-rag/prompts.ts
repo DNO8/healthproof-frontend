@@ -49,11 +49,15 @@ Genera exclusivamente un JSON con esta estructura:
 
 Reglas duras:
 - No inventes datos clínicos. Usa solo lo que viene del PDF o del laboratorio.
-- Cada Observation debe tener status, code (LOINC si fue confirmado), subject, effectiveDateTime y value[x] o dataAbsentReason.
+- El usuario puede confirmar o corregir el LOINC de cada examen usando el campo "<index>.loinc" en labFilledFields. Si existe ese valor, úsalo como código LOINC en Observation.code.coding. Si no existe, usa el propuesto en audit.mappings si confirmed=true; de lo contrario usa un code.text con rawName.
+- El usuario puede confirmar la unidad de medida usando "<index>.unit" en labFilledFields. Si existe, usa ese valor exacto (es un código UCUM válido) en Observation.valueQuantity.unit y .code. Si es "N/A", omite valueQuantity.unit.
+- El usuario puede confirmar el método analítico usando "<index>.method" en labFilledFields. Si existe y no es "N/A", genera Observation.method como CodeableConcept.text con ese valor. Si es "N/A", no generes Observation.method.
+- El usuario puede confirmar la interpretación usando "<index>.interpretation" en labFilledFields. Si existe, genera Observation.interpretation como CodeableConcept.coding con system "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation" y ese code. Si es "N/A", omite Observation.interpretation.
+- El usuario puede completar el rango de referencia usando "<index>.referenceRange" en labFilledFields. Formatos aceptados: "low-high unit" o "< X unit". Si es "N/A", omite Observation.referenceRange.
+- Cada Observation debe tener status, code, subject, effectiveDateTime y value[x] o dataAbsentReason.
 - DiagnosticReport debe tener status, code, category "LAB", subject, effectiveDateTime, issued, performer y result (refs a Observation).
 - El RUT chileno usa Identifier.system "https://www.registrocivil.cl/run".
-- Si el laboratorio no confirmó un LOINC, usa un code.text con rawName.
-- Si un campo completado por el laboratorio tiene el valor "N/A" (no aplica), no lo incluyas en el recurso FHIR. Para Observation, si unit o referenceRange son "N/A", omítelos; si method es "N/A", no generes Observation.method.
+- Si un campo completado por el laboratorio tiene el valor "N/A" (no aplica), no lo incluyas en el recurso FHIR.
 `;
 
 export const CHILE_LOINC_CONTEXT = `Subset LOINC Chile (selección):
