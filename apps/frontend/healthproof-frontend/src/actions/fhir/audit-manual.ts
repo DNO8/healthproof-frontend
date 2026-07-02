@@ -77,6 +77,6 @@ export const auditManual = withAuth(
     }
   },
   {
-    rateLimit: { windowMs: 60000, maxRequests: 10 },
+    rateLimit: { windowMs: 60000, maxRequests: 20 },
   },
 );

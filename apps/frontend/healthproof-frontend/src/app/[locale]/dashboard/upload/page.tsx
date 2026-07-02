@@ -76,6 +76,14 @@ async function getViemWalletClient(wallet: {
   });
 }
 
+function formatUploadError(e: unknown): string {
+  const message = String(e).slice(0, 160);
+  if (message.toLowerCase().includes("rate limit")) {
+    return "Rate limit. Espera unos segundos y vuelve a intentar.";
+  }
+  return message;
+}
+
 export default function UploadPage() {
   const t = useTranslations("dashboard.upload");
   const router = useRouter();
@@ -243,7 +251,7 @@ export default function UploadPage() {
     } catch (e) {
       sileo.error({
         title: t("uploadError"),
-        description: String(e).slice(0, 120),
+        description: formatUploadError(e),
       });
     } finally {
       setUploading(false);
@@ -278,7 +286,7 @@ export default function UploadPage() {
     } catch (e) {
       sileo.error({
         title: t("uploadError"),
-        description: String(e).slice(0, 120),
+        description: formatUploadError(e),
       });
       setStep("select");
     } finally {
@@ -340,7 +348,7 @@ export default function UploadPage() {
     } catch (e) {
       sileo.error({
         title: t("uploadError"),
-        description: String(e).slice(0, 120),
+        description: formatUploadError(e),
       });
     } finally {
       setUploading(false);
@@ -370,7 +378,7 @@ export default function UploadPage() {
     } catch (e) {
       sileo.error({
         title: t("uploadError"),
-        description: String(e).slice(0, 120),
+        description: formatUploadError(e),
       });
     } finally {
       setUploading(false);
@@ -581,7 +589,7 @@ export default function UploadPage() {
     } catch (e) {
       sileo.error({
         title: t("uploadError"),
-        description: String(e).slice(0, 120),
+        description: formatUploadError(e),
       });
     } finally {
       setUploading(false);
@@ -632,7 +640,7 @@ export default function UploadPage() {
                 console.error("[upload] Retry order completion failed:", err);
                 sileo.error({
                   title: t("orderCompletionFailed"),
-                  description: String(err).slice(0, 120),
+                  description: formatUploadError(err),
                 });
               } finally {
                 setUploading(false);
