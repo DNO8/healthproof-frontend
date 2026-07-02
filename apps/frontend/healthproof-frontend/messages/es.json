@@ -1661,6 +1661,12 @@
     "unconfirmed": "sin confirmar",
     "completeFields": "Completar campos faltantes",
     "missingHint": "Son datos obligatorios que la IA no detectó",
+    "fieldLabel": {
+      "unit": "Unidad",
+      "method": "Método",
+      "referenceRange": "Rango de referencia"
+    },
+    "unknownExam": "Examen {index}",
     "noMissingFields": "No faltan campos obligatorios. Puedes generar el bundle FHIR.",
     "tourStart": "Ver tour de esta pantalla",
     "tourExamsTitle": "Resultados detectados",
