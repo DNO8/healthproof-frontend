@@ -53,6 +53,7 @@ Reglas duras:
 - DiagnosticReport debe tener status, code, category "LAB", subject, effectiveDateTime, issued, performer y result (refs a Observation).
 - El RUT chileno usa Identifier.system "https://www.registrocivil.cl/run".
 - Si el laboratorio no confirmó un LOINC, usa un code.text con rawName.
+- Si un campo completado por el laboratorio tiene el valor "N/A" (no aplica), no lo incluyas en el recurso FHIR. Para Observation, si unit o referenceRange son "N/A", omítelos; si method es "N/A", no generes Observation.method.
 `;
 
 export const CHILE_LOINC_CONTEXT = `Subset LOINC Chile (selección):

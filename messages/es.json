@@ -1672,6 +1672,7 @@
       "referenceRange": "Intervalo de valores considerados normales para este examen (ej: 70-110 mg/dL). FHIR lo guarda en Observation.referenceRange para interpretar si el resultado es normal o alterado."
     },
     "showFieldHelp": "¿Qué es este campo?",
+    "naLabel": "No aplica",
     "unknownExam": "Examen {index}",
     "noMissingFields": "No faltan campos obligatorios. Puedes generar el bundle FHIR.",
     "tourStart": "Ver tour de esta pantalla",
