@@ -1,8 +1,8 @@
 "use client";
 
 import { Map as MapIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { requestTourStart } from "@/lib/onboarding/tour-events";
 
 interface TourTriggerProps {

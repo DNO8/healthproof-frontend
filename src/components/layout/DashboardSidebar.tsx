@@ -21,9 +21,9 @@ import {
   Upload,
   User,
 } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { sileo } from "sileo";
 import { clearDbUserCache } from "@/hooks/auth/useDbUser";
 import { clearUserSession } from "@/lib/auth/clear-session";

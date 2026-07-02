@@ -2,8 +2,8 @@
 
 import { useWallets } from "@privy-io/react-auth";
 import { ClipboardList } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { sileo } from "sileo";
 import { createWalletClient, custom, keccak256, toHex } from "viem";

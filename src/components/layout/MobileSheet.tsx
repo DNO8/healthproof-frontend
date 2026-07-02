@@ -18,18 +18,13 @@ import {
   Upload,
   User,
 } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 import { sileo } from "sileo";
 import { clearDbUserCache, useDbUser } from "@/hooks/auth/useDbUser";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
-import {
-  Link,
-  usePathname as useIntlPathname,
-  useRouter as useIntlRouter,
-} from "@/i18n/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { clearUserSession } from "@/lib/auth/clear-session";
 import { LINKS_BY_ROLE } from "@/lib/navigation";
 import { useUiStore } from "@/state/ui.store";
@@ -61,8 +56,6 @@ export function MobileSheet() {
   const sheetOpen = useUiStore((s) => s.mobileSheetOpen);
   const setSheetOpen = useUiStore((s) => s.setMobileSheetOpen);
   const locale = useLocale();
-  const intlRouter = useIntlRouter();
-  const intlPathname = useIntlPathname();
   const sheetRef = useRef<HTMLDivElement>(null);
 
   const walletAddress = useWalletAddress();
@@ -105,7 +98,7 @@ export function MobileSheet() {
   }
 
   function switchLocale(next: "en" | "es") {
-    intlRouter.replace(intlPathname, { locale: next });
+    router.replace(pathname, { locale: next });
   }
 
   const linkClass = (active: boolean) =>
@@ -197,14 +190,14 @@ export function MobileSheet() {
             {t("protocol")}
           </p>
           <Link
-            className={linkClass(intlPathname === "/")}
+            className={linkClass(pathname === "/")}
             href="/"
             onClick={() => setSheetOpen(false)}
           >
             {t("home")}
           </Link>
           <Link
-            className={linkClass(intlPathname === "/contact")}
+            className={linkClass(pathname === "/contact")}
             href="/contact"
             onClick={() => setSheetOpen(false)}
           >
@@ -215,7 +208,7 @@ export function MobileSheet() {
             <>
               {!isDashboard && (
                 <Link
-                  className={linkClass(intlPathname === "/dashboard")}
+                  className={linkClass(pathname === "/dashboard")}
                   href="/dashboard"
                   onClick={() => setSheetOpen(false)}
                 >
@@ -223,7 +216,7 @@ export function MobileSheet() {
                 </Link>
               )}
               <Link
-                className={linkClass(intlPathname === "/dashboard/profile")}
+                className={linkClass(pathname === "/dashboard/profile")}
                 href="/dashboard/profile"
                 onClick={() => setSheetOpen(false)}
               >
@@ -262,7 +255,7 @@ export function MobileSheet() {
               </button>
             ) : (
               <Link
-                className={linkClass(intlPathname === "/auth")}
+                className={linkClass(pathname === "/auth")}
                 href="/auth"
                 onClick={() => setSheetOpen(false)}
               >

@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { useState } from "react";
 import { ACTION_ICONS } from "@/lib/icons";
 import type { UserRole } from "@/types/domain.types";

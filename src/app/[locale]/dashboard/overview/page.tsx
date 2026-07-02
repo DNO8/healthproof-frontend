@@ -19,8 +19,8 @@ import {
   Upload,
   User,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { useDbUser } from "@/hooks/auth/useDbUser";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { useDashboardStats } from "@/hooks/dashboard/useDashboardStats";
