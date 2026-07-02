@@ -35,6 +35,10 @@ async function verifyConsent(
     .single();
 
   if (error || !data) {
+    logger.warn(
+      { sessionId, actorWallet: actorWallet.toLowerCase(), dbError: error?.message },
+      "verifyConsent failed: ConsentRequired",
+    );
     return { error: "ConsentRequired" };
   }
   return { ok: true };
@@ -43,6 +47,10 @@ async function verifyConsent(
 export const extractAndAudit = withAuth(
   async (data: ExtractAndAuditData, auth: AuthContext) => {
     const { text, sessionId, labFilledFields = {} } = data;
+    logger.info(
+      { sessionId, actor: auth.wallet.toLowerCase(), textLength: text.length },
+      "extractAndAudit started",
+    );
 
     const consent = await verifyConsent(sessionId, auth.wallet);
     if ("error" in consent) {
