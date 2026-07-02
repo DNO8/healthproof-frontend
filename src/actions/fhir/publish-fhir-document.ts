@@ -247,6 +247,6 @@ export const publishFhirDocument = withAuth(
     return { success: true };
   },
   {
-    rateLimit: { windowMs: 60000, maxRequests: 5 },
+    rateLimit: { windowMs: 60000, maxRequests: 20 },
   },
 );

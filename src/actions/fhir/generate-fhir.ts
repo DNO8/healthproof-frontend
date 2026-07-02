@@ -85,6 +85,6 @@ export const generateFhir = withAuth(
     }
   },
   {
-    rateLimit: { windowMs: 60000, maxRequests: 5 },
+    rateLimit: { windowMs: 60000, maxRequests: 20 },
   },
 );

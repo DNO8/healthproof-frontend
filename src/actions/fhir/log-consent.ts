@@ -50,6 +50,6 @@ export const logConsent = withAuth(
     return { success: true };
   },
   {
-    rateLimit: { windowMs: 60000, maxRequests: 10 },
+    rateLimit: { windowMs: 60000, maxRequests: 30 },
   },
 );
