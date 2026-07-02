@@ -1,12 +1,47 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Bot, FileText, Hand } from "lucide-react";
+import { Bot, ChevronDown, Hand } from "lucide-react";
+import { useState } from "react";
 
 interface ConsentNoticeProps {
   onAccept: () => void;
   onManual: () => void;
   disabled?: boolean;
+}
+
+function Accordion({
+  title,
+  children,
+  defaultOpen = false,
+}: {
+  title: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between p-3 text-sm font-semibold text-amber-800 hover:bg-amber-100 transition-colors"
+        aria-expanded={open}
+      >
+        <span className="flex items-center gap-2">{title}</span>
+        <ChevronDown
+          className={`h-4 w-4 text-amber-700 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      {open && (
+        <div className="px-4 pb-3 text-sm text-amber-800 space-y-1">
+          {children}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ConsentNotice({ onAccept, onManual, disabled }: ConsentNoticeProps) {
@@ -18,15 +53,23 @@ export function ConsentNotice({ onAccept, onManual, disabled }: ConsentNoticePro
       </h3>
       <p className="text-sm text-slate-600">{t("consentBody")}</p>
 
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 space-y-1">
-        <p className="font-semibold flex items-center gap-2">
-          <FileText className="h-4 w-4" />
-          {t("consentConsequenceTitle")}
-        </p>
-        <p>{t("consentConsequenceOcr")}</p>
-        <p>{t("consentConsequenceFhir")}</p>
-        <p>{t("consentOpenAiRetention")}</p>
-        <p className="text-xs text-amber-700">{t("consentNoStorage")}</p>
+      <div className="space-y-2">
+        <Accordion title={t("consentAiTitle")} defaultOpen>
+          <ul className="list-disc pl-4 space-y-1">
+            <li>{t("consentAiItem1")}</li>
+            <li>{t("consentAiItem2")}</li>
+            <li>{t("consentAiItem3")}</li>
+            <li className="text-xs text-amber-700">{t("consentAiItem4")}</li>
+          </ul>
+        </Accordion>
+
+        <Accordion title={t("consentManualTitle")}>
+          <ul className="list-disc pl-4 space-y-1">
+            <li>{t("consentManualItem1")}</li>
+            <li>{t("consentManualItem2")}</li>
+            <li>{t("consentManualItem3")}</li>
+          </ul>
+        </Accordion>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
