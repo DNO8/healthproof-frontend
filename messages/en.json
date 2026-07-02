@@ -1670,6 +1670,12 @@
       "method": "Method",
       "referenceRange": "Reference range"
     },
+    "fieldHelp": {
+      "unit": "Indicates the unit of measurement for the result (e.g., mg/dL, U/L, mmol/L). FHIR uses this in Observation.valueQuantity.unit so the result is comparable.",
+      "method": "Describes the analytical technique used (e.g., chemiluminescence, enzymatic, immunofluorescence). FHIR records this in Observation.method to provide context for the result.",
+      "referenceRange": "The range of values considered normal for this test (e.g., 70-110 mg/dL). FHIR stores this in Observation.referenceRange to interpret whether the result is normal or abnormal."
+    },
+    "showFieldHelp": "What is this field?",
     "unknownExam": "Exam {index}",
     "noMissingFields": "No required fields are missing. You can generate the FHIR bundle.",
     "tourStart": "View this screen's tour",
