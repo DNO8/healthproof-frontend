@@ -28,8 +28,13 @@ export function FhirReviewPanel({
   generating,
 }: FhirReviewPanelProps) {
   const t = useTranslations("fhirReview");
+  const NA_VALUE = "N/A";
+  const naCount =
+    audit.missing?.filter(
+      (item) => labFilledFields[`${item.examIndex}.${item.field}`] === NA_VALUE,
+    ).length ?? 0;
   const remaining =
-    (audit.missing?.length ?? 0) + (audit.warnings?.length ?? 0);
+    (audit.missing?.length ?? 0) + (audit.warnings?.length ?? 0) - naCount;
 
   const tourSteps = useMemo(
     () => [
@@ -143,6 +148,8 @@ export function FhirReviewPanel({
                 </div>
                 {items.map((item) => {
                   const fieldId = `${item.examIndex}-${item.field}`;
+                  const fieldKey = `${item.examIndex}.${item.field}`;
+                  const isNa = labFilledFields[fieldKey] === NA_VALUE;
                   return (
                     <div
                       key={fieldId}
@@ -164,16 +171,31 @@ export function FhirReviewPanel({
                       <input
                         id={`missing-field-${fieldId}`}
                         type="text"
-                        value={labFilledFields[`${item.examIndex}.${item.field}`] ?? ""}
+                        value={isNa ? NA_VALUE : (labFilledFields[fieldKey] ?? "")}
                         onChange={(e) =>
                           onChange({
                             ...labFilledFields,
-                            [`${item.examIndex}.${item.field}`]: e.target.value,
+                            [fieldKey]: e.target.value,
                           })
                         }
+                        disabled={isNa}
                         placeholder={item.reason}
-                        className="neu-pressed flex-1 rounded-lg px-3 py-1.5 text-xs"
+                        className="neu-pressed flex-1 rounded-lg px-3 py-1.5 text-xs disabled:opacity-50"
                       />
+                      <label className="flex items-center gap-1 text-xs text-slate-600 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={isNa}
+                          onChange={(e) =>
+                            onChange({
+                              ...labFilledFields,
+                              [fieldKey]: e.target.checked ? NA_VALUE : "",
+                            })
+                          }
+                          className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                        />
+                        {t("naLabel")}
+                      </label>
                     </div>
                   );
                 })}
