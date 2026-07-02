@@ -13,6 +13,10 @@ interface LogConsentData {
 export const logConsent = withAuth(
   async (data: LogConsentData, auth: AuthContext) => {
     const { sessionId } = data;
+    logger.info(
+      { sessionId, actor: auth.wallet.toLowerCase() },
+      "logConsent started",
+    );
 
     if (!isValidUuidV4(sessionId)) {
       return { error: "InvalidSessionId" };

@@ -217,11 +217,14 @@ export default function UploadPage() {
     setUploading(true);
     try {
       const { text, hasText, error } = await extractDocumentText(file);
+      console.log("[upload] extracted text", { hasText, length: text.length, error });
       const newSessionId = crypto.randomUUID();
       setSessionId(newSessionId);
+      console.log("[upload] logging consent", { sessionId: newSessionId });
       const consent = await logConsent(
         await withPrivyToken({ sessionId: newSessionId }),
       );
+      console.log("[upload] consent response", consent);
       if (!isAuthSuccess(consent) || !consent.data.success) {
         throw new Error("ConsentRequired");
       }
@@ -235,6 +238,7 @@ export default function UploadPage() {
         return;
       }
       setExtractedText(text);
+      console.log("[upload] moving to consent step");
       setStep("consent");
     } catch (e) {
       sileo.error({
@@ -249,6 +253,7 @@ export default function UploadPage() {
   async function handleExtractAndAudit(sessionId: string, text: string) {
     setUploading(true);
     try {
+      console.log("[upload] extractAndAudit starting", { sessionId, textLength: text.length });
       const response = await extractAndAudit(
         await withPrivyToken({
           text,
@@ -256,6 +261,7 @@ export default function UploadPage() {
           labFilledFields: {},
         }),
       );
+      console.log("[upload] extractAndAudit response", response);
       if (isAuthSuccess(response)) {
         const { doc, audit } = response.data as unknown as {
           doc: ExtractedDoc;
@@ -263,8 +269,10 @@ export default function UploadPage() {
         };
         setDoc(doc);
         setAudit(audit);
+        console.log("[upload] moving to review step from extractAndAudit");
         setStep("review");
       } else {
+        console.error("[upload] extractAndAudit failed", response);
         throw new Error((response as { error: string }).error);
       }
     } catch (e) {
@@ -311,9 +319,11 @@ export default function UploadPage() {
           confidence: 1,
         })),
       };
+      console.log("[upload] auditManual starting", { sessionId });
       const response = await auditManual(
         await withPrivyToken({ doc: manualDoc, sessionId }),
       );
+      console.log("[upload] auditManual response", response);
       if (isAuthSuccess(response)) {
         const { doc, audit } = response.data as unknown as {
           doc: ExtractedDoc;
@@ -321,8 +331,10 @@ export default function UploadPage() {
         };
         setDoc(doc);
         setAudit(audit);
+        console.log("[upload] moving to review step from auditManual");
         setStep("review");
       } else {
+        console.error("[upload] auditManual failed", response);
         throw new Error((response as { error: string }).error);
       }
     } catch (e) {
@@ -339,6 +351,7 @@ export default function UploadPage() {
     if (!doc || !audit || !sessionId) return;
     setUploading(true);
     try {
+      console.log("[upload] generateFhir starting", { sessionId });
       const response = await generateFhir(
         await withPrivyToken({
           doc,
@@ -347,6 +360,7 @@ export default function UploadPage() {
           sessionId,
         }),
       );
+      console.log("[upload] generateFhir response", response);
       if (isAuthSuccess(response)) {
         setGenerateResult(response.data as GenerateResult);
         setStep("preview");
@@ -490,6 +504,7 @@ export default function UploadPage() {
         }),
       );
 
+      console.log("[upload] publishFhirDocument starting", { sessionId });
       const publishResponse = await publishFhirDocument(
         await withPrivyToken({
           pdf: {
