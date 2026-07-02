@@ -778,6 +778,7 @@ export default function UploadPage() {
             result={generateResult}
             onPublish={handlePublish}
             publishing={uploading}
+            onReviewAgain={() => setStep("review")}
           />
         )}
       </div>

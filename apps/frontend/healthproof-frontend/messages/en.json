@@ -1666,6 +1666,8 @@
     "consentManualItem3": "You can fill in only the available data; fields that do not apply are marked N/A and omitted from the bundle.",
     "reviewTitle": "Review extracted results",
     "scoreTooltip": "The score measures the percentage of required fields (Must Support) from the CL-Core/CLIPS guide present in the bundle. To increase it, complete unit, method, reference range, and interpretation. Qualitative results (e.g., 'NON-REACTIVE') usually score lower because they use valueString instead of valueQuantity + unit.",
+    "scoreNotPerfect": "The bundle is at {score}%. You can publish it as is, or go back and complete the missing fields to raise the score before publishing.",
+    "reviewAgain": "Review and complete again",
     "missingCount": "{count, plural, =0 {All fields present} one {1 field to review} other {# fields to review}}",
     "unconfirmed": "unconfirmed",
     "completeFields": "Complete missing fields",
