@@ -25,6 +25,7 @@ export function ConsentNotice({ onAccept, onManual, disabled }: ConsentNoticePro
         </p>
         <p>{t("consentConsequenceOcr")}</p>
         <p>{t("consentConsequenceFhir")}</p>
+        <p>{t("consentOpenAiRetention")}</p>
         <p className="text-xs text-amber-700">{t("consentNoStorage")}</p>
       </div>
 
