@@ -3,12 +3,16 @@ export const OBSERVATION_MUST_SUPPORT = [
   "code",
   "subject",
   "effectiveDateTime",
+  "referenceRange",
+  "interpretation",
+];
+
+// Only one of these value representations is required, so they are counted as a single group.
+export const OBSERVATION_VALUE_ALTERNATIVES = [
   "valueQuantity",
   "valueString",
   "valueCodeableConcept",
   "dataAbsentReason",
-  "referenceRange",
-  "interpretation",
 ];
 
 export const DIAGNOSTIC_REPORT_MUST_SUPPORT = [
@@ -58,6 +62,13 @@ export function countMustSupport(bundle: {
     for (const field of fields) {
       total++;
       if (isMustSupportFilled(resource, field)) filled++;
+    }
+    if (resource.resourceType === "Observation") {
+      total++;
+      const hasValue = OBSERVATION_VALUE_ALTERNATIVES.some((field) =>
+        isMustSupportFilled(resource, field),
+      );
+      if (hasValue) filled++;
     }
   }
   return { total, filled };

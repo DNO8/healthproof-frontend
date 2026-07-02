@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { HelpCircle } from "lucide-react";
 import type { GenerateResult } from "@/services/fhir-rag/schema";
 
 interface FhirBundlePreviewProps {
@@ -23,15 +24,24 @@ export function FhirBundlePreview({
         <h3 className="text-base font-semibold text-slate-800">
           {t("previewTitle")}
         </h3>
-        <span
-          className={`text-xs font-medium px-2 py-1 rounded-lg ${
-            score >= 80
-              ? "bg-emerald-50 text-emerald-600"
-              : "bg-amber-50 text-amber-600"
-          }`}
-        >
-          {t("complianceScore", { score })}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className={`text-xs font-medium px-2 py-1 rounded-lg ${
+              score >= 80
+                ? "bg-emerald-50 text-emerald-600"
+                : "bg-amber-50 text-amber-600"
+            }`}
+          >
+            {t("complianceScore", { score })}
+          </span>
+          <span
+            className="text-slate-400 hover:text-sky-600 transition-colors cursor-help"
+            aria-label={t("scoreTooltip")}
+            title={t("scoreTooltip")}
+          >
+            <HelpCircle className="h-4 w-4" />
+          </span>
+        </div>
       </div>
 
       <div className="neu-inset rounded-lg p-3 max-h-80 overflow-y-auto">
