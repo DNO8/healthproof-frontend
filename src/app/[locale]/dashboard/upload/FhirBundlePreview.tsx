@@ -8,12 +8,14 @@ interface FhirBundlePreviewProps {
   result: GenerateResult;
   onPublish: () => void;
   publishing: boolean;
+  onReviewAgain?: () => void;
 }
 
 export function FhirBundlePreview({
   result,
   onPublish,
   publishing,
+  onReviewAgain,
 }: FhirBundlePreviewProps) {
   const t = useTranslations("fhirReview");
   const score = Math.round(result.compliance.score * 100);
@@ -49,6 +51,19 @@ export function FhirBundlePreview({
           {JSON.stringify(result.bundle, null, 2)}
         </pre>
       </div>
+
+      {score < 100 && onReviewAgain && (
+        <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800 space-y-2">
+          <p>{t("scoreNotPerfect", { score })}</p>
+          <button
+            type="button"
+            onClick={onReviewAgain}
+            className="neu-surface hover:neu-pressed w-full rounded-xl px-4 py-2 text-sm font-semibold text-sky-700"
+          >
+            {t("reviewAgain")}
+          </button>
+        </div>
+      )}
 
       <button
         type="button"

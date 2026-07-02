@@ -1662,6 +1662,8 @@
     "consentManualItem3": "Puedes completar solo los datos disponibles; los campos no aplicables se marcan como N/A y no se incluyen en el bundle.",
     "reviewTitle": "Revisar resultados extraídos",
     "scoreTooltip": "El puntaje mide los campos obligatorios (Must Support) de la guía CL-Core/CLIPS que están presentes en el bundle. Para subirlo, completa unidad, método, rango de referencia e interpretación. Resultados cualitativos (ej: 'NO REACTIVO') suelen puntuar menos porque usan valueString en lugar de valueQuantity + unit.",
+    "scoreNotPerfect": "El bundle está en un {score}%. Puedes publicarlo así o volver a completar los campos faltantes para subir el puntaje antes de publicar.",
+    "reviewAgain": "Volver a revisar y completar",
     "missingCount": "{count, plural, =0 {Todos los campos presentes} one {1 campo por revisar} other {# campos por revisar}}",
     "unconfirmed": "sin confirmar",
     "completeFields": "Completar campos faltantes",
