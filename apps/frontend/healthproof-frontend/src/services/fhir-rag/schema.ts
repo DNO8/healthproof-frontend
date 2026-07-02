@@ -170,12 +170,14 @@ export const fhirBundleSchema = z.object({
 
 export const generateResultSchema = z.object({
   bundle: fhirBundleSchema,
-  compliance: z.object({
-    score: z.number().min(0).max(1),
-    mustSupportTotal: z.number().int().nonnegative(),
-    mustSupportFilled: z.number().int().nonnegative(),
-    guiaVersion: z.literal("CL-Core-1.8.4_CLIPS-0.2.0"),
-  }),
+  compliance: z
+    .object({
+      score: z.number().min(0).max(1),
+      mustSupportTotal: z.number().int().nonnegative(),
+      mustSupportFilled: z.number().int().nonnegative(),
+      guiaVersion: z.literal("CL-Core-1.8.4_CLIPS-0.2.0"),
+    })
+    .optional(),
 });
 
 export function isValidChileanRut(rut: string): boolean {
