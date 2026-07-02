@@ -222,22 +222,19 @@ export default function UploadPage() {
       sileo.error({ title: t("uploadError"), description: t("fileTooLarge") });
       return;
     }
+    setStep("consent");
+  }
+
+  async function handleAiProcessing() {
+    if (!file) return;
     setUploading(true);
     try {
       const { text, hasText, error } = await extractDocumentText(file);
       console.log("[upload] extracted text", { hasText, length: text.length, error });
       const newSessionId = crypto.randomUUID();
       setSessionId(newSessionId);
-      console.log("[upload] logging consent", { sessionId: newSessionId });
-      const consent = await logConsent(
-        await withPrivyToken({ sessionId: newSessionId }),
-      );
-      console.log("[upload] consent response", consent);
-      if (!isAuthSuccess(consent) || !consent.data.success) {
-        throw new Error("ConsentRequired");
-      }
       if (!hasText || error) {
-        console.error("[handleStartProcessing] extraction failed", { text, hasText, error });
+        console.error("[handleAiProcessing] extraction failed", { text, hasText, error });
         sileo.warning({
           title: tModal("noTextTitle"),
           description: `${tModal("noTextDesc")}${error ? ` (${error})` : ""}`,
@@ -246,13 +243,22 @@ export default function UploadPage() {
         return;
       }
       setExtractedText(text);
-      console.log("[upload] moving to consent step");
-      setStep("consent");
+      console.log("[upload] logging consent", { sessionId: newSessionId });
+      const consent = await logConsent(
+        await withPrivyToken({ sessionId: newSessionId }),
+      );
+      console.log("[upload] consent response", consent);
+      if (!isAuthSuccess(consent) || !consent.data.success) {
+        throw new Error("ConsentRequired");
+      }
+      console.log("[upload] moving to review step");
+      await handleExtractAndAudit(newSessionId, text);
     } catch (e) {
       sileo.error({
         title: t("uploadError"),
         description: formatUploadError(e),
       });
+      setStep("consent");
     } finally {
       setUploading(false);
     }
@@ -739,7 +745,8 @@ export default function UploadPage() {
 
         {step === "consent" && (
           <ConsentNotice
-            onAccept={() => handleExtractAndAudit(sessionId, extractedText)}
+            onAccept={handleAiProcessing}
+            onManual={() => setStep("manual")}
             disabled={uploading}
           />
         )}
