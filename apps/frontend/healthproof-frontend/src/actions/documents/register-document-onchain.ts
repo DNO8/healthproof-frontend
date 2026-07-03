@@ -109,30 +109,63 @@ async function registerDocumentHandler(
     classification,
   } = data;
 
+  console.log("[registerDocumentOnChain] Incoming request:", {
+    cid,
+    fileHash,
+    patientWallet,
+    documentType,
+    standard,
+    classification,
+    episodeId: data.episodeId,
+    authWallet: auth.wallet,
+    gateway: CONTRACT_ADDRESSES.HealthProofGateway,
+    requestTo: request?.to,
+    requestFrom: request?.from,
+    requestValue: request?.value?.toString?.(),
+    requestDataPrefix: request?.data?.slice(0, 20),
+  });
+
   if (!isValidForwardRequest(request)) {
-    throw new Error("InvalidForwardRequest");
+    console.error("[registerDocumentOnChain] ForwardRequest validation failed:", {
+      request,
+      authWallet: auth.wallet,
+      gateway: CONTRACT_ADDRESSES.HealthProofGateway,
+    });
+    throw new Error("InvalidForwardRequest: malformed forward request");
   }
   if (!isValidSha256(fileHash)) {
-    throw new Error("InvalidForwardRequest");
+    console.error("[registerDocumentOnChain] Invalid fileHash:", fileHash);
+    throw new Error("InvalidForwardRequest: invalid fileHash");
   }
   if (!isValidEvmAddress(patientWallet)) {
-    throw new Error("InvalidForwardRequest");
+    console.error("[registerDocumentOnChain] Invalid patientWallet:", patientWallet);
+    throw new Error("InvalidForwardRequest: invalid patientWallet");
   }
   if (!isValidCid(cid)) {
-    throw new Error("InvalidForwardRequest");
+    console.error("[registerDocumentOnChain] Invalid CID:", cid);
+    throw new Error("InvalidForwardRequest: invalid CID");
   }
   if (
     request.to.toLowerCase() !==
     CONTRACT_ADDRESSES.HealthProofGateway.toLowerCase()
   ) {
-    throw new Error("InvalidForwardRequest");
+    console.error("[registerDocumentOnChain] request.to mismatch:", {
+      requestTo: request.to,
+      expectedGateway: CONTRACT_ADDRESSES.HealthProofGateway,
+    });
+    throw new Error("InvalidForwardRequest: request.to != HealthProofGateway");
   }
   if (request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
+    console.error("[registerDocumentOnChain] Signer mismatch:", {
+      requestFrom: request.from,
+      authWallet: auth.wallet,
+    });
     throw new Error("SignerMismatch");
   }
   const value = BigInt(request.value);
   if (value !== BigInt(0)) {
-    throw new Error("InvalidForwardRequest");
+    console.error("[registerDocumentOnChain] Non-zero value:", value.toString());
+    throw new Error("InvalidForwardRequest: value must be 0");
   }
 
   const expectedDocumentId = keccak256(toHex(cid));
@@ -157,7 +190,8 @@ async function registerDocumentHandler(
   });
 
   if (decoded.functionName !== "registerMedicalDocument") {
-    throw new Error("InvalidForwardRequest");
+    console.error("[registerDocumentOnChain] Unexpected function name:", decoded.functionName);
+    throw new Error("InvalidForwardRequest: function must be registerMedicalDocument");
   }
   const args = decoded.args as [
     `0x${string}`, // documentId
@@ -183,18 +217,38 @@ async function registerDocumentHandler(
     onChainClassification,
   ] = args;
 
-  if (
-    onChainDocumentId.toLowerCase() !== expectedDocumentId.toLowerCase() ||
-    onChainPatient.toLowerCase() !== patientWallet.toLowerCase() ||
-    onChainInstitution.toLowerCase() !== auth.wallet.toLowerCase() ||
-    onChainDocumentType.toLowerCase() !== expectedDocumentType.toLowerCase() ||
-    onChainClinicalHash.toLowerCase() !== expectedClinicalHash.toLowerCase() ||
-    onChainEpisodeId.toLowerCase() !== expectedEpisodeId.toLowerCase() ||
-    onChainCid !== cid ||
-    onChainStandard.toLowerCase() !== expectedStandard.toLowerCase() ||
-    onChainClassification.toLowerCase() !== expectedClassification.toLowerCase()
-  ) {
-    throw new Error("InvalidForwardRequest");
+  const fieldMismatches: string[] = [];
+  if (onChainDocumentId.toLowerCase() !== expectedDocumentId.toLowerCase()) {
+    fieldMismatches.push(`documentId: expected ${expectedDocumentId}, got ${onChainDocumentId}`);
+  }
+  if (onChainPatient.toLowerCase() !== patientWallet.toLowerCase()) {
+    fieldMismatches.push(`patient: expected ${patientWallet}, got ${onChainPatient}`);
+  }
+  if (onChainInstitution.toLowerCase() !== auth.wallet.toLowerCase()) {
+    fieldMismatches.push(`institution: expected ${auth.wallet}, got ${onChainInstitution}`);
+  }
+  if (onChainDocumentType.toLowerCase() !== expectedDocumentType.toLowerCase()) {
+    fieldMismatches.push(`documentType: expected ${expectedDocumentType}, got ${onChainDocumentType}`);
+  }
+  if (onChainClinicalHash.toLowerCase() !== expectedClinicalHash.toLowerCase()) {
+    fieldMismatches.push(`clinicalHash: expected ${expectedClinicalHash}, got ${onChainClinicalHash}`);
+  }
+  if (onChainEpisodeId.toLowerCase() !== expectedEpisodeId.toLowerCase()) {
+    fieldMismatches.push(`episodeId: expected ${expectedEpisodeId}, got ${onChainEpisodeId}`);
+  }
+  if (onChainCid !== cid) {
+    fieldMismatches.push(`cid: expected ${cid}, got ${onChainCid}`);
+  }
+  if (onChainStandard.toLowerCase() !== expectedStandard.toLowerCase()) {
+    fieldMismatches.push(`standard: expected ${expectedStandard}, got ${onChainStandard}`);
+  }
+  if (onChainClassification.toLowerCase() !== expectedClassification.toLowerCase()) {
+    fieldMismatches.push(`classification: expected ${expectedClassification}, got ${onChainClassification}`);
+  }
+
+  if (fieldMismatches.length > 0) {
+    console.error("[registerDocumentOnChain] Decoded argument mismatches:", fieldMismatches);
+    throw new Error("InvalidForwardRequest: decoded args do not match expected values");
   }
 
   const result = await executeForwardRequest(request);

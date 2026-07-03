@@ -112,7 +112,7 @@ export function FhirReviewPanel({
     [t],
   );
 
-  const { start } = useDriverTour(tourSteps, { startWhen: true });
+  const { start } = useDriverTour(tourSteps, { startWhen: false });
 
   const groupedMissing = useMemo(() => {
     return (
