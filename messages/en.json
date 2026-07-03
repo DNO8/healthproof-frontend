@@ -1707,6 +1707,7 @@
     "showFieldHelp": "What is this field?",
     "naLabel": "Not applicable",
     "unknownExam": "Exam {index}",
+    "noValue": "no value",
     "noMissingFields": "No required fields are missing. You can generate the FHIR bundle.",
     "tourStart": "View this screen's tour",
     "tourExamsTitle": "Detected results",

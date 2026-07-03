@@ -5,14 +5,15 @@ Devuelve exclusivamente un JSON con esta estructura:
   "patient": { "name": string|null, "rut": string|null, "birthDate": string|null },
   "issuer": { "name": string|null, "date": string|null },
   "exams": [
-    { "rawName": string, "value": string, "unit": string|null, "refRange": string|null, "method": string|null, "confidence": number 0-1 }
+    { "rawName": string, "value": string|null, "unit": string|null, "refRange": string|null, "method": string|null, "confidence": number 0-1 }
   ]
 }
 
 Reglas:
-- No inventes pacientes, exámenes ni valores. Si falta un dato, usa null.
+- No inventes pacientes, exámenes ni valores.
 - "rawName" debe ser el nombre exacto del examen en el PDF.
-- "confidence" refleja cuán explícito está el valor (1 = claro, 0.5 = ambiguo).
+- "value" debe ser el resultado del examen si es claro; usa null cuando el valor no sea legible o no esté presente.
+- "confidence" refleja cuán explícito está el valor (1 = claro, 0.5 = ambiguo, 0 = no legible).
 - Fechas deben estar en formato ISO 8601 (YYYY-MM-DD) si es posible.
 `;
 

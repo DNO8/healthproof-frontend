@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export interface ExtractedExam {
   rawName: string;
-  value: string;
+  value?: string | null;
   unit?: string | null;
   refRange?: string | null;
   method?: string | null;
@@ -109,7 +109,7 @@ export function isValidUuidV4(value: string): boolean {
 
 export const extractedExamSchema = z.object({
   rawName: z.string().min(1),
-  value: z.string().min(1),
+  value: z.string().nullable().optional(),
   unit: z.string().nullable().optional(),
   refRange: z.string().nullable().optional(),
   method: z.string().nullable().optional(),

@@ -1703,6 +1703,7 @@
     "showFieldHelp": "¿Qué es este campo?",
     "naLabel": "No aplica",
     "unknownExam": "Examen {index}",
+    "noValue": "sin valor",
     "noMissingFields": "No faltan campos obligatorios. Puedes generar el bundle FHIR.",
     "tourStart": "Ver tour de esta pantalla",
     "tourExamsTitle": "Resultados detectados",
