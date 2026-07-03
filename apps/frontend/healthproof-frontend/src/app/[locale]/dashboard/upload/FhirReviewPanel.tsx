@@ -334,7 +334,7 @@ export function FhirReviewPanel({
                 <div>
                   <p className="font-semibold text-slate-700">{exam.rawName}</p>
                   <p className="text-slate-500">
-                    {exam.value} {exam.unit ?? ""}
+                    {exam.value ?? t("noValue")} {exam.unit ?? ""}
                   </p>
                 </div>
                 {proposed && !proposed.confirmed && (
@@ -388,11 +388,9 @@ export function FhirReviewPanel({
                   <span className="font-semibold text-slate-700">
                     {exam?.rawName ?? t("unknownExam", { index: index + 1 })}
                   </span>
-                  {exam?.value && (
-                    <span className="text-slate-500">
-                      {exam.value} {exam.unit ?? ""}
-                    </span>
-                  )}
+                  <span className="text-slate-500">
+                    {exam?.value ?? t("noValue")} {exam?.unit ?? ""}
+                  </span>
                 </div>
                 {items.map((item) => (
                   <div key={`${item.examIndex}-${item.field}`}>
