@@ -177,6 +177,7 @@ export const publishFhirDocument = withAuth(
       NO_CLASSIFICATION,
       DOC_CLASSIFICATION.LAB,
       DOC_CLASSIFICATION.DIAGNOSTIC,
+      DOC_CLASSIFICATION.OBSTETRIC_ULTRASOUND,
     ];
     if (!allowedClassifications.includes(data.classification)) {
       return { error: "InvalidClassification" };

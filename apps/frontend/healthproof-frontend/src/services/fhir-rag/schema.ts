@@ -47,8 +47,59 @@ export interface LabFilledFields {
   [key: string]: string;
 }
 
+export interface ObstetricMeasurement {
+  name: string;
+  value?: string | null;
+  unit?: string | null;
+  gestationalAgeWeeks?: number | null;
+  loincCode?: string | null;
+  confidence: number;
+}
+
+export interface ObstetricReport {
+  patient: {
+    name?: string | null;
+    rut?: string | null;
+    birthDate?: string | null;
+  };
+  issuer?: {
+    name?: string | null;
+    date?: string | null;
+  };
+  gestationalAgeWeeks?: number | null;
+  gestationalAgeDays?: number | null;
+  amnioticFluidIndex?: string | null;
+  placenta?: string | null;
+  observations?: string | null;
+  measurements: ObstetricMeasurement[];
+}
+
+export type DocumentCategory = "lab" | "obstetric-ultrasound" | "other";
+
+export interface DocumentType {
+  type: DocumentCategory;
+  confidence: number;
+  reason: string;
+}
+
+export interface SuggestionOption {
+  code: string;
+  system: string;
+  display: string;
+}
+
+export interface SuggestionField {
+  field: string;
+  type: "choice" | "text";
+  options?: SuggestionOption[];
+}
+
+export interface AuditSuggestions {
+  [field: string]: SuggestionField;
+}
+
 export type FhirResource = {
-  resourceType: "DiagnosticReport" | "Observation";
+  resourceType: "DiagnosticReport" | "Observation" | "DocumentReference";
   [key: string]: unknown;
 };
 
@@ -152,9 +203,62 @@ export const auditReportSchema = z.object({
   mustSupportFilled: z.number().int().nonnegative().default(0),
 });
 
+export const documentTypeSchema = z.object({
+  type: z.enum(["lab", "obstetric-ultrasound", "other"]),
+  confidence: z.number().min(0).max(1),
+  reason: z.string().min(1),
+});
+
+export const suggestionOptionSchema = z.object({
+  code: z.string().min(1),
+  system: z.string().min(1),
+  display: z.string().min(1),
+});
+
+export const suggestionFieldSchema = z.object({
+  field: z.string().min(1),
+  type: z.enum(["choice", "text"]),
+  options: z.array(suggestionOptionSchema).optional(),
+});
+
+export const auditSuggestionsSchema = z.record(suggestionFieldSchema);
+
+export const obstetricMeasurementSchema = z.object({
+  name: z.string().min(1),
+  value: z.string().nullable().optional(),
+  unit: z.string().nullable().optional(),
+  gestationalAgeWeeks: z.number().nullable().optional(),
+  loincCode: z.string().nullable().optional(),
+  confidence: z.number().min(0).max(1),
+});
+
+export const obstetricReportSchema = z.object({
+  patient: z.object({
+    name: z.string().nullable().optional(),
+    rut: z.string().nullable().optional(),
+    birthDate: z.string().nullable().optional(),
+  }),
+  issuer: z
+    .object({
+      name: z.string().nullable().optional(),
+      date: z.string().nullable().optional(),
+    })
+    .optional(),
+  gestationalAgeWeeks: z.number().nullable().optional(),
+  gestationalAgeDays: z.number().nullable().optional(),
+  amnioticFluidIndex: z.string().nullable().optional(),
+  placenta: z.string().nullable().optional(),
+  observations: z.string().nullable().optional(),
+  measurements: z.array(obstetricMeasurementSchema),
+});
+
 export const fhirResourceSchema = z
   .object({
-    resourceType: z.enum(["DiagnosticReport", "Observation"]),
+    resourceType: z.enum([
+      "DiagnosticReport",
+      "Observation",
+      "DocumentReference",
+    ]),
   })
   .passthrough();
 

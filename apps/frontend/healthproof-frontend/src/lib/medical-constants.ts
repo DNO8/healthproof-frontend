@@ -12,6 +12,7 @@ export const FHIR_STANDARD = {
 export const DOC_CLASSIFICATION = {
   LAB: "LAB",
   DIAGNOSTIC: "DIAGNOSTIC",
+  OBSTETRIC_ULTRASOUND: "OBSTETRIC_ULTRASOUND",
 } as const;
 
 export const NO_STANDARD = "NONE";

@@ -1,10 +1,13 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { Bot, ChevronDown, Hand } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
+import type { DocumentCategory } from "@/services/fhir-rag/schema";
+
 interface ConsentNoticeProps {
+  documentType?: DocumentCategory;
   onAccept: () => void;
   onManual: () => void;
   disabled?: boolean;
@@ -45,23 +48,32 @@ function Accordion({
   );
 }
 
-export function ConsentNotice({ onAccept, onManual, disabled, aiStatus }: ConsentNoticeProps) {
+export function ConsentNotice({
+  documentType = "lab",
+  onAccept,
+  onManual,
+  disabled,
+  aiStatus,
+}: ConsentNoticeProps) {
   const t = useTranslations("fhirReview");
   const isAiProcessing = !!aiStatus;
+  const prefix = documentType === "obstetric-ultrasound" ? "obstetric" : "lab";
   return (
     <div className="neu-surface rounded-xl p-5 space-y-4">
       <h3 className="text-base font-semibold text-slate-800">
-        {t("consentTitle")}
+        {t(`${prefix}.consentTitle`)}
       </h3>
-      <p className="text-sm text-slate-600">{t("consentBody")}</p>
+      <p className="text-sm text-slate-600">{t(`${prefix}.consentBody`)}</p>
 
       <div className="space-y-2">
-        <Accordion title={t("consentAiTitle")} defaultOpen>
+        <Accordion title={t(`${prefix}.consentAiTitle`)} defaultOpen>
           <ul className="list-disc pl-4 space-y-1">
-            <li>{t("consentAiItem1")}</li>
-            <li>{t("consentAiItem2")}</li>
-            <li>{t("consentAiItem3")}</li>
-            <li className="text-xs text-amber-700">{t("consentAiItem4")}</li>
+            <li>{t(`${prefix}.consentAiItem1`)}</li>
+            <li>{t(`${prefix}.consentAiItem2`)}</li>
+            <li>{t(`${prefix}.consentAiItem3`)}</li>
+            <li className="text-xs text-amber-700">
+              {t(`${prefix}.consentAiItem4`)}
+            </li>
           </ul>
         </Accordion>
 

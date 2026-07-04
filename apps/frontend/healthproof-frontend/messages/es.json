@@ -782,10 +782,25 @@
       "processing": "Procesando…",
       "processButton": "Continuar",
       "aiStatusExtracting": "Analizando documento…",
+      "aiStatusClassifying": "Clasificando documento…",
       "aiStatusConsent": "Registrando consentimiento…",
       "aiStatusOpenAI": "Extrayendo exámenes con IA…",
       "aiStatusAuditing": "Comparando con guías FHIR…",
       "aiStatusPreparing": "Preparando revisión…",
+      "detectedType": "Tipo de documento detectado",
+      "documentType": {
+        "lab": "Laboratorio clínico",
+        "obstetric-ultrasound": "Ecografía obstétrica",
+        "other": "Otro documento"
+      },
+      "lowConfidenceBadge": "Baja confianza",
+      "classificationFailedTitle": "No se pudo clasificar automáticamente",
+      "classificationFailedDesc": "El documento no pudo ser clasificado. Puedes intentar procesarlo como laboratorio, ingresar los datos manualmente o subir otro archivo.",
+      "processAsLab": "Procesar como laboratorio",
+      "enterManual": "Ingresar manualmente",
+      "uploadAnotherFile": "Subir otro archivo",
+      "unsupportedDocumentTitle": "Documento no soportado",
+      "unsupportedDocumentDesc": "No detectamos un informe de laboratorio ni una ecografía obstétrica. Puedes ingresar los datos manualmente o subir otro archivo.",
       "linkedOrder": "Vinculado a Orden",
       "twoSignaturesRequired": "Se requieren dos firmas on-chain para este resultado.",
       "orderCompletionPending": "Completado de orden pendiente",
@@ -1656,6 +1671,24 @@
     "consentBody": "Puedes dejar que la IA extraiga y clasifique los resultados, o rellenarlos tú mismo sin enviar el documento a procesadores externos.",
     "consentAccept": "Usar IA (OpenAI)",
     "consentManual": "Rellenar manualmente",
+    "lab": {
+      "consentTitle": "¿Cómo procesar este informe de laboratorio?",
+      "consentBody": "La IA extraerá los exámenes de laboratorio, valores, unidades y rangos de referencia para generar un bundle FHIR.",
+      "consentAiTitle": "Al usar IA para laboratorio",
+      "consentAiItem1": "El documento/imagen se envía a OpenAI (GPT-4o-mini) para extraer texto (OCR).",
+      "consentAiItem2": "El texto extraído se envía a OpenAI para identificar exámenes de laboratorio, valores y generar el bundle FHIR.",
+      "consentAiItem3": "OpenAI puede retener los datos transitoriamente para seguridad; según su política de API no se usan para entrenar modelos.",
+      "consentAiItem4": "HealthProof no almacena el texto crudo ni el documento original en su base de datos. Solo guarda el bundle FHIR y el PDF cifrado en IPFS."
+    },
+    "obstetric": {
+      "consentTitle": "¿Cómo procesar esta ecografía obstétrica?",
+      "consentBody": "La IA extraerá las medidas fetales (BPD, HC, AC, FL), edad gestacional, líquido amniótico y placenta para generar un bundle FHIR.",
+      "consentAiTitle": "Al usar IA para ecografía obstétrica",
+      "consentAiItem1": "El documento/imagen se envía a OpenAI (GPT-4o-mini) para extraer texto (OCR).",
+      "consentAiItem2": "El texto extraído se envía a OpenAI para identificar medidas fetales, edad gestacional y otros datos de la ecografía.",
+      "consentAiItem3": "OpenAI puede retener los datos transitoriamente para seguridad; según su política de API no se usan para entrenar modelos.",
+      "consentAiItem4": "HealthProof no almacena el texto crudo ni el documento original en su base de datos. Solo guarda el bundle FHIR y el PDF cifrado en IPFS."
+    },
     "consentAiTitle": "Al usar IA",
     "consentAiItem1": "El documento/imagen se envía a OpenAI (GPT-4o-mini) para extraer texto (OCR).",
     "consentAiItem2": "El texto extraído se envía a OpenAI para identificar exámenes, valores y generar el bundle FHIR.",
@@ -1718,5 +1751,21 @@
     "complianceScore": "Puntaje FHIR: {score}%",
     "publishing": "Publicando PDF + FHIR…",
     "publishFhir": "Publicar PDF + FHIR"
+  },
+  "obstetricReview": {
+    "reviewTitle": "Revisar medidas obstétricas",
+    "gestationalAgeWeeks": "Edad gestacional (semanas)",
+    "gestationalAgeDays": "Edad gestacional (días)",
+    "amnioticFluidIndex": "Índice de líquido amniótico",
+    "placenta": "Placenta",
+    "observations": "Observaciones",
+    "measurements": "Medidas fetales",
+    "measurementName": "Medida",
+    "value": "Valor",
+    "unit": "Unidad",
+    "loincCode": "Código LOINC",
+    "auditWarnings": "Advertencias del auditor",
+    "generating": "Generando bundle FHIR…",
+    "generateButton": "Generar bundle FHIR"
   }
 }
