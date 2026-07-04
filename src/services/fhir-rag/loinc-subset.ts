@@ -491,10 +491,98 @@ export const CHILE_LOINC_SUBSET: LoincEntry[] = [
   },
 ];
 
+export const OBSTETRIC_LOINC_SUBSET: LoincEntry[] = [
+  {
+    code: "26828-7",
+    display: "Biparietal diameter [Length] by US",
+    spanishDisplay: "Diámetro biparietal (BPD) por ecografía",
+    aliases: ["BPD", "biparietal", "diametro biparietal"],
+    component: "Biparietal diameter",
+    system: "US",
+    scale: "Qn",
+  },
+  {
+    code: "11820-8",
+    display: "Head circumference [Length] by US",
+    spanishDisplay: "Circunferencia de cabeza (HC) por ecografía",
+    aliases: ["HC", "head circumference", "circunferencia de cabeza"],
+    component: "Head circumference",
+    system: "US",
+    scale: "Qn",
+  },
+  {
+    code: "11824-0",
+    display: "Abdominal circumference [Length] by US",
+    spanishDisplay: "Circunferencia abdominal (AC) por ecografía",
+    aliases: ["AC", "abdominal circumference", "circunferencia abdominal"],
+    component: "Abdominal circumference",
+    system: "US",
+    scale: "Qn",
+  },
+  {
+    code: "11920-8",
+    display: "Femur length [Length] by US",
+    spanishDisplay: "Longitud de fémur (FL) por ecografía",
+    aliases: ["FL", "femur length", "longitud de femur"],
+    component: "Femur length",
+    system: "US",
+    scale: "Qn",
+  },
+  {
+    code: "72132-8",
+    display: "Estimated fetal weight [Mass] by US",
+    spanishDisplay: "Peso fetal estimado (PFE) por ecografía",
+    aliases: ["PFE", "estimated fetal weight", "peso fetal estimado", "EFW"],
+    component: "Estimated fetal weight",
+    system: "US",
+    scale: "Qn",
+  },
+  {
+    code: "18185-9",
+    display: "Gestational age",
+    spanishDisplay: "Edad gestacional",
+    aliases: ["edad gestacional", "gestational age", "EG", "EGA"],
+    component: "Gestational age",
+    system: "Patient",
+    scale: "Qn",
+  },
+  {
+    code: "33067-6",
+    display: "Amniotic fluid index [Length] by US",
+    spanishDisplay: "Índice de líquido amniótico (ILA) por ecografía",
+    aliases: ["ILA", "amniotic fluid index", "indice de liquido amniotico"],
+    component: "Amniotic fluid index",
+    system: "US",
+    scale: "Qn",
+  },
+];
+
 export function searchLoinc(query: string, limit = 8): LoincEntry[] {
   const q = query.toLowerCase().trim();
   if (!q) return CHILE_LOINC_SUBSET.slice(0, limit);
   const scored = CHILE_LOINC_SUBSET.map((entry) => {
+    const haystack =
+      `${entry.code} ${entry.display} ${entry.spanishDisplay} ${entry.aliases.join(" ")} ${entry.component}`.toLowerCase();
+    let score = 0;
+    if (entry.code === q) score += 100;
+    if (entry.component.toLowerCase().includes(q)) score += 40;
+    if (entry.spanishDisplay.toLowerCase().includes(q)) score += 30;
+    if (entry.display.toLowerCase().includes(q)) score += 20;
+    if (entry.aliases.some((a) => a.toLowerCase().includes(q))) score += 25;
+    if (haystack.includes(q)) score += 10;
+    return { entry, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored
+    .filter((s) => s.score > 0)
+    .slice(0, limit)
+    .map((s) => s.entry);
+}
+
+export function searchObstetricLoinc(query: string, limit = 8): LoincEntry[] {
+  const q = query.toLowerCase().trim();
+  if (!q) return OBSTETRIC_LOINC_SUBSET.slice(0, limit);
+  const scored = OBSTETRIC_LOINC_SUBSET.map((entry) => {
     const haystack =
       `${entry.code} ${entry.display} ${entry.spanishDisplay} ${entry.aliases.join(" ")} ${entry.component}`.toLowerCase();
     let score = 0;

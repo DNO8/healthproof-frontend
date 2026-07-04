@@ -11,6 +11,7 @@ import {
 } from "@/services/fhir-rag/fhir-options";
 import type {
   AuditReport,
+  DocumentCategory,
   ExtractedDoc,
   LabFilledFields,
 } from "@/services/fhir-rag/schema";
@@ -23,6 +24,7 @@ interface FhirReviewPanelProps {
   onChange: (fields: LabFilledFields) => void;
   onGenerate: () => void;
   generating: boolean;
+  documentType?: DocumentCategory;
 }
 
 const NA_VALUE = "N/A";
@@ -73,7 +75,10 @@ export function FhirReviewPanel({
   onChange,
   onGenerate,
   generating,
+  documentType,
 }: FhirReviewPanelProps) {
+  // documentType is reserved for future type-specific UI adjustments
+  void documentType;
   const t = useTranslations("fhirReview");
   const naCount =
     audit.missing?.filter(

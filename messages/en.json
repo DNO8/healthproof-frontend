@@ -782,10 +782,25 @@
       "processing": "Processing…",
       "processButton": "Continue",
       "aiStatusExtracting": "Analyzing document…",
+      "aiStatusClassifying": "Classifying document…",
       "aiStatusConsent": "Logging consent…",
       "aiStatusOpenAI": "Extracting exams with AI…",
       "aiStatusAuditing": "Auditing against FHIR guides…",
       "aiStatusPreparing": "Preparing review…",
+      "detectedType": "Detected document type",
+      "documentType": {
+        "lab": "Clinical laboratory",
+        "obstetric-ultrasound": "Obstetric ultrasound",
+        "other": "Other document"
+      },
+      "lowConfidenceBadge": "Low confidence",
+      "classificationFailedTitle": "Could not classify automatically",
+      "classificationFailedDesc": "The document could not be classified. You can try processing it as a lab report, enter the data manually, or upload another file.",
+      "processAsLab": "Process as laboratory",
+      "enterManual": "Enter manually",
+      "uploadAnotherFile": "Upload another file",
+      "unsupportedDocumentTitle": "Unsupported document",
+      "unsupportedDocumentDesc": "We did not detect a lab report or an obstetric ultrasound. You can enter the data manually or upload another file.",
       "linkedOrder": "Linked to Order",
       "twoSignaturesRequired": "Two on-chain signatures required for this result.",
       "orderCompletionPending": "Order completion pending",
@@ -1660,6 +1675,24 @@
     "consentBody": "You can let AI extract and classify the results, or fill them in yourself without sending the document to external processors.",
     "consentAccept": "Use AI (OpenAI)",
     "consentManual": "Fill in manually",
+    "lab": {
+      "consentTitle": "How do you want to process this lab report?",
+      "consentBody": "AI will extract the lab tests, values, units, and reference ranges to generate a FHIR bundle.",
+      "consentAiTitle": "When using AI for lab",
+      "consentAiItem1": "The document/image is sent to OpenAI (GPT-4o-mini) to extract text (OCR).",
+      "consentAiItem2": "The extracted text is sent to OpenAI to identify lab tests, values, and generate the FHIR bundle.",
+      "consentAiItem3": "OpenAI may retain data transiently for security; according to their API policy it is not used to train models.",
+      "consentAiItem4": "HealthProof does not store raw text or the original document in its database. Only the FHIR bundle and the encrypted PDF on IPFS are kept."
+    },
+    "obstetric": {
+      "consentTitle": "How do you want to process this obstetric ultrasound?",
+      "consentBody": "AI will extract fetal measurements (BPD, HC, AC, FL), gestational age, amniotic fluid, and placenta to generate a FHIR bundle.",
+      "consentAiTitle": "When using AI for obstetric ultrasound",
+      "consentAiItem1": "The document/image is sent to OpenAI (GPT-4o-mini) to extract text (OCR).",
+      "consentAiItem2": "The extracted text is sent to OpenAI to identify fetal measurements, gestational age, and other ultrasound data.",
+      "consentAiItem3": "OpenAI may retain data transiently for security; according to their API policy it is not used to train models.",
+      "consentAiItem4": "HealthProof does not store raw text or the original document in its database. Only the FHIR bundle and the encrypted PDF on IPFS are kept."
+    },
     "consentAiTitle": "When using AI",
     "consentAiItem1": "The document/image is sent to OpenAI (GPT-4o-mini) to extract text (OCR).",
     "consentAiItem2": "The extracted text is sent to OpenAI to identify exams, values, and generate the FHIR bundle.",
@@ -1722,5 +1755,21 @@
     "complianceScore": "FHIR score: {score}%",
     "publishing": "Publishing PDF + FHIR…",
     "publishFhir": "Publish PDF + FHIR"
+  },
+  "obstetricReview": {
+    "reviewTitle": "Review obstetric measurements",
+    "gestationalAgeWeeks": "Gestational age (weeks)",
+    "gestationalAgeDays": "Gestational age (days)",
+    "amnioticFluidIndex": "Amniotic fluid index",
+    "placenta": "Placenta",
+    "observations": "Observations",
+    "measurements": "Fetal measurements",
+    "measurementName": "Measurement",
+    "value": "Value",
+    "unit": "Unit",
+    "loincCode": "LOINC code",
+    "auditWarnings": "Auditor warnings",
+    "generating": "Generating FHIR bundle…",
+    "generateButton": "Generate FHIR bundle"
   }
 }

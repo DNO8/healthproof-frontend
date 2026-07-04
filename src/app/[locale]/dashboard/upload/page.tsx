@@ -4,7 +4,6 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { Upload } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { useCallback, useRef, useState } from "react";
 import { sileo } from "sileo";
 import {
@@ -17,8 +16,11 @@ import {
 import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
 import { registerDocumentOnChain } from "@/actions/documents/register-document-onchain";
 import { auditManual } from "@/actions/fhir/audit-manual";
+import { classifyDocument } from "@/actions/fhir/classify-document";
 import { extractAndAudit } from "@/actions/fhir/extract-and-audit";
+import { extractAndAuditObstetric } from "@/actions/fhir/extract-and-audit-obstetric";
 import { generateFhir } from "@/actions/fhir/generate-fhir";
+import { generateFhirObstetric } from "@/actions/fhir/generate-fhir-obstetric";
 import { logConsent } from "@/actions/fhir/log-consent";
 import { publishFhirDocument } from "@/actions/fhir/publish-fhir-document";
 import {
@@ -26,9 +28,10 @@ import {
   updateOrderStatusOnChain,
 } from "@/actions/medical-orders/medical-orders-onchain";
 import { UserSelect } from "@/components/forms/UserSelect";
-import { useWithPrivyToken } from "@/lib/auth/privy-token-helper";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { useRouter } from "@/i18n/navigation";
 import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
+import { useWithPrivyToken } from "@/lib/auth/privy-token-helper";
 import { isAuthSuccess } from "@/lib/auth/with-auth";
 import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import {
@@ -46,11 +49,14 @@ import { exportPublicKey } from "@/services/encryption/ecdh";
 import { getKeyPair } from "@/services/encryption/keystore";
 import type {
   AuditReport,
+  DocumentType,
   ExtractedDoc,
+  FhirResource,
   GenerateResult,
   LabFilledFields,
   ManualExamRow,
   ManualHeader,
+  ObstetricReport,
 } from "@/services/fhir-rag/schema";
 import { extractDocumentText } from "@/services/pdf/extract-text";
 import type { HybridRecipient } from "@/services/storage/upload";
@@ -64,6 +70,7 @@ import { ConsentNotice } from "./ConsentNotice";
 import { FhirBundlePreview } from "./FhirBundlePreview";
 import { FhirReviewPanel } from "./FhirReviewPanel";
 import { ManualEntryForm } from "./ManualEntryForm";
+import { ObstetricReviewPanel } from "./ObstetricReviewPanel";
 
 async function getViemWalletClient(wallet: {
   getEthereumProvider: () => Promise<unknown>;
@@ -83,6 +90,44 @@ function formatUploadError(e: unknown): string {
     return "Rate limit. Espera unos segundos y vuelve a intentar.";
   }
   return message;
+}
+
+function addDocumentReference(
+  bundle: GenerateResult["bundle"],
+  pdfCid: string,
+  contentType: string,
+  title: string,
+): GenerateResult["bundle"] {
+  const documentReference = {
+    resourceType: "DocumentReference",
+    status: "current",
+    docStatus: "final",
+    type: { text: "Medical document" },
+    category: [
+      {
+        coding: [
+          {
+            system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+            code: "DOC",
+            display: "Document",
+          },
+        ],
+      },
+    ],
+    content: [
+      {
+        attachment: {
+          contentType,
+          url: `ipfs://${pdfCid}`,
+          title,
+        },
+      },
+    ],
+  };
+  return {
+    ...bundle,
+    entry: [...bundle.entry, { resource: documentReference as FhirResource }],
+  };
 }
 
 export default function UploadPage() {
@@ -107,9 +152,22 @@ export default function UploadPage() {
   const [aiStatus, setAiStatus] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string>("");
   const [extractedText, setExtractedText] = useState<string>("");
+  const [hasEnoughText, setHasEnoughText] = useState(false);
+  const [detectedDocumentType, setDetectedDocumentType] =
+    useState<DocumentType | null>(null);
+  const [classificationError, setClassificationError] = useState(false);
+  const [classificationLoading, setClassificationLoading] = useState(false);
   const [doc, setDoc] = useState<ExtractedDoc | null>(null);
   const [audit, setAudit] = useState<AuditReport | null>(null);
   const [labFilledFields, setLabFilledFields] = useState<LabFilledFields>({});
+  const [obstetricReport, setObstetricReport] =
+    useState<ObstetricReport | null>(null);
+  const [obstetricAudit, setObstetricAudit] = useState<AuditReport | null>(
+    null,
+  );
+  const [obstetricFilledFields, setObstetricFilledFields] = useState<
+    Record<string, string>
+  >({});
   const [manualHeader, setManualHeader] = useState<ManualHeader>({});
   const [manualExams, setManualExams] = useState<ManualExamRow[]>([]);
   const [generateResult, setGenerateResult] = useState<GenerateResult | null>(
@@ -122,6 +180,24 @@ export default function UploadPage() {
     useState<`0x${string}`>(ZERO_BYTES32);
   const inputRef = useRef<HTMLInputElement>(null);
   const keyConflict = useKeyConflictStore((s) => s.conflict);
+
+  function resetUploadState() {
+    setFile(null);
+    setDoc(null);
+    setAudit(null);
+    setObstetricReport(null);
+    setObstetricAudit(null);
+    setGenerateResult(null);
+    setPdfResult(null);
+    setLabFilledFields({});
+    setObstetricFilledFields({});
+    setSessionId("");
+    setExtractedText("");
+    setHasEnoughText(false);
+    setDetectedDocumentType(null);
+    setClassificationError(false);
+    setAiStatus(null);
+  }
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -224,40 +300,84 @@ export default function UploadPage() {
       sileo.error({ title: t("uploadError"), description: t("fileTooLarge") });
       return;
     }
-    setStep("consent");
+    await analyzeDocument();
   }
 
-  async function handleAiProcessing() {
+  async function analyzeDocument() {
     if (!file) return;
+    setClassificationLoading(true);
     setUploading(true);
     setAiStatus(t("aiStatusExtracting"));
+    setClassificationError(false);
+    setDetectedDocumentType(null);
     try {
       const { text, hasText, error } = await extractDocumentText(file);
-      console.log("[upload] extracted text", { hasText, length: text.length, error });
+      console.log("[upload] extracted text", {
+        hasText,
+        length: text.length,
+        error,
+      });
+      setHasEnoughText(hasText && text.trim().length > 20);
       const newSessionId = crypto.randomUUID();
       setSessionId(newSessionId);
-      if (!hasText || error) {
-        console.error("[handleAiProcessing] extraction failed", { text, hasText, error });
+      if (!hasText || error || text.trim().length === 0) {
+        console.error("[analyzeDocument] extraction failed", {
+          text,
+          hasText,
+          error,
+        });
         sileo.warning({
           title: tModal("noTextTitle"),
           description: `${tModal("noTextDesc")}${error ? ` (${error})` : ""}`,
         });
-        setStep("manual");
+        setClassificationError(true);
+        setStep("consent");
         return;
       }
       setExtractedText(text);
-      setAiStatus(t("aiStatusConsent"));
-      console.log("[upload] logging consent", { sessionId: newSessionId });
-      const consent = await logConsent(
-        await withPrivyToken({ sessionId: newSessionId }),
+      setAiStatus(t("aiStatusClassifying"));
+      const classification = await classifyDocument(
+        await withPrivyToken({ text, sessionId: newSessionId }),
       );
+      console.log("[upload] classification response", classification);
+      if (isAuthSuccess(classification)) {
+        const result = classification.data as DocumentType;
+        setDetectedDocumentType(result);
+        setStep("consent");
+      } else {
+        console.error("[upload] classification failed", classification);
+        setClassificationError(true);
+        setStep("consent");
+      }
+    } catch (e) {
+      console.error("[analyzeDocument] error", e);
+      setClassificationError(true);
+      setStep("consent");
+    } finally {
+      setUploading(false);
+      setClassificationLoading(false);
+      setAiStatus(null);
+    }
+  }
+
+  async function handleAiProcessing() {
+    if (!extractedText || !sessionId || !detectedDocumentType) return;
+    setUploading(true);
+    setAiStatus(t("aiStatusConsent"));
+    try {
+      console.log("[upload] logging consent", { sessionId });
+      const consent = await logConsent(await withPrivyToken({ sessionId }));
       console.log("[upload] consent response", consent);
       if (!isAuthSuccess(consent) || !consent.data.success) {
         throw new Error("ConsentRequired");
       }
       setAiStatus(t("aiStatusOpenAI"));
       console.log("[upload] moving to review step");
-      await handleExtractAndAudit(newSessionId, text);
+      if (detectedDocumentType.type === "obstetric-ultrasound") {
+        await handleExtractAndAuditObstetric(sessionId, extractedText);
+      } else {
+        await handleExtractAndAudit(sessionId, extractedText);
+      }
     } catch (e) {
       sileo.error({
         title: t("uploadError"),
@@ -273,7 +393,10 @@ export default function UploadPage() {
   async function handleExtractAndAudit(sessionId: string, text: string) {
     setAiStatus(t("aiStatusAuditing"));
     try {
-      console.log("[upload] extractAndAudit starting", { sessionId, textLength: text.length });
+      console.log("[upload] extractAndAudit starting", {
+        sessionId,
+        textLength: text.length,
+      });
       const response = await extractAndAudit(
         await withPrivyToken({
           text,
@@ -294,6 +417,48 @@ export default function UploadPage() {
         setStep("review");
       } else {
         console.error("[upload] extractAndAudit failed", response);
+        throw new Error((response as { error: string }).error);
+      }
+    } catch (e) {
+      sileo.error({
+        title: t("uploadError"),
+        description: formatUploadError(e),
+      });
+      setStep("select");
+    }
+  }
+
+  async function handleExtractAndAuditObstetric(
+    sessionId: string,
+    text: string,
+  ) {
+    setAiStatus(t("aiStatusAuditing"));
+    try {
+      console.log("[upload] extractAndAuditObstetric starting", {
+        sessionId,
+        textLength: text.length,
+      });
+      const response = await extractAndAuditObstetric(
+        await withPrivyToken({
+          text,
+          sessionId,
+        }),
+      );
+      console.log("[upload] extractAndAuditObstetric response", response);
+      if (isAuthSuccess(response)) {
+        const { report, audit } = response.data as unknown as {
+          report: ObstetricReport;
+          audit: AuditReport;
+        };
+        setObstetricReport(report);
+        setObstetricAudit(audit);
+        setAiStatus(t("aiStatusPreparing"));
+        console.log(
+          "[upload] moving to review step from extractAndAuditObstetric",
+        );
+        setStep("review");
+      } else {
+        console.error("[upload] extractAndAuditObstetric failed", response);
         throw new Error((response as { error: string }).error);
       }
     } catch (e) {
@@ -367,24 +532,55 @@ export default function UploadPage() {
   }
 
   async function handleGenerate() {
-    if (!doc || !audit || !sessionId) return;
+    if (!sessionId) return;
+    const hasLabData = doc && audit;
+    const hasObstetricData =
+      detectedDocumentType?.type === "obstetric-ultrasound" &&
+      obstetricReport &&
+      obstetricAudit;
+    if (!hasLabData && !hasObstetricData) {
+      sileo.error({
+        title: t("uploadError"),
+        description: "No hay datos revisados para generar el bundle FHIR.",
+      });
+      return;
+    }
     setUploading(true);
     try {
-      console.log("[upload] generateFhir starting", { sessionId });
-      const response = await generateFhir(
-        await withPrivyToken({
-          doc,
-          audit,
-          labFilledFields,
-          sessionId,
-        }),
-      );
-      console.log("[upload] generateFhir response", response);
-      if (isAuthSuccess(response)) {
-        setGenerateResult(response.data as GenerateResult);
-        setStep("preview");
-      } else {
-        throw new Error((response as { error: string }).error);
+      if (hasObstetricData) {
+        console.log("[upload] generateFhirObstetric starting", { sessionId });
+        const response = await generateFhirObstetric(
+          await withPrivyToken({
+            report: obstetricReport,
+            audit: obstetricAudit,
+            filledFields: obstetricFilledFields,
+            sessionId,
+          }),
+        );
+        console.log("[upload] generateFhirObstetric response", response);
+        if (isAuthSuccess(response)) {
+          setGenerateResult(response.data as GenerateResult);
+          setStep("preview");
+        } else {
+          throw new Error((response as { error: string }).error);
+        }
+      } else if (doc && audit) {
+        console.log("[upload] generateFhir starting", { sessionId });
+        const response = await generateFhir(
+          await withPrivyToken({
+            doc,
+            audit,
+            labFilledFields,
+            sessionId,
+          }),
+        );
+        console.log("[upload] generateFhir response", response);
+        if (isAuthSuccess(response)) {
+          setGenerateResult(response.data as GenerateResult);
+          setStep("preview");
+        } else {
+          throw new Error((response as { error: string }).error);
+        }
       }
     } catch (e) {
       sileo.error({
@@ -477,8 +673,18 @@ export default function UploadPage() {
       const rawName = file.name?.trim() || "uploaded-document";
       const base = slugify(rawName.replace(/\.[^/.]+$/, "")) || "document";
       const fhirFileName = `fhir-bundle-${base}.json`;
-      const fhirUpload = await uploadHybridEncryptedJson(
+      const documentClassification =
+        detectedDocumentType?.type === "obstetric-ultrasound"
+          ? DOC_CLASSIFICATION.OBSTETRIC_ULTRASOUND
+          : DOC_CLASSIFICATION.LAB;
+      const bundleWithReference = addDocumentReference(
         generateResult.bundle,
+        pdfUpload.ipfs.cid,
+        file.type || "application/pdf",
+        rawName,
+      );
+      const fhirUpload = await uploadHybridEncryptedJson(
+        bundleWithReference,
         fhirFileName,
         labKeys.privateKey,
         labKeys.publicKey,
@@ -505,7 +711,7 @@ export default function UploadPage() {
           episodeId,
           fhirUpload.ipfs.cid,
           stringToHex(FHIR_STANDARD.R4, { size: 32 }),
-          stringToHex(DOC_CLASSIFICATION.LAB, { size: 32 }),
+          stringToHex(documentClassification, { size: 32 }),
         ],
         HealthProofGatewayAbi,
       );
@@ -517,7 +723,7 @@ export default function UploadPage() {
           fileHash: fhirUpload.fileHash,
           documentType: DOC_TYPE.FHIR_REPORT,
           standard: FHIR_STANDARD.R4,
-          classification: DOC_CLASSIFICATION.LAB,
+          classification: documentClassification,
           patientWallet: patientId.trim(),
           episodeId,
         }),
@@ -543,7 +749,7 @@ export default function UploadPage() {
           relatedCid: pdfUpload.ipfs.cid,
           documentType: DOC_TYPE.FHIR_REPORT,
           standard: FHIR_STANDARD.R4,
-          classification: DOC_CLASSIFICATION.LAB,
+          classification: documentClassification,
           fhirCompliance: {
             score: generateResult.compliance.score,
             mustSupportTotal: generateResult.compliance.mustSupportTotal,
@@ -587,15 +793,7 @@ export default function UploadPage() {
         });
       }
 
-      setStep("select");
-      setFile(null);
-      setDoc(null);
-      setAudit(null);
-      setGenerateResult(null);
-      setPdfResult(null);
-      setLabFilledFields({});
-      setSessionId("");
-      setExtractedText("");
+      resetUploadState();
       setPatientId(linkedPatientWallet ?? "");
     } catch (e) {
       sileo.error({
@@ -749,12 +947,120 @@ export default function UploadPage() {
         )}
 
         {step === "consent" && (
-          <ConsentNotice
-            onAccept={handleAiProcessing}
-            onManual={() => setStep("manual")}
-            disabled={uploading || !!aiStatus}
-            aiStatus={aiStatus}
-          />
+          <div className="space-y-4">
+            {detectedDocumentType && !classificationError && (
+              <div className="neu-surface rounded-xl p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-slate-700">
+                    {t("detectedType")}
+                  </p>
+                  {detectedDocumentType.confidence < 0.7 && (
+                    <span className="text-[10px] px-2 py-1 rounded-full bg-amber-50 text-amber-700">
+                      {t("lowConfidenceBadge")}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-slate-600">
+                  {t(`documentType.${detectedDocumentType.type}`)}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {detectedDocumentType.reason}
+                </p>
+              </div>
+            )}
+            {classificationError && (
+              <div className="neu-surface rounded-xl p-4 space-y-3">
+                <p className="text-sm font-semibold text-slate-700">
+                  {t("classificationFailedTitle")}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {t("classificationFailedDesc")}
+                </p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {hasEnoughText && (
+                    <button
+                      type="button"
+                      disabled={uploading || classificationLoading}
+                      onClick={() => {
+                        setClassificationError(false);
+                        setDetectedDocumentType({
+                          type: "lab",
+                          confidence: 0.5,
+                          reason: "Seleccionado manualmente por el usuario",
+                        });
+                      }}
+                      className="neu-surface hover:neu-pressed rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+                    >
+                      {t("processAsLab")}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={uploading || classificationLoading}
+                    onClick={() => setStep("manual")}
+                    className="neu-inset hover:brightness-95 rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 disabled:opacity-50"
+                  >
+                    {t("enterManual")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={uploading || classificationLoading}
+                    onClick={() => {
+                      resetUploadState();
+                      setStep("select");
+                      if (inputRef.current) inputRef.current.value = "";
+                    }}
+                    className="neu-surface hover:neu-pressed rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50 sm:col-span-2"
+                  >
+                    {t("uploadAnotherFile")}
+                  </button>
+                </div>
+              </div>
+            )}
+            {!classificationError && detectedDocumentType?.type === "other" && (
+              <div className="neu-surface rounded-xl p-4 space-y-3">
+                <p className="text-sm font-semibold text-slate-700">
+                  {t("unsupportedDocumentTitle")}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {t("unsupportedDocumentDesc")}
+                </p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    disabled={uploading || classificationLoading}
+                    onClick={() => setStep("manual")}
+                    className="neu-inset hover:brightness-95 rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 disabled:opacity-50"
+                  >
+                    {t("enterManual")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={uploading || classificationLoading}
+                    onClick={() => {
+                      resetUploadState();
+                      setStep("select");
+                      if (inputRef.current) inputRef.current.value = "";
+                    }}
+                    className="neu-surface hover:neu-pressed rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+                  >
+                    {t("uploadAnotherFile")}
+                  </button>
+                </div>
+              </div>
+            )}
+            {!classificationError &&
+              (detectedDocumentType?.type === "lab" ||
+                detectedDocumentType?.type === "obstetric-ultrasound") && (
+                <ConsentNotice
+                  documentType={detectedDocumentType.type}
+                  onAccept={handleAiProcessing}
+                  onManual={() => setStep("manual")}
+                  disabled={uploading || !!aiStatus}
+                  aiStatus={aiStatus}
+                />
+              )}
+          </div>
         )}
 
         {step === "manual" && (
@@ -776,8 +1082,23 @@ export default function UploadPage() {
             onChange={setLabFilledFields}
             onGenerate={handleGenerate}
             generating={uploading}
+            documentType={detectedDocumentType?.type ?? "lab"}
           />
         )}
+
+        {step === "review" &&
+          detectedDocumentType?.type === "obstetric-ultrasound" &&
+          obstetricReport &&
+          obstetricAudit && (
+            <ObstetricReviewPanel
+              report={obstetricReport}
+              audit={obstetricAudit}
+              filledFields={obstetricFilledFields}
+              onChange={setObstetricFilledFields}
+              onGenerate={handleGenerate}
+              generating={uploading}
+            />
+          )}
 
         {step === "preview" && generateResult && (
           <FhirBundlePreview
