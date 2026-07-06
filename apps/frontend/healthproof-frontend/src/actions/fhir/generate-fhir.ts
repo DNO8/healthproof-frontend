@@ -44,12 +44,15 @@ async function verifyConsent(
 }
 
 export const generateFhir = withAuth(
-  async (data: GenerateFhirData, auth: AuthContext) => {
+  async (
+    data: GenerateFhirData,
+    auth: AuthContext,
+  ): Promise<GenerateResult> => {
     const { doc, audit, labFilledFields, sessionId } = data;
 
     const consent = await verifyConsent(sessionId, auth.wallet);
     if ("error" in consent) {
-      return { error: consent.error };
+      throw new Error(consent.error);
     }
 
     if (
@@ -58,7 +61,7 @@ export const generateFhir = withAuth(
       !audit ||
       typeof audit !== "object"
     ) {
-      return { error: "EmptyPayload" };
+      throw new Error("EmptyPayload");
     }
 
     const phiCheckDoc = checkForPhiLeak(doc);
@@ -72,7 +75,7 @@ export const generateFhir = withAuth(
         },
         "generateFhir rejected: PHI leak detected",
       );
-      return { error: "PhiLeakDetected" };
+      throw new Error("PhiLeakDetected");
     }
 
     try {
@@ -89,7 +92,7 @@ export const generateFhir = withAuth(
           { sessionId, errors: validation.errors },
           "generateFhir bundle validation failed",
         );
-        return { error: "InvalidPayload", details: validation.errors };
+        throw new Error("InvalidPayload");
       }
 
       const phiCheckResult = checkForPhiLeak(result);
@@ -98,14 +101,14 @@ export const generateFhir = withAuth(
           { sessionId, leakedCount: phiCheckResult.leaked.length },
           "generateFhir rejected: PHI leak detected in generated bundle",
         );
-        return { error: "PhiLeakDetected" };
+        throw new Error("PhiLeakDetected");
       }
 
       return result as GenerateResult;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logger.error({ sessionId, error: message }, "generateFhir failed");
-      return { error: "OpenAIProcessingFailed" };
+      throw new Error("OpenAIProcessingFailed");
     }
   },
   {
