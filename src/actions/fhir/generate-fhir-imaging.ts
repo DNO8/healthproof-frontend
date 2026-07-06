@@ -24,7 +24,7 @@ export const generateFhirImaging = withAuth(
   async (
     data: GenerateFhirImagingData,
     auth: AuthContext,
-  ): Promise<GenerateResult | { error: string }> => {
+  ): Promise<GenerateResult> => {
     const { report, audit, filledFields, sessionId } = data;
     logger.info(
       { sessionId, actor: auth.wallet.toLowerCase() },
@@ -32,7 +32,7 @@ export const generateFhirImaging = withAuth(
     );
 
     if (!isValidUuidV4(sessionId)) {
-      return { error: "InvalidSessionId" };
+      throw new Error("InvalidSessionId");
     }
 
     const phiCheckReport = checkForPhiLeak(report);
@@ -46,7 +46,7 @@ export const generateFhirImaging = withAuth(
         },
         "generateFhirImaging rejected: PHI leak detected",
       );
-      return { error: "PhiLeakDetected" };
+      throw new Error("PhiLeakDetected");
     }
 
     try {
@@ -62,7 +62,7 @@ export const generateFhirImaging = withAuth(
           { sessionId, errors: validation.errors },
           "validateFhirBundle failed",
         );
-        return { error: "FhirValidationFailed" };
+        throw new Error("FhirValidationFailed");
       }
       const phiCheckResult = checkForPhiLeak(result);
       if (!phiCheckResult.safe) {
@@ -70,13 +70,13 @@ export const generateFhirImaging = withAuth(
           { sessionId, leakedCount: phiCheckResult.leaked.length },
           "generateFhirImaging rejected: PHI leak detected in generated bundle",
         );
-        return { error: "PhiLeakDetected" };
+        throw new Error("PhiLeakDetected");
       }
       return result;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logger.error({ sessionId, error: message }, "generateFhirImaging failed");
-      return { error: "OpenAIProcessingFailed" };
+      throw new Error("OpenAIProcessingFailed");
     }
   },
   {
