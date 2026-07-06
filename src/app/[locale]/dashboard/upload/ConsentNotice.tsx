@@ -9,7 +9,7 @@ import type { DocumentCategory } from "@/services/fhir-rag/schema";
 interface ConsentNoticeProps {
   documentType?: DocumentCategory;
   onAccept: () => void;
-  onManual: () => void;
+  onManual?: () => void;
   disabled?: boolean;
   aiStatus?: string | null;
 }
@@ -57,7 +57,12 @@ export function ConsentNotice({
 }: ConsentNoticeProps) {
   const t = useTranslations("fhirReview");
   const isAiProcessing = !!aiStatus;
-  const prefix = documentType === "obstetric-ultrasound" ? "obstetric" : "lab";
+  const prefix =
+    documentType === "obstetric-ultrasound"
+      ? "obstetric"
+      : documentType === "abdominal-ultrasound"
+        ? "imaging"
+        : "lab";
   return (
     <div className="neu-surface rounded-xl p-5 space-y-4">
       <h3 className="text-base font-semibold text-slate-800">
@@ -86,7 +91,9 @@ export function ConsentNotice({
         </Accordion>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div
+        className={`grid grid-cols-1 gap-3 ${onManual ? "sm:grid-cols-2" : ""}`}
+      >
         <button
           type="button"
           disabled={disabled}
@@ -105,15 +112,17 @@ export function ConsentNotice({
             </>
           )}
         </button>
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={onManual}
-          className="neu-inset hover:brightness-95 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 disabled:opacity-50"
-        >
-          <Hand className="h-4 w-4" />
-          {t("consentManual")}
-        </button>
+        {onManual && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onManual}
+            className="neu-inset hover:brightness-95 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 disabled:opacity-50"
+          >
+            <Hand className="h-4 w-4" />
+            {t("consentManual")}
+          </button>
+        )}
       </div>
     </div>
   );

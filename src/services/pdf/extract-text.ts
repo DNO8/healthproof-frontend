@@ -1,8 +1,16 @@
-import { extractTextFromImage } from "@/actions/ocr/extract-text-from-image";
+import * as pdfjsLib from "pdfjs-dist";
 import type { TextItem } from "pdfjs-dist/types/src/display/api";
 
+import { env } from "@/lib/env";
+import { extractDocumentTextClient } from "@/services/ocr/client-ocr";
+import { redactPhi } from "@/services/phi/redactor";
+import type { PhiMap } from "@/services/phi/types";
+
 export interface PdfTextResult {
+  /** Anonymized text that is safe to send to AI models. */
   text: string;
+  /** Map of placeholder -> original PHI value. */
+  phiMap: PhiMap;
   hasText: boolean;
   error?: string;
   usedOcr?: boolean;
@@ -10,75 +18,41 @@ export interface PdfTextResult {
 
 const MIN_NATIVE_TEXT_LENGTH = 60;
 
-async function pdfToPageDataUrls(file: File): Promise<string[]> {
-  const pdfjs = await import("pdfjs-dist");
-  const pdfjsLib = pdfjs.default ?? pdfjs;
-
+function configurePdfWorker() {
   if (typeof window !== "undefined") {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = env.PDF_WORKER_PATH;
   }
-
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-  const dataUrls: string[] = [];
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale: 1.5 });
-    const canvas = document.createElement("canvas");
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) continue;
-    await page.render({ canvasContext: ctx, viewport, canvas }).promise;
-    dataUrls.push(canvas.toDataURL("image/png"));
-  }
-  return dataUrls;
-}
-
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-async function ocrWithOpenAI(dataUrls: string[]): Promise<string> {
-  const result = await extractTextFromImage({ images: dataUrls });
-  if (!result.success || !result.text) {
-    throw new Error(result.error || "OCR failed");
-  }
-  return result.text;
 }
 
 export async function extractDocumentText(file: File): Promise<PdfTextResult> {
   console.log("[extractDocumentText] starting", {
     type: file.type,
     size: file.size,
-    name: file.name,
   });
   try {
     const isImage = file.type.startsWith("image/");
 
     if (isImage) {
-      const dataUrl = await fileToDataUrl(file);
-      const text = await ocrWithOpenAI([dataUrl]);
+      const clientResult = await extractDocumentTextClient(file);
+      if (clientResult.error || !clientResult.hasText) {
+        return {
+          text: "",
+          phiMap: {},
+          hasText: false,
+          error: clientResult.error || "extraction_failed",
+        };
+      }
+      const { redactedText, phiMap } = redactPhi(clientResult.text);
       return {
-        text,
-        hasText: text.length > 0,
+        text: redactedText,
+        phiMap,
+        hasText: redactedText.length > 0,
         usedOcr: true,
       };
     }
 
     // PDF path: try native text extraction first
-    const pdfjs = await import("pdfjs-dist");
-    const pdfjsLib = pdfjs.default ?? pdfjs;
-
-    if (typeof window !== "undefined") {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-    }
+    configurePdfWorker();
 
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -97,23 +71,35 @@ export async function extractDocumentText(file: File): Promise<PdfTextResult> {
     const trimmed = fullText.trim();
     console.log("[extractDocumentText] native text length", trimmed.length);
     if (trimmed.length >= MIN_NATIVE_TEXT_LENGTH) {
+      const { redactedText, phiMap } = redactPhi(trimmed);
+      await pdf.destroy();
       return {
-        text: trimmed,
+        text: redactedText,
+        phiMap,
         hasText: true,
         usedOcr: false,
       };
     }
 
-    // Fall back to OpenAI Vision OCR for scanned/image-only PDFs
-    console.log("[extractDocumentText] falling back to OpenAI Vision OCR");
-    const pageDataUrls = await pdfToPageDataUrls(file);
-    console.log("[extractDocumentText] rendered pages", pageDataUrls.length);
-    const ocrText = await ocrWithOpenAI(pageDataUrls);
+    // Fall back to local Tesseract OCR for scanned/image-only PDFs
+    await pdf.destroy();
+    console.log("[extractDocumentText] falling back to local Tesseract OCR");
+    const clientResult = await extractDocumentTextClient(file);
+    if (clientResult.error || !clientResult.hasText) {
+      return {
+        text: "",
+        phiMap: {},
+        hasText: false,
+        error: clientResult.error || "extraction_failed",
+      };
+    }
 
-    console.log("[extractDocumentText] OCR result length", ocrText.length);
+    const { redactedText, phiMap } = redactPhi(clientResult.text);
+    console.log("[extractDocumentText] OCR result length", redactedText.length);
     return {
-      text: ocrText,
-      hasText: ocrText.length > 0,
+      text: redactedText,
+      phiMap,
+      hasText: redactedText.length > 0,
       usedOcr: true,
     };
   } catch (err) {
@@ -121,6 +107,7 @@ export async function extractDocumentText(file: File): Promise<PdfTextResult> {
     console.error("[extractDocumentText] failed", message);
     return {
       text: "",
+      phiMap: {},
       hasText: false,
       error: message.includes("worker")
         ? "worker_load_failed"

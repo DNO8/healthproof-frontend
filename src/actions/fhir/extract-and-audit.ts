@@ -11,6 +11,7 @@ import type {
   LabFilledFields,
 } from "@/services/fhir-rag/schema";
 import { isValidUuidV4 } from "@/services/fhir-rag/schema";
+import { checkForPhiLeak } from "@/services/phi/phi-privacy-guard";
 
 interface ExtractAndAuditData {
   text: string;
@@ -36,7 +37,11 @@ async function verifyConsent(
 
   if (error || !data) {
     logger.warn(
-      { sessionId, actorWallet: actorWallet.toLowerCase(), dbError: error?.message },
+      {
+        sessionId,
+        actorWallet: actorWallet.toLowerCase(),
+        dbError: error?.message,
+      },
       "verifyConsent failed: ConsentRequired",
     );
     return { error: "ConsentRequired" };
@@ -61,8 +66,25 @@ export const extractAndAudit = withAuth(
       return { error: "EmptyPayload" };
     }
 
+    const phiCheck = checkForPhiLeak(text);
+    if (!phiCheck.safe) {
+      logger.warn(
+        { sessionId, leakedCount: phiCheck.leaked.length },
+        "extractAndAudit rejected: PHI leak detected",
+      );
+      return { error: "PhiLeakDetected" };
+    }
+
     try {
       const doc = await extractMedicalExams(text, sessionId);
+      const phiCheckDoc = checkForPhiLeak(doc);
+      if (!phiCheckDoc.safe) {
+        logger.warn(
+          { sessionId, leakedCount: phiCheckDoc.leaked.length },
+          "extractAndAudit rejected: PHI leak detected in AI output",
+        );
+        return { error: "PhiLeakDetected" };
+      }
       const audit = await auditExtractedDoc(doc, labFilledFields, sessionId);
 
       return { doc, audit } as { doc: ExtractedDoc; audit: AuditReport };

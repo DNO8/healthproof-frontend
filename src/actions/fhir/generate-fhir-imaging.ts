@@ -2,33 +2,33 @@
 
 import { type AuthContext, withAuth } from "@/lib/auth/with-auth";
 import { logger } from "@/lib/logger";
-import { generateObstetricBundle } from "@/services/fhir-rag/generate-obstetric";
+import { generateImagingBundle } from "@/services/fhir-rag/generate-imaging";
 import type {
   AuditReport,
   GenerateResult,
-  ObstetricReport,
+  ImagingReport,
 } from "@/services/fhir-rag/schema";
 import { isValidUuidV4 } from "@/services/fhir-rag/schema";
 import { validateFhirBundle } from "@/services/fhir-rag/validate";
 import { checkForPhiLeak } from "@/services/phi/phi-privacy-guard";
 
-interface GenerateFhirObstetricData {
-  report: ObstetricReport;
+interface GenerateFhirImagingData {
+  report: ImagingReport;
   audit: AuditReport;
   filledFields: Record<string, string>;
   sessionId: string;
   _privyToken?: string;
 }
 
-export const generateFhirObstetric = withAuth(
+export const generateFhirImaging = withAuth(
   async (
-    data: GenerateFhirObstetricData,
+    data: GenerateFhirImagingData,
     auth: AuthContext,
   ): Promise<GenerateResult | { error: string }> => {
     const { report, audit, filledFields, sessionId } = data;
     logger.info(
       { sessionId, actor: auth.wallet.toLowerCase() },
-      "generateFhirObstetric started",
+      "generateFhirImaging started",
     );
 
     if (!isValidUuidV4(sessionId)) {
@@ -44,13 +44,13 @@ export const generateFhirObstetric = withAuth(
           leakedInReport: phiCheckReport.leaked.length,
           leakedInFields: phiCheckFields.leaked.length,
         },
-        "generateFhirObstetric rejected: PHI leak detected",
+        "generateFhirImaging rejected: PHI leak detected",
       );
       return { error: "PhiLeakDetected" };
     }
 
     try {
-      const result = await generateObstetricBundle(
+      const result = await generateImagingBundle(
         report,
         audit,
         filledFields,
@@ -68,17 +68,14 @@ export const generateFhirObstetric = withAuth(
       if (!phiCheckResult.safe) {
         logger.warn(
           { sessionId, leakedCount: phiCheckResult.leaked.length },
-          "generateFhirObstetric rejected: PHI leak detected in generated bundle",
+          "generateFhirImaging rejected: PHI leak detected in generated bundle",
         );
         return { error: "PhiLeakDetected" };
       }
       return result;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      logger.error(
-        { sessionId, error: message },
-        "generateFhirObstetric failed",
-      );
+      logger.error({ sessionId, error: message }, "generateFhirImaging failed");
       return { error: "OpenAIProcessingFailed" };
     }
   },

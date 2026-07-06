@@ -52,4 +52,16 @@ export const env = {
     const gw = process.env.NEXT_PUBLIC_PINATA_GATEWAY ?? "gateway.pinata.cloud";
     return gw.startsWith("http") ? gw : `https://${gw}`;
   })(),
+  ENABLE_LOCAL_OCR_ONLY:
+    process.env.NEXT_PUBLIC_ENABLE_LOCAL_OCR_ONLY === "true",
+  PDF_WORKER_PATH:
+    process.env.NEXT_PUBLIC_PDF_WORKER_PATH ?? "/pdf.worker.min.mjs",
+  TESSERACT_LANG_PATH: process.env.NEXT_PUBLIC_TESSERACT_LANG_PATH,
+  TESSERACT_WORKER_PATH: process.env.NEXT_PUBLIC_TESSERACT_WORKER_PATH,
+  TESSERACT_CORE_PATH: process.env.NEXT_PUBLIC_TESSERACT_CORE_PATH,
+  LOINC_FHIR_BASE_URL:
+    process.env.LOINC_FHIR_BASE_URL ?? "https://fhir.loinc.org",
+  LOINC_SEARCH_BASE_URL:
+    process.env.LOINC_SEARCH_BASE_URL ??
+    "https://loinc.regenstrief.org/searchapi",
 } as const;

@@ -2,37 +2,37 @@
 
 import { type AuthContext, withAuth } from "@/lib/auth/with-auth";
 import { logger } from "@/lib/logger";
-import { auditObstetricDoc } from "@/services/fhir-rag/audit-obstetric";
-import { extractObstetricUltrasound } from "@/services/fhir-rag/extract-obstetric";
+import { auditImagingDoc } from "@/services/fhir-rag/audit-imaging";
+import { extractImagingUltrasound } from "@/services/fhir-rag/extract-imaging";
 import type {
   AuditReport,
   AuditSuggestions,
-  ObstetricReport,
+  ImagingReport,
 } from "@/services/fhir-rag/schema";
 import { isValidUuidV4 } from "@/services/fhir-rag/schema";
 import { checkForPhiLeak } from "@/services/phi/phi-privacy-guard";
 
-interface ExtractAndAuditObstetricData {
+interface ExtractAndAuditImagingData {
   text: string;
   sessionId: string;
   _privyToken?: string;
 }
 
-interface ExtractAndAuditObstetricResult {
-  report: ObstetricReport;
+interface ExtractAndAuditImagingResult {
+  report: ImagingReport;
   audit: AuditReport;
   suggestions: AuditSuggestions;
 }
 
-export const extractAndAuditObstetric = withAuth(
+export const extractAndAuditImaging = withAuth(
   async (
-    data: ExtractAndAuditObstetricData,
+    data: ExtractAndAuditImagingData,
     auth: AuthContext,
-  ): Promise<ExtractAndAuditObstetricResult | { error: string }> => {
+  ): Promise<ExtractAndAuditImagingResult | { error: string }> => {
     const { text, sessionId } = data;
     logger.info(
       { sessionId, actor: auth.wallet.toLowerCase(), textLength: text.length },
-      "extractAndAuditObstetric started",
+      "extractAndAuditImaging started",
     );
 
     if (!isValidUuidV4(sessionId)) {
@@ -46,28 +46,28 @@ export const extractAndAuditObstetric = withAuth(
     if (!phiCheck.safe) {
       logger.warn(
         { sessionId, leakedCount: phiCheck.leaked.length },
-        "extractAndAuditObstetric rejected: PHI leak detected",
+        "extractAndAuditImaging rejected: PHI leak detected",
       );
       return { error: "PhiLeakDetected" };
     }
 
     try {
-      const report = await extractObstetricUltrasound(text, sessionId);
+      const report = await extractImagingUltrasound(text, sessionId);
       const phiCheckReport = checkForPhiLeak(report);
       if (!phiCheckReport.safe) {
         logger.warn(
           { sessionId, leakedCount: phiCheckReport.leaked.length },
-          "extractAndAuditObstetric rejected: PHI leak detected in AI output",
+          "extractAndAuditImaging rejected: PHI leak detected in AI output",
         );
         return { error: "PhiLeakDetected" };
       }
-      const { audit, suggestions } = await auditObstetricDoc(report, sessionId);
+      const { audit, suggestions } = await auditImagingDoc(report, sessionId);
       return { report, audit, suggestions };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logger.error(
         { sessionId, error: message },
-        "extractAndAuditObstetric failed",
+        "extractAndAuditImaging failed",
       );
       return { error: "OpenAIProcessingFailed" };
     }
