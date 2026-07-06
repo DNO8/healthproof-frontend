@@ -10,6 +10,7 @@ import {
   extractedDocSchema,
   isValidUuidV4,
 } from "@/services/fhir-rag/schema";
+import { checkForPhiLeak } from "@/services/phi/phi-privacy-guard";
 
 interface AuditManualData {
   doc: ExtractedDoc;
@@ -57,6 +58,15 @@ export const auditManual = withAuth(
         "auditManual invalid doc schema",
       );
       return { error: "InvalidPayload" };
+    }
+
+    const phiCheck = checkForPhiLeak(parsed.data);
+    if (!phiCheck.safe) {
+      logger.warn(
+        { sessionId, leakedCount: phiCheck.leaked.length },
+        "auditManual rejected: PHI leak detected",
+      );
+      return { error: "PhiLeakDetected" };
     }
 
     try {

@@ -12,6 +12,7 @@ import type {
 } from "@/services/fhir-rag/schema";
 import { isValidUuidV4 } from "@/services/fhir-rag/schema";
 import { validateFhirBundle } from "@/services/fhir-rag/validate";
+import { checkForPhiLeak } from "@/services/phi/phi-privacy-guard";
 
 interface GenerateFhirData {
   doc: ExtractedDoc;
@@ -60,6 +61,20 @@ export const generateFhir = withAuth(
       return { error: "EmptyPayload" };
     }
 
+    const phiCheckDoc = checkForPhiLeak(doc);
+    const phiCheckFields = checkForPhiLeak(labFilledFields);
+    if (!phiCheckDoc.safe || !phiCheckFields.safe) {
+      logger.warn(
+        {
+          sessionId,
+          leakedInDoc: phiCheckDoc.leaked.length,
+          leakedInFields: phiCheckFields.leaked.length,
+        },
+        "generateFhir rejected: PHI leak detected",
+      );
+      return { error: "PhiLeakDetected" };
+    }
+
     try {
       const result = await generateFhirBundle(
         doc,
@@ -75,6 +90,15 @@ export const generateFhir = withAuth(
           "generateFhir bundle validation failed",
         );
         return { error: "InvalidPayload", details: validation.errors };
+      }
+
+      const phiCheckResult = checkForPhiLeak(result);
+      if (!phiCheckResult.safe) {
+        logger.warn(
+          { sessionId, leakedCount: phiCheckResult.leaked.length },
+          "generateFhir rejected: PHI leak detected in generated bundle",
+        );
+        return { error: "PhiLeakDetected" };
       }
 
       return result as GenerateResult;

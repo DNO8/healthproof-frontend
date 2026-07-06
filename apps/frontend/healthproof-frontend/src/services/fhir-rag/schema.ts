@@ -74,7 +74,42 @@ export interface ObstetricReport {
   measurements: ObstetricMeasurement[];
 }
 
-export type DocumentCategory = "lab" | "obstetric-ultrasound" | "other";
+export interface ImagingMeasurement {
+  name: string;
+  value?: string | null;
+  unit?: string | null;
+  laterality?: "left" | "right" | "bilateral" | "unspecified" | null;
+  region?: string | null;
+  bodySiteSnomed?: string | null;
+  loincCode?: string | null;
+  confidence: number;
+}
+
+export interface ImagingReport {
+  patient: {
+    name?: string | null;
+    rut?: string | null;
+    birthDate?: string | null;
+  };
+  issuer?: {
+    name?: string | null;
+    date?: string | null;
+    identifier?: string | null;
+  };
+  studyType?: string | null;
+  procedureLoinc?: string | null;
+  indication?: string | null;
+  technique?: string | null;
+  findings?: string | null;
+  impression?: string | null;
+  measurements: ImagingMeasurement[];
+}
+
+export type DocumentCategory =
+  | "lab"
+  | "obstetric-ultrasound"
+  | "abdominal-ultrasound"
+  | "other";
 
 export interface DocumentType {
   type: DocumentCategory;
@@ -99,14 +134,20 @@ export interface AuditSuggestions {
 }
 
 export type FhirResource = {
-  resourceType: "DiagnosticReport" | "Observation" | "DocumentReference";
+  resourceType:
+    | "DiagnosticReport"
+    | "Observation"
+    | "DocumentReference"
+    | "Patient"
+    | "Practitioner"
+    | "Organization";
   [key: string]: unknown;
 };
 
 export interface FhirBundle {
   resourceType: "Bundle";
   type: "collection";
-  entry: Array<{ resource: FhirResource }>;
+  entry: Array<{ fullUrl?: string; resource: FhirResource }>;
 }
 
 export interface GenerateResult {
@@ -204,7 +245,12 @@ export const auditReportSchema = z.object({
 });
 
 export const documentTypeSchema = z.object({
-  type: z.enum(["lab", "obstetric-ultrasound", "other"]),
+  type: z.enum([
+    "lab",
+    "obstetric-ultrasound",
+    "abdominal-ultrasound",
+    "other",
+  ]),
   confidence: z.number().min(0).max(1),
   reason: z.string().min(1),
 });
@@ -252,12 +298,51 @@ export const obstetricReportSchema = z.object({
   measurements: z.array(obstetricMeasurementSchema),
 });
 
+export const imagingMeasurementSchema = z.object({
+  name: z.string().min(1),
+  value: z.string().nullable().optional(),
+  unit: z.string().nullable().optional(),
+  laterality: z
+    .enum(["left", "right", "bilateral", "unspecified"])
+    .nullable()
+    .optional(),
+  region: z.string().nullable().optional(),
+  bodySiteSnomed: z.string().nullable().optional(),
+  loincCode: z.string().nullable().optional(),
+  confidence: z.number().min(0).max(1),
+});
+
+export const imagingReportSchema = z.object({
+  patient: z.object({
+    name: z.string().nullable().optional(),
+    rut: z.string().nullable().optional(),
+    birthDate: z.string().nullable().optional(),
+  }),
+  issuer: z
+    .object({
+      name: z.string().nullable().optional(),
+      date: z.string().nullable().optional(),
+      identifier: z.string().nullable().optional(),
+    })
+    .optional(),
+  studyType: z.string().nullable().optional(),
+  procedureLoinc: z.string().nullable().optional(),
+  indication: z.string().nullable().optional(),
+  technique: z.string().nullable().optional(),
+  findings: z.string().nullable().optional(),
+  impression: z.string().nullable().optional(),
+  measurements: z.array(imagingMeasurementSchema),
+});
+
 export const fhirResourceSchema = z
   .object({
     resourceType: z.enum([
       "DiagnosticReport",
       "Observation",
       "DocumentReference",
+      "Patient",
+      "Practitioner",
+      "Organization",
     ]),
   })
   .passthrough();
@@ -267,6 +352,7 @@ export const fhirBundleSchema = z.object({
   type: z.enum(["collection"]),
   entry: z.array(
     z.object({
+      fullUrl: z.string().optional(),
       resource: fhirResourceSchema,
     }),
   ),

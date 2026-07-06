@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
+    "test": "vitest run",
     "rag:ingest": "tsx --env-file=.env scripts/rag/ingest.ts"
   },
   "dependencies": {
@@ -33,6 +34,7 @@
     "html5-qrcode": "^2.3.8",
     "jose": "^6.2.3",
     "lucide-react": "^1.16.0",
+    "never": "^1.1.0",
     "next": "16.2.6",
     "next-intl": "^4.8.3",
     "openai": "^4.95.0",
@@ -46,6 +48,7 @@
     "secrets.js-grempe": "^2.0.0",
     "server-only": "^0.0.1",
     "sileo": "^0.1.5",
+    "tesseract.js": "5.1.1",
     "viem": "^2.47.0",
     "wagmi": "^3.5.0",
     "zod": "^3.25.0",

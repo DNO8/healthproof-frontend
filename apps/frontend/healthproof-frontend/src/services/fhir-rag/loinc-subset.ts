@@ -1,12 +1,6 @@
-export interface LoincEntry {
-  code: string;
-  display: string;
-  spanishDisplay: string;
-  aliases: string[];
-  component: string;
-  system: string;
-  scale: string;
-}
+import type { LoincEntry } from "../loinc/types";
+
+export type { LoincEntry };
 
 export const CHILE_LOINC_SUBSET: LoincEntry[] = [
   {

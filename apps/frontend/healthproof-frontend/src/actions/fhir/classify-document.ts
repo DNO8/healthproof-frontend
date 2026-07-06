@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { classifyDocumentText } from "@/services/fhir-rag/classify";
 import type { DocumentType } from "@/services/fhir-rag/schema";
 import { isValidUuidV4 } from "@/services/fhir-rag/schema";
+import { checkForPhiLeak } from "@/services/phi/phi-privacy-guard";
 
 interface ClassifyDocumentData {
   text: string;
@@ -25,6 +26,15 @@ export const classifyDocument = withAuth(
     }
     if (typeof text !== "string" || text.trim().length === 0) {
       return { error: "EmptyPayload" };
+    }
+
+    const phiCheck = checkForPhiLeak(text);
+    if (!phiCheck.safe) {
+      logger.warn(
+        { sessionId, leakedCount: phiCheck.leaked.length },
+        "classifyDocument rejected: PHI leak detected",
+      );
+      return { error: "PhiLeakDetected" };
     }
 
     try {
