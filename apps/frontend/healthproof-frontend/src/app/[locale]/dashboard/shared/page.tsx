@@ -4,7 +4,6 @@ import { usePrivy } from "@privy-io/react-auth";
 import { FileText } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { sileo } from "sileo";
 import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
@@ -17,6 +16,7 @@ import { SharedErrorBoundary } from "@/components/feedback/SharedErrorBoundary";
 import { EmptyState, SkeletonList } from "@/components/ui";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { useDocumentDecrypt } from "@/hooks/documents/useDocumentDecrypt";
+import { useRouter } from "@/i18n/navigation";
 import { isAuthSuccess } from "@/lib/auth/with-auth";
 import type { WrappedKey } from "@/services/encryption/ecdh";
 
@@ -55,12 +55,6 @@ export default function SharedDocumentsPage() {
 
   const fetchDocs = useCallback(async () => {
     if (!walletAddress) return;
-    console.log(
-      "[SharedPage] fetchDocs start, wallet:",
-      walletAddress,
-      "episode:",
-      episodeId,
-    );
     setLoading(true);
     try {
       let resultDocs: SharedDocument[] = [];
@@ -95,7 +89,6 @@ export default function SharedDocumentsPage() {
         uniquePatients.length > 0 &&
         Object.values(keyMap).every((v) => v === null)
       ) {
-        console.warn("[SharedPage] No patient public keys resolved");
         sileo.warning({
           title: "Claves de pacientes no disponibles",
           description:
@@ -104,7 +97,6 @@ export default function SharedDocumentsPage() {
         });
       }
     } catch (e) {
-      console.error("[SharedPage] fetchDocs error:", e);
       sileo.error({
         title: t("loadError"),
         description: String(e).slice(0, 120),
@@ -118,16 +110,88 @@ export default function SharedDocumentsPage() {
     fetchDocs();
   }, [fetchDocs]);
 
+  const performDecrypt = useCallback(
+    async (doc: SharedDocument, silent = false) => {
+      if (!walletAddress || !userId) return null;
+      if (!doc.iv) {
+        if (!silent)
+          sileo.error({ title: t("noIv"), description: t("noIvDesc") });
+        return null;
+      }
+
+      // 1. On-chain permission gate
+      try {
+        const accessResult = await checkAccessOnChain({
+          patientWallet: doc.patient_wallet,
+          requesterWallet: walletAddress,
+          documentId: doc.document_id,
+        });
+        if (!accessResult.success || !accessResult.data) {
+          if (!silent)
+            sileo.error({
+              title: t("accessRevoked"),
+              description: t("accessRevokedDesc"),
+            });
+          return null;
+        }
+      } catch {
+        if (!silent)
+          sileo.error({
+            title: t("accessCheckError"),
+            description: t("accessCheckErrorDesc"),
+          });
+        return null;
+      }
+
+      // Resolve patient public key: QR param → pre-fetched map → on-demand fetch
+      let senderKey = qrPatientKey ?? patientKeys[doc.patient_wallet] ?? null;
+      if (!senderKey) {
+        try {
+          senderKey = await getUserPublicKey(doc.patient_wallet);
+          if (senderKey) {
+            setPatientKeys((prev) => ({
+              ...prev,
+              [doc.patient_wallet]: senderKey,
+            }));
+          }
+        } catch {
+          senderKey = null;
+        }
+      }
+      if (!senderKey) {
+        if (!silent)
+          sileo.error({ title: t("noKey"), description: t("noPatientKey") });
+        return null;
+      }
+      let wrappedKey: WrappedKey;
+      try {
+        wrappedKey = JSON.parse(doc.encrypted_key) as WrappedKey;
+      } catch {
+        if (!silent)
+          sileo.error({ title: t("noKey"), description: t("invalidKey") });
+        return null;
+      }
+      const result = await decrypt({
+        cid: doc.document_id,
+        iv: doc.iv,
+        wrappedKey,
+        senderPublicKeyJwk: senderKey,
+        myUserId: userId,
+      });
+      if (!result && !silent) {
+        sileo.error({
+          title: t("decryptFailed"),
+          description: t("decryptFailedDesc"),
+        });
+      }
+      return result;
+    },
+    [walletAddress, userId, t, qrPatientKey, patientKeys, decrypt],
+  );
+
   // Auto-select document from QR scan redirect
-  // biome-ignore lint/correctness/useExhaustiveDependencies: one-shot auto-decrypt from URL params
   useEffect(() => {
     if (!highlightDocId || docs.length === 0 || hasAttemptedAutoDecrypt) return;
-    console.log(
-      "[SharedPage] auto-decrypt trigger, docId:",
-      highlightDocId,
-      "qrPatientKey:",
-      !!qrPatientKey,
-    );
     const doc = docs.find((d) => d.document_id === highlightDocId);
     if (doc && doc.document_id !== selectedDoc?.document_id) {
       setSelectedDoc(doc);
@@ -140,110 +204,12 @@ export default function SharedDocumentsPage() {
   }, [
     highlightDocId,
     docs,
-    qrPatientKey,
     clear,
     hasAttemptedAutoDecrypt,
     performDecrypt,
     router.replace,
     selectedDoc?.document_id,
   ]);
-
-  async function performDecrypt(doc: SharedDocument, silent = false) {
-    if (!walletAddress || !userId) return null;
-    console.log(
-      "[SharedPage] performDecrypt start, docId:",
-      doc.document_id,
-      "silent:",
-      silent,
-    );
-    if (!doc.iv) {
-      if (!silent)
-        sileo.error({ title: t("noIv"), description: t("noIvDesc") });
-      return null;
-    }
-
-    // 1. On-chain permission gate
-    try {
-      const accessResult = await checkAccessOnChain({
-        patientWallet: doc.patient_wallet,
-        requesterWallet: walletAddress,
-        documentId: doc.document_id,
-      });
-      if (!accessResult.success || !accessResult.data) {
-        if (!silent)
-          sileo.error({
-            title: t("accessRevoked"),
-            description: t("accessRevokedDesc"),
-          });
-        return null;
-      }
-    } catch {
-      if (!silent)
-        sileo.error({
-          title: t("accessCheckError"),
-          description: t("accessCheckErrorDesc"),
-        });
-      return null;
-    }
-
-    // Resolve patient public key: QR param → pre-fetched map → on-demand fetch
-    let senderKey = qrPatientKey ?? patientKeys[doc.patient_wallet] ?? null;
-    console.log(
-      "[SharedPage] senderKey source:",
-      qrPatientKey
-        ? "QR"
-        : patientKeys[doc.patient_wallet]
-          ? "prefetch"
-          : "fetch",
-    );
-    if (!senderKey) {
-      try {
-        senderKey = await getUserPublicKey(doc.patient_wallet);
-        if (senderKey) {
-          setPatientKeys((prev) => ({
-            ...prev,
-            [doc.patient_wallet]: senderKey,
-          }));
-        }
-      } catch {
-        senderKey = null;
-      }
-    }
-    if (!senderKey) {
-      if (!silent)
-        sileo.error({ title: t("noKey"), description: t("noPatientKey") });
-      return null;
-    }
-    let wrappedKey: WrappedKey;
-    try {
-      wrappedKey = JSON.parse(doc.encrypted_key) as WrappedKey;
-    } catch {
-      if (!silent)
-        sileo.error({ title: t("noKey"), description: t("invalidKey") });
-      return null;
-    }
-    const result = await decrypt({
-      cid: doc.document_id,
-      iv: doc.iv,
-      wrappedKey,
-      senderPublicKeyJwk: senderKey,
-      myUserId: userId,
-    });
-    console.log(
-      "[SharedPage] decrypt result:",
-      result ? "success" : "failed",
-      "error:",
-      decryptError,
-    );
-    if (!result && !silent) {
-      sileo.error({
-        title: t("decryptFailed"),
-        description: t("decryptFailedDesc"),
-      });
-    }
-    return result;
-  }
-
   async function handleView(doc: SharedDocument) {
     setSelectedDoc(doc);
     clear();

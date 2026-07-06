@@ -2,7 +2,6 @@
 
 import { usePrivy } from "@privy-io/react-auth";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { useRef, useState } from "react";
 import { sileo } from "sileo";
 import { checkAccessOnChain } from "@/actions/permissions/check-access-onchain";
@@ -10,6 +9,7 @@ import { savePermissionKey } from "@/actions/permissions/save-permission-key";
 import { QRScanner } from "@/components/scanner/QRScanner";
 import { isExpired } from "@/features/permissions";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { useRouter } from "@/i18n/navigation";
 import type { EncryptedQRData } from "@/types/domain.types";
 
 interface QRV2 {

@@ -110,8 +110,10 @@ export function MobileSheet() {
 
   return (
     <div className="fixed inset-0 z-100">
-      <div
+      <button
+        type="button"
         className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity"
+        aria-label="Close"
         onClick={() => setSheetOpen(false)}
       />
       <div

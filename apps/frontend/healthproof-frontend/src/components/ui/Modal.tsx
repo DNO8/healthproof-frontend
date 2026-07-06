@@ -44,18 +44,11 @@ export function Modal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        role="button"
-        tabIndex={-1}
+      <button
+        type="button"
         aria-label="Close"
         className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity"
         onClick={onClose}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onClose();
-          }
-        }}
       />
       <div
         ref={dialogRef}

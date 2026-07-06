@@ -69,6 +69,7 @@ function TabButton({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`rounded-xl px-4 py-2 text-sm font-medium transition-all ${
         active ? "bg-sky-100 text-sky-700" : "text-slate-500 hover:bg-slate-50"

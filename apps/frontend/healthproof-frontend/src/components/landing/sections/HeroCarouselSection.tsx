@@ -2,7 +2,6 @@ import gsap from "gsap";
 import { Check, MousePointerClick } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   ACTORS,
@@ -15,6 +14,7 @@ import { DemoSummary } from "@/components/landing/demo/DemoSummary";
 import { HeroDemoModal } from "@/components/landing/HeroDemoModal";
 import { Button, DecorativeCircle, DecorativeCross } from "@/components/ui";
 import { useHeroPathAnimation } from "@/hooks/ui/useHeroPathAnimation";
+import { useRouter } from "@/i18n/navigation";
 
 const ICON_COUNT = 12;
 
@@ -73,13 +73,6 @@ export function HeroCarouselSection() {
     "group absolute rounded-3xl border border-transparent bg-transparent p-2 transition hover:bg-white/30 cursor-pointer";
 
   const openDemo = () => setShowModal(true);
-
-  const handleActorKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      openDemo();
-    }
-  };
 
   return (
     <section
@@ -217,12 +210,10 @@ export function HeroCarouselSection() {
           </svg>
 
           {/* Actor: Medical Center (left) */}
-          <div
-            className={`${actorCardClass} left-[6%] top-[22%] z-10 flex flex-col items-center sm:left-[10%] sm:top-[18%]`}
+          <button
+            type="button"
+            className={`${actorCardClass} left-[6%] top-[22%] z-10 flex flex-col items-center text-left sm:left-[10%] sm:top-[18%]`}
             onClick={openDemo}
-            onKeyDown={handleActorKeyDown}
-            role="button"
-            tabIndex={0}
           >
             <div className="relative h-[80px] w-[100px] sm:h-[140px] sm:w-[180px] lg:h-[170px] lg:w-[210px]">
               <Image
@@ -247,15 +238,13 @@ export function HeroCarouselSection() {
             <h3 className="mt-1 text-xs font-semibold text-slate-700 sm:text-sm">
               {tActors("medicalCenter")}
             </h3>
-          </div>
+          </button>
 
           {/* Actor: Laboratory (right) */}
-          <div
-            className={`${actorCardClass} right-[6%] top-[22%] z-10 flex flex-col items-center sm:right-[10%] sm:top-[18%]`}
+          <button
+            type="button"
+            className={`${actorCardClass} right-[6%] top-[22%] z-10 flex flex-col items-center text-left sm:right-[10%] sm:top-[18%]`}
             onClick={openDemo}
-            onKeyDown={handleActorKeyDown}
-            role="button"
-            tabIndex={0}
           >
             <div className="relative h-[80px] w-[100px] sm:h-[140px] sm:w-[180px] lg:h-[170px] lg:w-[210px]">
               <Image
@@ -279,15 +268,13 @@ export function HeroCarouselSection() {
             <h3 className="mt-1 text-xs font-semibold text-slate-700 sm:text-sm">
               {tActors("laboratory")}
             </h3>
-          </div>
+          </button>
 
           {/* Actor: Patient (bottom center) */}
-          <div
-            className={`${actorCardClass} bottom-[16px] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center sm:bottom-[100px]`}
+          <button
+            type="button"
+            className={`${actorCardClass} bottom-[16px] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center text-left sm:bottom-[100px]`}
             onClick={openDemo}
-            onKeyDown={handleActorKeyDown}
-            role="button"
-            tabIndex={0}
           >
             <div className="relative h-[90px] w-[60px] sm:h-[150px] sm:w-[100px] lg:h-[180px] lg:w-[120px]">
               <Image
@@ -312,7 +299,7 @@ export function HeroCarouselSection() {
             <h3 className="mt-1 text-xs font-semibold text-slate-700 sm:text-sm">
               {tActors("patient")}
             </h3>
-          </div>
+          </button>
 
           {/* Animated icons traveling along paths */}
           <div className="pointer-events-none absolute inset-0 z-20">

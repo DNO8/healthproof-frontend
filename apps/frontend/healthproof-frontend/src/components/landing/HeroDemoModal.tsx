@@ -68,13 +68,16 @@ export function HeroDemoModal({
 
   return (
     <div
-      className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/30 backdrop-blur-sm p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      className="fixed inset-0 z-60 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
     >
+      <button
+        type="button"
+        className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
+        aria-label={t("close")}
+        onClick={onClose}
+      />
       <div className="relative flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-white/70 bg-(--hp-bg) shadow-(--hp-shadow-raised)">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-(--hp-border) px-6 py-4 shrink-0">

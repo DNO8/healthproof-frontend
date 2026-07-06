@@ -627,7 +627,6 @@ export default function PermissionsPage() {
               {loadingDocs ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map((i) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders are static
                     <div
                       key={i}
                       className="neu-pressed h-10 w-full animate-pulse rounded-xl bg-slate-200"
@@ -702,7 +701,6 @@ export default function PermissionsPage() {
                 {loadingEpisodes ? (
                   <div className="space-y-2">
                     {[1, 2, 3].map((i) => (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders are static
                       <div
                         key={i}
                         className="neu-pressed h-10 w-full animate-pulse rounded-xl bg-slate-200"

@@ -273,33 +273,36 @@ export function useSyncKeys() {
   );
 
   // ── Helper: reconstruct from two shares ──
-  const reconstructFromShares = async (
-    shareA: string,
-    shareB: string,
-    expectedHash: string,
-  ): Promise<{ keyPair: CryptoKeyPair; publicKeyJwk: string } | null> => {
-    try {
-      const reconstructed = reconstructSecret([shareA, shareB]);
-      const reconstructedHash = await hashMasterSecret(reconstructed);
-      if (reconstructedHash !== expectedHash) {
-        console.error("[useSyncKeys] Master secret hash mismatch", {
-          expectedHashPrefix: expectedHash.slice(0, 16),
-          reconstructedHashPrefix: reconstructedHash.slice(0, 16),
-          shareAPrefix: shareA.slice(0, 16),
-          shareBPrefix: shareB.slice(0, 16),
-          reconstructedLength: reconstructed.length,
-        });
+  const reconstructFromShares = useCallback(
+    async (
+      shareA: string,
+      shareB: string,
+      expectedHash: string,
+    ): Promise<{ keyPair: CryptoKeyPair; publicKeyJwk: string } | null> => {
+      try {
+        const reconstructed = reconstructSecret([shareA, shareB]);
+        const reconstructedHash = await hashMasterSecret(reconstructed);
+        if (reconstructedHash !== expectedHash) {
+          console.error("[useSyncKeys] Master secret hash mismatch", {
+            expectedHashPrefix: expectedHash.slice(0, 16),
+            reconstructedHashPrefix: reconstructedHash.slice(0, 16),
+            shareAPrefix: shareA.slice(0, 16),
+            shareBPrefix: shareB.slice(0, 16),
+            reconstructedLength: reconstructed.length,
+          });
+          return null;
+        }
+        return await importKeyPairFromMasterSecret(reconstructed);
+      } catch (e) {
+        console.error("[useSyncKeys] Reconstruction failed:", e);
         return null;
       }
-      return await importKeyPairFromMasterSecret(reconstructed);
-    } catch (e) {
-      console.error("[useSyncKeys] Reconstruction failed:", e);
-      return null;
-    }
-  };
+    },
+    [],
+  );
 
   // ── Helper: fetch server share2 ──
-  const fetchServerShare = async (): Promise<string | null> => {
+  const fetchServerShare = useCallback(async (): Promise<string | null> => {
     if (serverShareAttemptedRef.current) {
       console.log(
         "[useSyncKeys] fetchServerShare: already attempted this session, skipping",
@@ -356,7 +359,7 @@ export function useSyncKeys() {
       console.error("[useSyncKeys] fetchServerShare failed:", e);
       return null;
     }
-  };
+  }, [getAccessToken]);
 
   // Guard: if recovery state in sessionStorage belongs to another user, reset it
   useEffect(() => {
@@ -491,10 +494,11 @@ export function useSyncKeys() {
               try {
                 let privJwkStr: string;
                 try {
-                  // biome-ignore lint/style/noNonNullAssertion: keypair is validated before use
+                  if (!kp.privateKey)
+                    throw new Error("Missing local private key");
                   const privJwk = await crypto.subtle.exportKey(
                     "jwk",
-                    kp.privateKey!,
+                    kp.privateKey,
                   );
                   privJwkStr = JSON.stringify(privJwk);
                 } catch (_exportErr) {

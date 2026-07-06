@@ -333,9 +333,7 @@ export default function UploadPage() {
           return order.episodeId as `0x${string}`;
         }
       }
-    } catch (err) {
-      console.warn("[upload] Could not resolve episodeId from order:", err);
-    }
+    } catch (_err) {}
     return ZERO_BYTES32;
   }
 
@@ -392,22 +390,11 @@ export default function UploadPage() {
         hasText,
         error,
       } = await extractDocumentText(file);
-      console.log("[upload] extracted text", {
-        hasText,
-        redactedLength: redactedText.length,
-        phiKeys: Object.keys(phiMap),
-        error,
-      });
       phiMapRef.current = phiMap;
       setHasEnoughText(hasText && redactedText.trim().length > 20);
       const newSessionId = crypto.randomUUID();
       setSessionId(newSessionId);
       if (!hasText || error || redactedText.trim().length === 0) {
-        console.error("[analyzeDocument] extraction failed", {
-          redactedText,
-          hasText,
-          error,
-        });
         sileo.warning({
           title: tModal("noTextTitle"),
           description: `${tModal("noTextDesc")}${error ? ` (${error})` : ""}`,
@@ -421,18 +408,15 @@ export default function UploadPage() {
       const classification = await classifyDocument(
         await withPrivyToken({ text: redactedText, sessionId: newSessionId }),
       );
-      console.log("[upload] classification response", classification);
       if (isAuthSuccess(classification)) {
         const result = classification.data as DocumentType;
         setDetectedDocumentType(result);
         setStep("consent");
       } else {
-        console.error("[upload] classification failed", classification);
         setClassificationError(true);
         setStep("consent");
       }
-    } catch (e) {
-      console.error("[analyzeDocument] error", e);
+    } catch (_e) {
       setClassificationError(true);
       setStep("consent");
     } finally {
@@ -447,14 +431,11 @@ export default function UploadPage() {
     setUploading(true);
     setAiStatus(t("aiStatusConsent"));
     try {
-      console.log("[upload] logging consent", { sessionId });
       const consent = await logConsent(await withPrivyToken({ sessionId }));
-      console.log("[upload] consent response", consent);
       if (!isAuthSuccess(consent) || !consent.data.success) {
         throw new Error("ConsentRequired");
       }
       setAiStatus(t("aiStatusOpenAI"));
-      console.log("[upload] moving to review step");
       if (detectedDocumentType.type === "obstetric-ultrasound") {
         await handleExtractAndAuditObstetric(sessionId, extractedText);
       } else if (detectedDocumentType.type === "abdominal-ultrasound") {
@@ -477,10 +458,6 @@ export default function UploadPage() {
   async function handleExtractAndAudit(sessionId: string, text: string) {
     setAiStatus(t("aiStatusAuditing"));
     try {
-      console.log("[upload] extractAndAudit starting", {
-        sessionId,
-        textLength: text.length,
-      });
       const response = await extractAndAudit(
         await withPrivyToken({
           text,
@@ -488,7 +465,6 @@ export default function UploadPage() {
           labFilledFields: {},
         }),
       );
-      console.log("[upload] extractAndAudit response", response);
       if (isAuthSuccess(response)) {
         const { doc, audit } = response.data as unknown as {
           doc: ExtractedDoc;
@@ -497,10 +473,8 @@ export default function UploadPage() {
         setDoc(doc);
         setAudit(audit);
         setAiStatus(t("aiStatusPreparing"));
-        console.log("[upload] moving to review step from extractAndAudit");
         setStep("review");
       } else {
-        console.error("[upload] extractAndAudit failed", response);
         throw new Error((response as { error: string }).error);
       }
     } catch (e) {
@@ -515,17 +489,12 @@ export default function UploadPage() {
   async function handleExtractAndAuditImaging(sessionId: string, text: string) {
     setAiStatus(t("aiStatusAuditing"));
     try {
-      console.log("[upload] extractAndAuditImaging starting", {
-        sessionId,
-        textLength: text.length,
-      });
       const response = await extractAndAuditImaging(
         await withPrivyToken({
           text,
           sessionId,
         }),
       );
-      console.log("[upload] extractAndAuditImaging response", response);
       if (isAuthSuccess(response)) {
         const { report, audit, suggestions } = response.data as unknown as {
           report: ImagingReport;
@@ -536,12 +505,8 @@ export default function UploadPage() {
         setImagingAudit(audit);
         setImagingSuggestions(suggestions);
         setAiStatus(t("aiStatusPreparing"));
-        console.log(
-          "[upload] moving to review step from extractAndAuditImaging",
-        );
         setStep("review");
       } else {
-        console.error("[upload] extractAndAuditImaging failed", response);
         throw new Error((response as { error: string }).error);
       }
     } catch (e) {
@@ -559,17 +524,12 @@ export default function UploadPage() {
   ) {
     setAiStatus(t("aiStatusAuditing"));
     try {
-      console.log("[upload] extractAndAuditObstetric starting", {
-        sessionId,
-        textLength: text.length,
-      });
       const response = await extractAndAuditObstetric(
         await withPrivyToken({
           text,
           sessionId,
         }),
       );
-      console.log("[upload] extractAndAuditObstetric response", response);
       if (isAuthSuccess(response)) {
         const { report, audit } = response.data as unknown as {
           report: ObstetricReport;
@@ -578,12 +538,8 @@ export default function UploadPage() {
         setObstetricReport(report);
         setObstetricAudit(audit);
         setAiStatus(t("aiStatusPreparing"));
-        console.log(
-          "[upload] moving to review step from extractAndAuditObstetric",
-        );
         setStep("review");
       } else {
-        console.error("[upload] extractAndAuditObstetric failed", response);
         throw new Error((response as { error: string }).error);
       }
     } catch (e) {
@@ -609,7 +565,6 @@ export default function UploadPage() {
     }
     setUploading(true);
     try {
-      console.log("[upload] logging consent for manual entry", { sessionId });
       const consent = await logConsent(await withPrivyToken({ sessionId }));
       if (!isAuthSuccess(consent) || !consent.data.success) {
         throw new Error("ConsentRequired");
@@ -653,11 +608,9 @@ export default function UploadPage() {
             : null,
         },
       };
-      console.log("[upload] auditManual starting", { sessionId });
       const response = await auditManual(
         await withPrivyToken({ doc: redactedManualDoc, sessionId }),
       );
-      console.log("[upload] auditManual response", response);
       if (isAuthSuccess(response)) {
         const { doc, audit } = response.data as unknown as {
           doc: ExtractedDoc;
@@ -665,10 +618,8 @@ export default function UploadPage() {
         };
         setDoc(doc);
         setAudit(audit);
-        console.log("[upload] moving to review step from auditManual");
         setStep("review");
       } else {
-        console.error("[upload] auditManual failed", response);
         throw new Error((response as { error: string }).error);
       }
     } catch (e) {
@@ -695,9 +646,6 @@ export default function UploadPage() {
     }
     setUploading(true);
     try {
-      console.log("[upload] logging consent for manual imaging entry", {
-        sessionId,
-      });
       const consent = await logConsent(await withPrivyToken({ sessionId }));
       if (!isAuthSuccess(consent) || !consent.data.success) {
         throw new Error("ConsentRequired");
@@ -742,11 +690,9 @@ export default function UploadPage() {
         },
       };
 
-      console.log("[upload] auditImagingManual starting", { sessionId });
       const response = await auditImagingManual(
         await withPrivyToken({ report: redactedReport, sessionId }),
       );
-      console.log("[upload] auditImagingManual response", response);
       if (isAuthSuccess(response)) {
         const { report, audit, suggestions } = response.data as unknown as {
           report: ImagingReport;
@@ -756,10 +702,8 @@ export default function UploadPage() {
         setImagingReport(report);
         setImagingAudit(audit);
         setImagingSuggestions(suggestions);
-        console.log("[upload] moving to review step from auditImagingManual");
         setStep("review");
       } else {
-        console.error("[upload] auditImagingManual failed", response);
         throw new Error((response as { error: string }).error);
       }
     } catch (e) {
@@ -793,7 +737,6 @@ export default function UploadPage() {
     setUploading(true);
     try {
       if (hasImagingData) {
-        console.log("[upload] generateFhirImaging starting", { sessionId });
         const response = await generateFhirImaging(
           await withPrivyToken({
             report: imagingReport,
@@ -802,7 +745,6 @@ export default function UploadPage() {
             sessionId,
           }),
         );
-        console.log("[upload] generateFhirImaging response", response);
         if (isAuthSuccess(response)) {
           setGenerateResult(response.data as GenerateResult);
           setStep("preview");
@@ -810,7 +752,6 @@ export default function UploadPage() {
           throw new Error((response as { error: string }).error);
         }
       } else if (hasObstetricData) {
-        console.log("[upload] generateFhirObstetric starting", { sessionId });
         const response = await generateFhirObstetric(
           await withPrivyToken({
             report: obstetricReport,
@@ -819,7 +760,6 @@ export default function UploadPage() {
             sessionId,
           }),
         );
-        console.log("[upload] generateFhirObstetric response", response);
         if (isAuthSuccess(response)) {
           setGenerateResult(response.data as GenerateResult);
           setStep("preview");
@@ -827,7 +767,6 @@ export default function UploadPage() {
           throw new Error((response as { error: string }).error);
         }
       } else if (doc && audit) {
-        console.log("[upload] generateFhir starting", { sessionId });
         const response = await generateFhir(
           await withPrivyToken({
             doc,
@@ -836,7 +775,6 @@ export default function UploadPage() {
             sessionId,
           }),
         );
-        console.log("[upload] generateFhir response", response);
         if (isAuthSuccess(response)) {
           setGenerateResult(response.data as GenerateResult);
           setStep("preview");
@@ -951,7 +889,6 @@ export default function UploadPage() {
       const { bundle: bundleWithPhi, missing: missingPhi } =
         reassemblePhiInBundle(bundleWithReference, phiMapRef.current);
       if (missingPhi.length > 0) {
-        console.warn("[upload] missing PHI placeholders in bundle", missingPhi);
         sileo.warning({
           title: t("phiMissingTitle"),
           description: t("phiMissingDesc", {
@@ -1005,7 +942,6 @@ export default function UploadPage() {
         }),
       );
 
-      console.log("[upload] publishFhirDocument starting", { sessionId });
       const publishResponse = await publishFhirDocument(
         await withPrivyToken({
           pdf: {
@@ -1054,8 +990,7 @@ export default function UploadPage() {
           });
           router.push("/dashboard/lab-orders");
           return;
-        } catch (err) {
-          console.error("[upload] Order status update failed:", err);
+        } catch (_err) {
           setPendingCompletion(true);
           sileo.warning({
             title: t("uploadSuccess"),
@@ -1122,7 +1057,6 @@ export default function UploadPage() {
                 setPendingCompletion(false);
                 router.push("/dashboard/lab-orders");
               } catch (err) {
-                console.error("[upload] Retry order completion failed:", err);
                 sileo.error({
                   title: t("orderCompletionFailed"),
                   description: formatUploadError(err),

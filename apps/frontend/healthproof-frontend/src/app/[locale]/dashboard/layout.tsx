@@ -2,11 +2,11 @@
 
 import { usePrivy } from "@privy-io/react-auth";
 import { useEffect, useMemo } from "react";
-import { useRouter } from "@/i18n/navigation";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { useDbUser } from "@/hooks/auth/useDbUser";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
+import { useRouter } from "@/i18n/navigation";
 import type { UserRole } from "@/types/domain.types";
 
 export default function DashboardLayout({

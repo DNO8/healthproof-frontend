@@ -20,12 +20,12 @@ import {
   User,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { useDbUser } from "@/hooks/auth/useDbUser";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { useDashboardStats } from "@/hooks/dashboard/useDashboardStats";
 import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
 import { useOnboardingTour } from "@/hooks/onboarding/useOnboardingTour";
+import { useRouter } from "@/i18n/navigation";
 import { ROLE_ICONS } from "@/lib/icons";
 import { LINKS_BY_ROLE } from "@/lib/navigation";
 import type { UserRole } from "@/types/domain.types";

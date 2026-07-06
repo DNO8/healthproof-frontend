@@ -56,8 +56,6 @@ export class EnvKMSProvider implements KMSProvider {
  * Would use AWS SDK to decrypt keys stored in AWS KMS.
  */
 export class AWSKMSProvider implements KMSProvider {
-  constructor(_keyId: string) {}
-
   async getPrivateKey(): Promise<string> {
     // TODO: Implement AWS KMS decrypt
     // const kms = new KMSClient();
