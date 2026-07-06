@@ -29,7 +29,7 @@ function buildStep(
     popover: {
       title: t(`${role}.${key}.title`),
       description: t(`${role}.${key}.description`),
-      side: key === "closing" ? "over" : "bottom",
+      side: key === "closing" ? "top" : "bottom",
       align: "start",
     },
   };
