@@ -67,6 +67,7 @@ export function TechDecentralizedNetworkSection() {
                 <svg
                   className="absolute inset-0 h-full w-full"
                   viewBox="0 0 100 100"
+                  aria-hidden="true"
                 >
                   {links.map(([a, b]) => {
                     const na = nodes[a];

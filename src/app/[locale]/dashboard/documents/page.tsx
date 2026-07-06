@@ -326,12 +326,13 @@ export default function DocumentsPage() {
 
       {/* Document Viewer Modal */}
       {modalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) closeModal();
-          }}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            aria-label={t("close")}
+            onClick={closeModal}
+          />
           <div className="relative w-full max-w-5xl h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
@@ -363,6 +364,7 @@ export default function DocumentsPage() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden="true"
                 >
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -386,6 +388,7 @@ export default function DocumentsPage() {
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     strokeWidth={1.5}
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"

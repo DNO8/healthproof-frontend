@@ -3,7 +3,6 @@
 import { useWallets } from "@privy-io/react-auth";
 import { ClipboardList } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { sileo } from "sileo";
 import { createWalletClient, custom, keccak256, toHex } from "viem";
@@ -16,6 +15,7 @@ import {
 } from "@/actions/medical-orders/medical-orders-onchain";
 import { EmptyState, SkeletonList } from "@/components/ui";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { useRouter } from "@/i18n/navigation";
 import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
 import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
 import { signGatewayMetaTx, signMetaTransaction } from "@/lib/metatx/forwarder";

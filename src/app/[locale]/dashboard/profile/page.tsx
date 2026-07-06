@@ -2,7 +2,6 @@
 
 import { usePrivy } from "@privy-io/react-auth";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import { getEntityOnChain } from "@/actions/healthcare-networks/register-entity-onchain";
 import { TourTrigger } from "@/components/onboarding/TourTrigger";
@@ -10,6 +9,7 @@ import { SecuritySection } from "@/components/profile/SecuritySection";
 import { useDbUser } from "@/hooks/auth/useDbUser";
 import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
 import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
+import { useRouter } from "@/i18n/navigation";
 import { ROLE_ICONS } from "@/lib/icons";
 import type { UserRole } from "@/types/domain.types";
 import { ROLES } from "@/types/domain.types";

@@ -23,9 +23,9 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "@/i18n/navigation";
 import { sileo } from "sileo";
 import { clearDbUserCache } from "@/hooks/auth/useDbUser";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { clearUserSession } from "@/lib/auth/clear-session";
 import { LINKS_BY_ROLE } from "@/lib/navigation";
 import type { UserRole } from "@/types/domain.types";

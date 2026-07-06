@@ -229,6 +229,7 @@ export function EmergencyAccessModal({ onClose }: Props) {
             <h2 className="text-lg font-bold text-slate-800">{t("title")}</h2>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600"
           >

@@ -79,6 +79,7 @@ export function RecoveryCodeModal({
         <div className="sticky bottom-0 bg-white px-5 pb-4 pt-2 sm:px-6 sm:pb-5 sm:pt-3">
           <div className="flex flex-col gap-2 sm:flex-row">
             <button
+              type="button"
               onClick={handleCopy}
               className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-100 px-4 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-200"
             >
@@ -90,6 +91,7 @@ export function RecoveryCodeModal({
               {copied ? t("copied") : t("copy")}
             </button>
             <button
+              type="button"
               onClick={handleDownload}
               className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
             >
@@ -100,6 +102,7 @@ export function RecoveryCodeModal({
 
           <div className="mt-3">
             <button
+              type="button"
               onClick={onDismiss}
               className="w-full rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
             >

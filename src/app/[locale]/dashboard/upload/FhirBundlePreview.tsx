@@ -1,7 +1,7 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { HelpCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { GenerateResult } from "@/services/fhir-rag/schema";
 
 interface FhirBundlePreviewProps {
@@ -38,6 +38,7 @@ export function FhirBundlePreview({
           </span>
           <span
             className="text-slate-400 hover:text-sky-600 transition-colors cursor-help"
+            role="img"
             aria-label={t("scoreTooltip")}
             title={t("scoreTooltip")}
           >

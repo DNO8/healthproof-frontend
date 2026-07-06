@@ -2,8 +2,8 @@
 
 import { Check, FlaskConical, Shield, User, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui";
+import { useRouter } from "@/i18n/navigation";
 
 interface DemoSummaryProps {
   onClose: () => void;
@@ -38,13 +38,16 @@ export function DemoSummary({ onClose }: DemoSummaryProps) {
 
   return (
     <div
-      className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      className="fixed inset-0 z-60 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
     >
+      <button
+        type="button"
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+        aria-label={t("close")}
+        onClick={onClose}
+      />
       <div className="relative flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-white/70 bg-(--hp-bg) shadow-(--hp-shadow-raised)">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-(--hp-border) px-6 py-4">
