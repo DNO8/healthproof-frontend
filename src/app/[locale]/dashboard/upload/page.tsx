@@ -1380,7 +1380,7 @@ export default function UploadPage() {
 							bundle: reassemblePhiInBundle(
 								generateResult.bundle,
 								phiMapRef.current,
-							).bundle,
+							).bundle as GenerateResult["bundle"],
 						}}
 						onPublish={handlePublish}
 						publishing={uploading}
