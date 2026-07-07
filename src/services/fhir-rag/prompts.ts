@@ -278,6 +278,7 @@ Reglas duras:
 - Practitioner/Organization (si hay emisor) debe tener id "performer-{uuid}" y usarse como performer del DiagnosticReport.
 - DiagnosticReport: status "final", category "RAD" con system "http://terminology.hl7.org/CodeSystem/v2-0074", code con LOINC de procedimiento o code.text, subject al Patient, effectiveDateTime, issued, performer al Practitioner/Organization, result referencias a Observations.
 - Observation por cada medida: status "final", category "imaging" con system "http://terminology.hl7.org/CodeSystem/observation-category", code con LOINC confirmado o code.text, subject al Patient, effectiveDateTime, bodySite con SNOMED CT si está disponible o bodySite.text, valueQuantity con sistema UCUM "http://unitsofmeasure.org" para medidas numéricas, valueString para descripciones textuales, dataAbsentReason "unknown" si no hay valor.
+- Si el informe no contiene medidas numéricas (solo técnica, hallazgos e impresión diagnóstica), genera al menos una Observation con los hallazgos y/o impresión en valueString y referenciada desde DiagnosticReport.result. Esto es válido en FHIR y es necesario para que el bundle pase la validación local.
 - "filledFields" contiene correcciones del usuario. Tienen prioridad sobre los valores extraídos:
   - "studyType", "indication", "technique", "findings", "impression": si el valor es "N/A" o vacío, omítelo.
   - "<index>.value": valor corregido para la medida en ese índice.
