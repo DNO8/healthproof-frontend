@@ -2,19 +2,21 @@
 
 import { HelpCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDriverTour } from "@/hooks/use-driver-tour";
 import {
   ANALYTICAL_METHODS,
   OBSERVATION_INTERPRETATIONS,
   UCUM_UNITS,
 } from "@/services/fhir-rag/fhir-options";
+import { searchLoincCodes } from "@/actions/fhir/search-loinc";
 import type {
   AuditReport,
   DocumentCategory,
   ExtractedDoc,
   LabFilledFields,
 } from "@/services/fhir-rag/schema";
+import type { LoincEntry, LoincSearchResult } from "@/services/loinc/types";
 import { LoincSelector } from "./LoincSelector";
 
 interface FhirReviewPanelProps {
@@ -25,6 +27,7 @@ interface FhirReviewPanelProps {
   onGenerate: () => void;
   generating: boolean;
   documentType?: DocumentCategory;
+  sessionId: string;
 }
 
 const NA_VALUE = "N/A";
@@ -76,9 +79,29 @@ export function FhirReviewPanel({
   onGenerate,
   generating,
   documentType,
+  sessionId,
 }: FhirReviewPanelProps) {
   // documentType is reserved for future type-specific UI adjustments
   void documentType;
+
+  const [loincResults, setLoincResults] = useState<Record<number, LoincEntry[]>>({});
+
+  // Auto-search LOINC for each exam on mount
+  useEffect(() => {
+    doc.exams.forEach((exam, index) => {
+      const proposed = audit.mappings.find((m) => m.rawName === exam.rawName);
+      const query = proposed?.loincCode ?? exam.rawName;
+      if (!query?.trim()) return;
+      searchLoincCodes({ query, sessionId }).then((response) => {
+        const res = response as LoincSearchResult | { error: string };
+        if ("results" in res && res.results.length > 0) {
+          setLoincResults((prev) => ({ ...prev, [index]: res.results }));
+        }
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doc.exams, audit.mappings, sessionId]);
+
   const t = useTranslations("fhirReview");
   const naCount =
     audit.missing?.filter(
@@ -359,6 +382,7 @@ export function FhirReviewPanel({
                   disabled={generating}
                   noMatchesLabel={t("loincNoMatches")}
                   clearLabel={t("loincClear")}
+                  extraOptions={loincResults[index] ?? []}
                 />
                 {proposed && !confirmedLoinc && (
                   <p className="text-xs text-slate-400">

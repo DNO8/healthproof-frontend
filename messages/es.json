@@ -1738,13 +1738,15 @@
 			"unit": "Unidad",
 			"method": "Método",
 			"referenceRange": "Rango de referencia",
-			"interpretation": "Interpretación"
+			"interpretation": "Interpretación",
+			"valueQuantity": "Valor numérico"
 		},
 		"fieldHelp": {
 			"unit": "Indica la unidad de medida del resultado (ej: mg/dL, U/L, mmol/L). FHIR usa este valor en Observation.valueQuantity.unit para que el resultado sea comparable.",
 			"method": "Describe la técnica analítica utilizada (ej: quimioluminiscencia, enzimático, inmunofluorescencia). FHIR lo registra en Observation.method para contextualizar el resultado.",
 			"referenceRange": "Intervalo de valores considerados normales para este examen (ej: 70-110 mg/dL). FHIR lo guarda en Observation.referenceRange para interpretar si el resultado es normal o alterado.",
-			"interpretation": "Interpretación clínica del resultado (ej: normal, bajo, alto). FHIR la guarda en Observation.interpretation usando el sistema de códigos v3 estándar."
+			"interpretation": "Interpretación clínica del resultado (ej: normal, bajo, alto). FHIR la guarda en Observation.interpretation usando el sistema de códigos v3 estándar.",
+			"valueQuantity": "Resultado numérico del examen con unidad de medida"
 		},
 		"showFieldHelp": "¿Qué es este campo?",
 		"naLabel": "No aplica",

@@ -1340,6 +1340,7 @@ export default function UploadPage() {
 						onGenerate={handleGenerate}
 						generating={uploading}
 						documentType={detectedDocumentType?.type ?? "lab"}
+						sessionId={sessionId}
 					/>
 				)}
 
