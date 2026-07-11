@@ -126,9 +126,9 @@ async function extractFromPdf(
       errorHandler: (err) => {
         console.error("[tesseract] worker error", err);
       },
-      langPath: options.langPath,
-      workerPath: options.workerPath,
-      corePath: options.corePath,
+      ...(options.langPath ? { langPath: options.langPath } : {}),
+      ...(options.workerPath ? { workerPath: options.workerPath } : {}),
+      ...(options.corePath ? { corePath: options.corePath } : {}),
     });
     await worker.setParameters({
       tessedit_pageseg_mode: options.psm,
@@ -200,9 +200,9 @@ async function extractFromImage(
       errorHandler: (err) => {
         console.error("[tesseract] worker error", err);
       },
-      langPath: options.langPath,
-      workerPath: options.workerPath,
-      corePath: options.corePath,
+      ...(options.langPath ? { langPath: options.langPath } : {}),
+      ...(options.workerPath ? { workerPath: options.workerPath } : {}),
+      ...(options.corePath ? { corePath: options.corePath } : {}),
     });
     await worker.setParameters({
       tessedit_pageseg_mode: options.psm,
