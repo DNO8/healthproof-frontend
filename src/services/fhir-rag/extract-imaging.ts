@@ -23,7 +23,7 @@ export async function extractImagingUltrasound(
         { role: "user", content: text.slice(0, 20000) },
       ],
       response_format: { type: "json_object" },
-      temperature: 0.1,
+      temperature: 0,
       max_tokens: 4096,
     });
 

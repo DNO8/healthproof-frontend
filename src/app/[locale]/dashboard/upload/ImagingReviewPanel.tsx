@@ -1,16 +1,18 @@
 "use client";
 
-import { Scan, Search } from "lucide-react";
+import { Scan } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { searchLoincCodes } from "@/actions/fhir/search-loinc";
 import type {
   AuditReport,
   AuditSuggestions,
   ImagingReport,
 } from "@/services/fhir-rag/schema";
+import type { LoincSearchResult } from "@/services/loinc/types";
 import { mapRegionToBodySite } from "@/services/fhir-rag/snomed-body-site";
 import type { LoincEntry } from "@/services/loinc/types";
+import { LoincSelector } from "./LoincSelector";
 
 interface ImagingReviewPanelProps {
   report: ImagingReport;
@@ -41,41 +43,29 @@ export function ImagingReviewPanel({
   generating,
 }: ImagingReviewPanelProps) {
   const t = useTranslations("imagingReview");
-  const [loincResults, setLoincResults] = useState<
-    Record<number, LoincEntry[]>
-  >({});
-  const [loincSearching, setLoincSearching] = useState<Record<number, boolean>>(
-    {},
-  );
+  const [loincResults, setLoincResults] = useState<Record<number, LoincEntry[]>>({});
+
   const loincApiFailed = Object.keys(suggestions ?? {}).some((key) =>
     key.endsWith(".apiFailed"),
   );
 
+  // Auto-search LOINC for each measurement on mount
+  useEffect(() => {
+    report.measurements.forEach((measurement, index) => {
+      const query = measurement.loincCode ?? measurement.name;
+      if (!query?.trim()) return;
+      searchLoincCodes({ query, sessionId }).then((response) => {
+        const res = response as LoincSearchResult | { error: string };
+        if ("results" in res && res.results.length > 0) {
+          setLoincResults((prev) => ({ ...prev, [index]: res.results }));
+        }
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [report.measurements, sessionId]);
+
   function setField(key: string, value: string) {
     onChange({ ...filledFields, [key]: value });
-  }
-
-  async function searchLoincForMeasurement(index: number, query: string) {
-    if (!query.trim()) return;
-    setLoincSearching(
-      (prev) => ({ ...prev, [index]: true }) as Record<number, boolean>,
-    );
-    try {
-      const response = await searchLoincCodes({ query, sessionId });
-      if ("results" in response) {
-        setLoincResults(
-          (prev) =>
-            ({ ...prev, [index]: response.results }) as Record<
-              number,
-              LoincEntry[]
-            >,
-        );
-      }
-    } finally {
-      setLoincSearching(
-        (prev) => ({ ...prev, [index]: false }) as Record<number, boolean>,
-      );
-    }
   }
 
   return (
@@ -89,12 +79,10 @@ export function ImagingReviewPanel({
         </h3>
       </div>
 
+      {/* Study header fields */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label
-            htmlFor="studyType"
-            className="text-xs font-semibold text-slate-600"
-          >
+          <label htmlFor="studyType" className="text-xs font-semibold text-slate-600">
             {t("studyType")}
           </label>
           <input
@@ -106,10 +94,7 @@ export function ImagingReviewPanel({
           />
         </div>
         <div className="space-y-1">
-          <label
-            htmlFor="indication"
-            className="text-xs font-semibold text-slate-600"
-          >
+          <label htmlFor="indication" className="text-xs font-semibold text-slate-600">
             {t("indication")}
           </label>
           <input
@@ -123,10 +108,7 @@ export function ImagingReviewPanel({
       </div>
 
       <div className="space-y-1">
-        <label
-          htmlFor="technique"
-          className="text-xs font-semibold text-slate-600"
-        >
+        <label htmlFor="technique" className="text-xs font-semibold text-slate-600">
           {t("technique")}
         </label>
         <textarea
@@ -138,10 +120,7 @@ export function ImagingReviewPanel({
       </div>
 
       <div className="space-y-1">
-        <label
-          htmlFor="findings"
-          className="text-xs font-semibold text-slate-600"
-        >
+        <label htmlFor="findings" className="text-xs font-semibold text-slate-600">
           {t("findings")}
         </label>
         <textarea
@@ -153,10 +132,7 @@ export function ImagingReviewPanel({
       </div>
 
       <div className="space-y-1">
-        <label
-          htmlFor="impression"
-          className="text-xs font-semibold text-slate-600"
-        >
+        <label htmlFor="impression" className="text-xs font-semibold text-slate-600">
           {t("impression")}
         </label>
         <textarea
@@ -185,162 +161,159 @@ export function ImagingReviewPanel({
         </div>
       )}
 
-      <div className="space-y-2">
-        <h4 className="text-sm font-semibold text-slate-700">
-          {t("measurements")}
-        </h4>
-        {report.measurements.map((measurement, index) => (
-          <div
-            key={`${measurement.name}-${index}`}
-            className="neu-inset rounded-xl p-3 grid grid-cols-1 sm:grid-cols-6 gap-3"
-          >
-            <div className="space-y-1 sm:col-span-2">
-              <label
-                htmlFor={`measurement-${index}-name`}
-                className="text-xs font-semibold text-slate-600"
+      {/* Measurements */}
+      {report.measurements.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="text-sm font-semibold text-slate-700">{t("measurements")}</h4>
+          {report.measurements.map((measurement, index) => {
+            const currentLoinc =
+              filledFields[`${index}.loincCode`] ?? measurement.loincCode ?? null;
+
+            // Merge suggestions from audit + auto-search results
+            const suggestionOptions = suggestions?.[measurement.name]?.options ?? [];
+            const searchOptions = loincResults[index] ?? [];
+            const allOptions: LoincEntry[] = [
+              ...searchOptions,
+              ...suggestionOptions
+                .filter((s) => !searchOptions.some((r) => r.code === s.code))
+                .map((s) => ({
+                  code: s.code,
+                  display: s.display,
+                  spanishDisplay: s.display,
+                  aliases: [],
+                  component: s.display,
+                  system: "http://loinc.org",
+                  scale: "Qn",
+                })),
+            ].filter(
+              (item, idx, self) =>
+                item.code && self.findIndex((i) => i.code === item.code) === idx,
+            );
+
+            return (
+              <div
+                key={`${measurement.name}-${index}`}
+                className="neu-inset rounded-xl p-4 space-y-3"
               >
-                {t("measurementName")}
-              </label>
-              <input
-                id={`measurement-${index}-name`}
-                type="text"
-                value={measurement.name}
-                readOnly
-                className="w-full rounded-xl px-3 py-2 text-sm neu-inset bg-transparent opacity-70"
-              />
-            </div>
-            <div className="space-y-1">
-              <label
-                htmlFor={`measurement-${index}-laterality`}
-                className="text-xs font-semibold text-slate-600"
-              >
-                {t("laterality")}
-              </label>
-              <select
-                id={`measurement-${index}-laterality`}
-                value={
-                  filledFields[`${index}.laterality`] ??
-                  measurement.laterality ??
-                  "unspecified"
-                }
-                onChange={(e) =>
-                  setField(`${index}.laterality`, e.target.value)
-                }
-                className="w-full rounded-xl px-3 py-2 text-sm neu-inset bg-transparent"
-              >
-                {LATERALITY_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {t(`laterality_${option}`)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label
-                htmlFor={`measurement-${index}-value`}
-                className="text-xs font-semibold text-slate-600"
-              >
-                {t("value")}
-              </label>
-              <input
-                id={`measurement-${index}-value`}
-                type="text"
-                value={
-                  filledFields[`${index}.value`] ?? measurement.value ?? ""
-                }
-                onChange={(e) => setField(`${index}.value`, e.target.value)}
-                className="w-full rounded-xl px-3 py-2 text-sm neu-inset bg-transparent"
-              />
-            </div>
-            <div className="space-y-1">
-              <label
-                htmlFor={`measurement-${index}-unit`}
-                className="text-xs font-semibold text-slate-600"
-              >
-                {t("unit")}
-              </label>
-              <input
-                id={`measurement-${index}-unit`}
-                type="text"
-                value={filledFields[`${index}.unit`] ?? measurement.unit ?? ""}
-                onChange={(e) => setField(`${index}.unit`, e.target.value)}
-                className="w-full rounded-xl px-3 py-2 text-sm neu-inset bg-transparent"
-              />
-            </div>
-            <div className="space-y-1">
-              <label
-                htmlFor={`measurement-${index}-region`}
-                className="text-xs font-semibold text-slate-600"
-              >
-                {t("region")}
-              </label>
-              <input
-                id={`measurement-${index}-region`}
-                type="text"
-                value={
-                  filledFields[`${index}.region`] ?? measurement.region ?? ""
-                }
-                onChange={(e) => {
-                  const region = e.target.value;
-                  const bodySite = mapRegionToBodySite(region);
-                  onChange({
-                    ...filledFields,
-                    [`${index}.region`]: region,
-                    [`${index}.bodySiteSnomed`]: bodySite?.snomedCode ?? "",
-                  });
-                }}
-                className="w-full rounded-xl px-3 py-2 text-sm neu-inset bg-transparent"
-              />
-            </div>
-            <div className="space-y-1">
-              <label
-                htmlFor={`measurement-${index}-loinc`}
-                className="text-xs font-semibold text-slate-600"
-              >
-                {t("loincCode")}
-              </label>
-              <div className="flex gap-2">
-                <input
-                  id={`measurement-${index}-loinc`}
-                  type="text"
-                  value={
-                    filledFields[`${index}.loincCode`] ??
-                    measurement.loincCode ??
-                    ""
-                  }
-                  onChange={(e) =>
-                    setField(`${index}.loincCode`, e.target.value)
-                  }
-                  className="w-full rounded-xl px-3 py-2 text-sm neu-inset bg-transparent"
-                />
-                <button
-                  type="button"
-                  disabled={loincSearching[index] || generating}
-                  onClick={() =>
-                    searchLoincForMeasurement(index, measurement.name)
-                  }
-                  className="neu-surface hover:neu-pressed rounded-xl px-2 py-2 text-slate-600 disabled:opacity-50"
-                  title={t("loincSearch")}
-                >
-                  <Search className="h-4 w-4" />
-                </button>
+                {/* Row 1: Measurement name (full width, read-only) */}
+                <div className="space-y-1">
+                  <label
+                    htmlFor={`measurement-${index}-name`}
+                    className="text-xs font-semibold text-slate-500 uppercase tracking-wide"
+                  >
+                    {t("measurementName")}
+                  </label>
+                  <input
+                    id={`measurement-${index}-name`}
+                    type="text"
+                    value={measurement.name}
+                    readOnly
+                    className="w-full rounded-xl px-3 py-2.5 text-sm neu-surface bg-transparent opacity-70 cursor-default"
+                  />
+                </div>
+
+                {/* Row 2: Laterality, Value, Unit, Region — equal width */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="space-y-1">
+                    <label
+                      htmlFor={`measurement-${index}-laterality`}
+                      className="text-xs font-semibold text-slate-600"
+                    >
+                      {t("laterality")}
+                    </label>
+                    <select
+                      id={`measurement-${index}-laterality`}
+                      value={
+                        filledFields[`${index}.laterality`] ??
+                        measurement.laterality ??
+                        "unspecified"
+                      }
+                      onChange={(e) => setField(`${index}.laterality`, e.target.value)}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm neu-inset bg-transparent"
+                    >
+                      {LATERALITY_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {t(`laterality_${option}`)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor={`measurement-${index}-value`}
+                      className="text-xs font-semibold text-slate-600"
+                    >
+                      {t("value")}
+                    </label>
+                    <input
+                      id={`measurement-${index}-value`}
+                      type="text"
+                      value={filledFields[`${index}.value`] ?? measurement.value ?? ""}
+                      onChange={(e) => setField(`${index}.value`, e.target.value)}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm neu-inset bg-transparent"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor={`measurement-${index}-unit`}
+                      className="text-xs font-semibold text-slate-600"
+                    >
+                      {t("unit")}
+                    </label>
+                    <input
+                      id={`measurement-${index}-unit`}
+                      type="text"
+                      value={filledFields[`${index}.unit`] ?? measurement.unit ?? ""}
+                      onChange={(e) => setField(`${index}.unit`, e.target.value)}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm neu-inset bg-transparent"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor={`measurement-${index}-region`}
+                      className="text-xs font-semibold text-slate-600"
+                    >
+                      {t("region")}
+                    </label>
+                    <input
+                      id={`measurement-${index}-region`}
+                      type="text"
+                      value={filledFields[`${index}.region`] ?? measurement.region ?? ""}
+                      onChange={(e) => {
+                        const region = e.target.value;
+                        const bodySite = mapRegionToBodySite(region);
+                        onChange({
+                          ...filledFields,
+                          [`${index}.region`]: region,
+                          [`${index}.bodySiteSnomed`]: bodySite?.snomedCode ?? "",
+                        });
+                      }}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm neu-inset bg-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 3: LOINC selector full width */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-600">
+                    {t("loincCode")}
+                  </label>
+                  <LoincSelector
+                    value={currentLoinc}
+                    onChange={(code) => setField(`${index}.loincCode`, code ?? "")}
+                    disabled={generating}
+                    placeholder={t("loincSearch")}
+                    extraOptions={allOptions}
+                  />
+                </div>
               </div>
-              <LoincSuggestions
-                options={suggestions?.[measurement.name]?.options}
-                searchResults={loincResults[index]}
-                selected={
-                  filledFields[`${index}.loincCode`] ??
-                  measurement.loincCode ??
-                  ""
-                }
-                onSelect={(code: string) =>
-                  setField(`${index}.loincCode`, code)
-                }
-              />
-            </div>
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       <button
         type="button"
@@ -350,50 +323,6 @@ export function ImagingReviewPanel({
       >
         {generating ? t("generating") : t("generateButton")}
       </button>
-    </div>
-  );
-}
-
-interface LoincSuggestionItem {
-  code: string;
-  display: string;
-}
-
-function LoincSuggestions({
-  options,
-  searchResults,
-  selected,
-  onSelect,
-}: {
-  options?: LoincSuggestionItem[];
-  searchResults?: LoincSuggestionItem[];
-  selected: string;
-  onSelect: (code: string) => void;
-}) {
-  const items = [...(options ?? []), ...(searchResults ?? [])].filter(
-    (item, index, self) =>
-      item.code && self.findIndex((i) => i.code === item.code) === index,
-  );
-  if (items.length === 0) return null;
-  return (
-    <div className="flex flex-wrap gap-2 pt-1">
-      {items.map((item) => {
-        const isSelected = item.code === selected;
-        return (
-          <button
-            key={item.code}
-            type="button"
-            onClick={() => onSelect(item.code)}
-            className={`rounded-lg px-2 py-1 text-xs font-medium ${
-              isSelected
-                ? "bg-sky-100 text-sky-700"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            {item.code} — {item.display}
-          </button>
-        );
-      })}
     </div>
   );
 }

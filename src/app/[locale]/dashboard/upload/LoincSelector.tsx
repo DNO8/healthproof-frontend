@@ -1,11 +1,12 @@
 "use client";
 
-import { Check, Search, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   CHILE_LOINC_SUBSET,
   searchLoinc,
 } from "@/services/fhir-rag/loinc-subset";
+import type { LoincEntry } from "@/services/loinc/types";
 
 interface LoincSelectorProps {
   value: string | null;
@@ -14,6 +15,8 @@ interface LoincSelectorProps {
   disabled?: boolean;
   noMatchesLabel?: string;
   clearLabel?: string;
+  /** Pre-fetched suggestions to show (e.g. from AI extraction or search-loinc) */
+  extraOptions?: LoincEntry[];
 }
 
 export function LoincSelector({
@@ -23,42 +26,64 @@ export function LoincSelector({
   disabled,
   noMatchesLabel = "Sin coincidencias",
   clearLabel = "Limpiar LOINC",
+  extraOptions = [],
 }: LoincSelectorProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
 
   const selected = useMemo(
-    () => CHILE_LOINC_SUBSET.find((e) => e.code === value) ?? null,
-    [value],
+    () =>
+      extraOptions.find((e) => e.code === value) ??
+      CHILE_LOINC_SUBSET.find((e) => e.code === value) ??
+      null,
+    [value, extraOptions],
   );
 
-  const results = useMemo(() => searchLoinc(query, 6), [query]);
+  // Merge local search results with extraOptions (extraOptions first, deduped)
+  const results = useMemo(() => {
+    const localResults = query.trim() ? searchLoinc(query, 6) : [];
+    const merged = [...extraOptions, ...localResults].filter(
+      (item, idx, self) =>
+        item.code && self.findIndex((i) => i.code === item.code) === idx,
+    );
+    // If there's a query, also filter extraOptions by it
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      return merged.filter(
+        (e) =>
+          e.code.toLowerCase().includes(q) ||
+          e.spanishDisplay.toLowerCase().includes(q) ||
+          e.display.toLowerCase().includes(q) ||
+          e.aliases.some((a) => a.toLowerCase().includes(q)),
+      );
+    }
+    return merged.slice(0, 8);
+  }, [query, extraOptions]);
 
   return (
     <div className="relative">
       {selected ? (
-        <div className="neu-pressed flex items-center justify-between rounded-lg px-3 py-1.5 text-xs">
-          <div className="min-w-0">
-            <span className="font-semibold text-slate-700">
+        <div className="neu-pressed flex items-center justify-between rounded-xl px-3 py-2.5 text-sm">
+          <div className="min-w-0 flex items-center gap-2">
+            <span className="font-semibold text-sky-700 shrink-0">
               {selected.code}
             </span>
-            <span className="ml-2 text-slate-500 truncate">
-              {selected.spanishDisplay}
+            <span className="text-slate-600 truncate">
+              {selected.spanishDisplay || selected.display}
             </span>
           </div>
           <button
             type="button"
             disabled={disabled}
-            onClick={() => onChange(null)}
-            className="ml-2 text-slate-400 hover:text-slate-600 disabled:opacity-50"
+            onClick={() => { onChange(null); setQuery(""); }}
+            className="ml-2 shrink-0 text-slate-400 hover:text-slate-600 disabled:opacity-50"
             aria-label={clearLabel}
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
       ) : (
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={query}
@@ -69,12 +94,12 @@ export function LoincSelector({
             }}
             onFocus={() => setOpen(true)}
             placeholder={placeholder}
-            className="neu-pressed w-full rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-700 placeholder:text-slate-400"
+            className="neu-inset w-full rounded-xl px-3 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 bg-transparent"
           />
           {open && !disabled && (
-            <div className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto neu-surface rounded-lg shadow-sm border border-slate-200">
+            <div className="absolute z-10 mt-1 w-full max-h-52 overflow-y-auto neu-surface rounded-xl shadow border border-slate-200">
               {results.length === 0 ? (
-                <div className="px-3 py-2 text-xs text-slate-500">
+                <div className="px-3 py-3 text-sm text-slate-500">
                   {noMatchesLabel}
                 </div>
               ) : (
@@ -87,22 +112,24 @@ export function LoincSelector({
                       setQuery("");
                       setOpen(false);
                     }}
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0"
+                    className="w-full text-left px-3 py-2.5 text-sm hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-slate-700">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-sky-700 shrink-0">
                         {entry.code}
                       </span>
                       {value === entry.code && (
-                        <Check className="h-3 w-3 text-sky-600" />
+                        <Check className="h-3.5 w-3.5 text-sky-600 shrink-0" />
                       )}
                     </div>
-                    <div className="text-slate-500 truncate">
+                    <div className="text-slate-600 text-sm">
                       {entry.spanishDisplay}
                     </div>
-                    <div className="text-slate-400 text-[10px] truncate">
-                      {entry.display}
-                    </div>
+                    {entry.spanishDisplay !== entry.display && (
+                      <div className="text-slate-400 text-xs truncate">
+                        {entry.display}
+                      </div>
+                    )}
                   </button>
                 ))
               )}

@@ -35,12 +35,18 @@ const DEFAULT_OPTIONS = {
   minNativeTextLength: 60,
   psm: 6 as unknown as PSM,
   lang: "spa+eng",
-  langPath: env.TESSERACT_LANG_PATH,
-  workerPath: env.TESSERACT_WORKER_PATH,
-  corePath: env.TESSERACT_CORE_PATH,
+  ...(env.TESSERACT_LANG_PATH ? { langPath: env.TESSERACT_LANG_PATH } : {}),
+  ...(env.TESSERACT_WORKER_PATH
+    ? { workerPath: env.TESSERACT_WORKER_PATH }
+    : {}),
+  ...(env.TESSERACT_CORE_PATH ? { corePath: env.TESSERACT_CORE_PATH } : {}),
 };
 
-type MergedClientOcrOptions = typeof DEFAULT_OPTIONS & ClientOcrOptions;
+type MergedClientOcrOptions = Omit<
+  typeof DEFAULT_OPTIONS,
+  "langPath" | "workerPath" | "corePath"
+> &
+  ClientOcrOptions;
 
 /**
  * Extracts text from a PDF or image file using client-side OCR.
