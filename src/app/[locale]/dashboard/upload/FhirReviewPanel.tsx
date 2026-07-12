@@ -28,6 +28,7 @@ interface FhirReviewPanelProps {
   generating: boolean;
   documentType?: DocumentCategory;
   sessionId: string;
+  withPrivyToken: <T>(data: T) => Promise<T & { _privyToken?: string }>;
 }
 
 const NA_VALUE = "N/A";
@@ -83,6 +84,7 @@ export function FhirReviewPanel({
   generating,
   documentType,
   sessionId,
+  withPrivyToken,
 }: FhirReviewPanelProps) {
   void documentType;
 
@@ -98,7 +100,9 @@ export function FhirReviewPanel({
       const proposed = audit.mappings.find((m) => m.rawName === exam.rawName);
       const query = proposed?.loincCode ?? exam.rawName;
       if (!query?.trim()) return;
-      searchLoincCodes({ query, sessionId }).then((response) => {
+      withPrivyToken({ query, sessionId }).then((tokenData) =>
+        searchLoincCodes(tokenData)
+      ).then((response) => {
         const res = response as LoincSearchResult | { error: string };
         if ("results" in res && res.results.length > 0) {
           setLoincResults((prev) => ({ ...prev, [index]: res.results }));

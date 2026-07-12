@@ -23,6 +23,7 @@ interface ImagingReviewPanelProps {
   onChange: (fields: Record<string, string>) => void;
   onGenerate: () => void;
   generating: boolean;
+  withPrivyToken: <T>(data: T) => Promise<T & { _privyToken?: string }>;
 }
 
 const LATERALITY_OPTIONS = [
@@ -41,6 +42,7 @@ export function ImagingReviewPanel({
   onChange,
   onGenerate,
   generating,
+  withPrivyToken,
 }: ImagingReviewPanelProps) {
   const t = useTranslations("imagingReview");
   const [loincResults, setLoincResults] = useState<Record<number, LoincEntry[]>>({});
@@ -54,7 +56,9 @@ export function ImagingReviewPanel({
     report.measurements.forEach((measurement, index) => {
       const query = measurement.loincCode ?? measurement.name;
       if (!query?.trim()) return;
-      searchLoincCodes({ query, sessionId }).then((response) => {
+      withPrivyToken({ query, sessionId }).then((tokenData) =>
+        searchLoincCodes(tokenData)
+      ).then((response) => {
         const res = response as LoincSearchResult | { error: string };
         if ("results" in res && res.results.length > 0) {
           setLoincResults((prev) => ({ ...prev, [index]: res.results }));

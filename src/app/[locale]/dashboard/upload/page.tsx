@@ -1341,6 +1341,7 @@ export default function UploadPage() {
 						generating={uploading}
 						documentType={detectedDocumentType?.type ?? "lab"}
 						sessionId={sessionId}
+						withPrivyToken={withPrivyToken}
 					/>
 				)}
 
@@ -1371,6 +1372,7 @@ export default function UploadPage() {
 							onChange={setImagingFilledFields}
 							onGenerate={handleGenerate}
 							generating={uploading}
+							withPrivyToken={withPrivyToken}
 						/>
 					)}
 
