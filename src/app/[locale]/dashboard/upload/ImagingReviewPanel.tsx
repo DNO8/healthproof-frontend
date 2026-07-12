@@ -4,12 +4,12 @@ import { Scan } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { searchLoincCodes } from "@/actions/fhir/search-loinc";
+import { isAuthSuccess } from "@/lib/auth/with-auth";
 import type {
   AuditReport,
   AuditSuggestions,
   ImagingReport,
 } from "@/services/fhir-rag/schema";
-import type { LoincSearchResult } from "@/services/loinc/types";
 import { mapRegionToBodySite } from "@/services/fhir-rag/snomed-body-site";
 import type { LoincEntry } from "@/services/loinc/types";
 import { LoincSelector } from "./LoincSelector";
@@ -59,9 +59,11 @@ export function ImagingReviewPanel({
       withPrivyToken({ query, sessionId }).then((tokenData) =>
         searchLoincCodes(tokenData)
       ).then((response) => {
-        const res = response as LoincSearchResult | { error: string };
-        if ("results" in res && res.results.length > 0) {
-          setLoincResults((prev) => ({ ...prev, [index]: res.results }));
+        if (isAuthSuccess(response)) {
+          const res = response.data as { results?: LoincEntry[]; apiFailed?: boolean };
+          if (res.results && res.results.length > 0) {
+            setLoincResults((prev) => ({ ...prev, [index]: res.results! }));
+          }
         }
       });
     });

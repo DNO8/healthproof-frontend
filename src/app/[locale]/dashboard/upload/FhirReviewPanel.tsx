@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { searchLoincCodes } from "@/actions/fhir/search-loinc";
+import { isAuthSuccess } from "@/lib/auth/with-auth";
 import { useDriverTour } from "@/hooks/use-driver-tour";
 import {
   ANALYTICAL_METHODS,
@@ -16,7 +17,7 @@ import type {
   ExtractedDoc,
   LabFilledFields,
 } from "@/services/fhir-rag/schema";
-import type { LoincEntry, LoincSearchResult } from "@/services/loinc/types";
+import type { LoincEntry } from "@/services/loinc/types";
 import { LoincSelector } from "./LoincSelector";
 
 interface FhirReviewPanelProps {
@@ -103,9 +104,11 @@ export function FhirReviewPanel({
       withPrivyToken({ query, sessionId }).then((tokenData) =>
         searchLoincCodes(tokenData)
       ).then((response) => {
-        const res = response as LoincSearchResult | { error: string };
-        if ("results" in res && res.results.length > 0) {
-          setLoincResults((prev) => ({ ...prev, [index]: res.results }));
+        if (isAuthSuccess(response)) {
+          const res = response.data as { results?: LoincEntry[]; apiFailed?: boolean };
+          if (res.results && res.results.length > 0) {
+            setLoincResults((prev) => ({ ...prev, [index]: res.results! }));
+          }
         }
       });
     });
