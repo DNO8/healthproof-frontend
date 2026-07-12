@@ -23,7 +23,7 @@ interface ImagingReviewPanelProps {
   onChange: (fields: Record<string, string>) => void;
   onGenerate: () => void;
   generating: boolean;
-  withPrivyToken: <T>(data: T) => Promise<T & { _privyToken?: string }>;
+  withPrivyToken: <T extends Record<string, unknown>>(data: T) => Promise<T & { _privyToken?: string }>;
 }
 
 const LATERALITY_OPTIONS = [

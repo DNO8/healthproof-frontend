@@ -28,7 +28,7 @@ interface FhirReviewPanelProps {
   generating: boolean;
   documentType?: DocumentCategory;
   sessionId: string;
-  withPrivyToken: <T>(data: T) => Promise<T & { _privyToken?: string }>;
+  withPrivyToken: <T extends Record<string, unknown>>(data: T) => Promise<T & { _privyToken?: string }>;
 }
 
 const NA_VALUE = "N/A";
