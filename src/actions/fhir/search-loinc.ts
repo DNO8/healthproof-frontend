@@ -4,6 +4,10 @@ import { type AuthContext, withAuth } from "@/lib/auth/with-auth";
 import { logger } from "@/lib/logger";
 import { ABDOMINAL_ULTRASOUND_LOINC_SUBSET } from "@/services/loinc/imaging-loinc-subset";
 import {
+  CHILE_LOINC_SUBSET,
+  OBSTETRIC_LOINC_SUBSET,
+} from "@/services/fhir-rag/loinc-subset";
+import {
   ApiLoincProvider,
   CachedLoincProvider,
   LocalLoincProvider,
@@ -17,7 +21,11 @@ interface SearchLoincData {
 }
 
 const apiProvider = new CachedLoincProvider(new ApiLoincProvider());
-const localProvider = new LocalLoincProvider(ABDOMINAL_ULTRASOUND_LOINC_SUBSET);
+const localProvider = new LocalLoincProvider([
+  ...CHILE_LOINC_SUBSET,
+  ...OBSTETRIC_LOINC_SUBSET,
+  ...ABDOMINAL_ULTRASOUND_LOINC_SUBSET,
+]);
 
 export const searchLoincCodes = withAuth(
   async (

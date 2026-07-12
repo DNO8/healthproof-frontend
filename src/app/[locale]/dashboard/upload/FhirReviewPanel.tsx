@@ -1,15 +1,15 @@
 "use client";
 
-import { HelpCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
+import { searchLoincCodes } from "@/actions/fhir/search-loinc";
 import { useDriverTour } from "@/hooks/use-driver-tour";
 import {
   ANALYTICAL_METHODS,
   OBSERVATION_INTERPRETATIONS,
   UCUM_UNITS,
 } from "@/services/fhir-rag/fhir-options";
-import { searchLoincCodes } from "@/actions/fhir/search-loinc";
 import type {
   AuditReport,
   DocumentCategory,
@@ -54,15 +54,18 @@ function FieldLabel({
   children: React.ReactNode;
 }) {
   const t = useTranslations("fhirReview");
+  const helpText = t.has(`fieldHelp.${field}` as "fieldHelp.unit")
+    ? t(`fieldHelp.${field}` as "fieldHelp.unit")
+    : null;
   return (
     <span className="text-xs text-slate-600 min-w-[140px] flex items-center gap-1">
       {children}
-      {t(`fieldHelp.${field}` as const) && (
+      {helpText && (
         <button
           type="button"
           className="text-slate-400 hover:text-sky-600 transition-colors"
-          aria-label={t(`fieldHelp.${field}` as const)}
-          title={t(`fieldHelp.${field}` as const)}
+          aria-label={helpText}
+          title={helpText}
         >
           <HelpCircle className="h-3.5 w-3.5" />
         </button>
@@ -81,10 +84,13 @@ export function FhirReviewPanel({
   documentType,
   sessionId,
 }: FhirReviewPanelProps) {
-  // documentType is reserved for future type-specific UI adjustments
   void documentType;
 
-  const [loincResults, setLoincResults] = useState<Record<number, LoincEntry[]>>({});
+  const t = useTranslations("fhirReview");
+  const [step, setStep] = useState<"loinc" | "fields">("loinc");
+  const [loincResults, setLoincResults] = useState<Record<number, LoincEntry[]>>(
+    {},
+  );
 
   // Auto-search LOINC for each exam on mount
   useEffect(() => {
@@ -102,7 +108,6 @@ export function FhirReviewPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc.exams, audit.mappings, sessionId]);
 
-  const t = useTranslations("fhirReview");
   const naCount =
     audit.missing?.filter(
       (item) => labFilledFields[`${item.examIndex}.${item.field}`] === NA_VALUE,
@@ -155,6 +160,8 @@ export function FhirReviewPanel({
     );
   }, [audit.missing]);
 
+  const hasMissingFields = audit.missing && audit.missing.length > 0;
+
   function renderFieldControl(item: {
     examIndex: number;
     field: string;
@@ -168,18 +175,18 @@ export function FhirReviewPanel({
     const baseWrapper =
       "flex flex-col gap-1 sm:flex-row sm:gap-2 sm:items-start";
     const baseSelect =
-      "neu-pressed flex-1 rounded-lg px-3 py-1.5 text-xs text-slate-700 disabled:opacity-50 bg-white";
+      "neu-pressed flex-1 rounded-lg px-3 py-2 text-sm text-slate-700 disabled:opacity-50 bg-white";
     const baseInput =
-      "neu-pressed flex-1 rounded-lg px-3 py-1.5 text-xs text-slate-700 disabled:opacity-50";
+      "neu-pressed flex-1 rounded-lg px-3 py-2 text-sm text-slate-700 disabled:opacity-50";
 
     switch (item.field) {
       case "unit":
         return (
           <div className={baseWrapper}>
             <FieldLabel field={item.field}>
-              {t(`fieldLabel.${item.field}` as const, {
-                defaultValue: item.field,
-              })}
+              {t.has(`fieldLabel.${item.field}` as "fieldLabel.unit")
+                ? t(`fieldLabel.${item.field}` as "fieldLabel.unit")
+                : item.field}
             </FieldLabel>
             <select
               value={currentValue}
@@ -208,9 +215,9 @@ export function FhirReviewPanel({
         return (
           <div className={baseWrapper}>
             <FieldLabel field={item.field}>
-              {t(`fieldLabel.${item.field}` as const, {
-                defaultValue: item.field,
-              })}
+              {t.has(`fieldLabel.${item.field}` as "fieldLabel.unit")
+                ? t(`fieldLabel.${item.field}` as "fieldLabel.unit")
+                : item.field}
             </FieldLabel>
             <select
               value={currentValue}
@@ -239,9 +246,9 @@ export function FhirReviewPanel({
         return (
           <div className={baseWrapper}>
             <FieldLabel field={item.field}>
-              {t(`fieldLabel.${item.field}` as const, {
-                defaultValue: item.field,
-              })}
+              {t.has(`fieldLabel.${item.field}` as "fieldLabel.unit")
+                ? t(`fieldLabel.${item.field}` as "fieldLabel.unit")
+                : item.field}
             </FieldLabel>
             <select
               value={currentValue}
@@ -270,9 +277,9 @@ export function FhirReviewPanel({
         return (
           <div className={baseWrapper}>
             <FieldLabel field={item.field}>
-              {t(`fieldLabel.${item.field}` as const, {
-                defaultValue: item.field,
-              })}
+              {t.has(`fieldLabel.${item.field}` as "fieldLabel.unit")
+                ? t(`fieldLabel.${item.field}` as "fieldLabel.unit")
+                : item.field}
             </FieldLabel>
             <input
               type="text"
@@ -296,9 +303,9 @@ export function FhirReviewPanel({
         return (
           <div className={baseWrapper}>
             <FieldLabel field={item.field}>
-              {t(`fieldLabel.${item.field}` as const, {
-                defaultValue: item.field,
-              })}
+              {t.has(`fieldLabel.${item.field}` as "fieldLabel.unit")
+                ? t(`fieldLabel.${item.field}` as "fieldLabel.unit")
+                : item.field}
             </FieldLabel>
             <input
               type="text"
@@ -323,13 +330,16 @@ export function FhirReviewPanel({
 
   return (
     <div className="neu-surface rounded-xl p-5 space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold text-slate-800">
           {t("reviewTitle")}
         </h3>
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">
-            {t("missingCount", { count: remaining })}
+            {step === "loinc"
+              ? t("stepLoinc")
+              : t("stepFields")}
           </span>
           <button
             type="button"
@@ -343,108 +353,162 @@ export function FhirReviewPanel({
         </div>
       </div>
 
-      <div
-        id="review-exams-list"
-        className="space-y-2 max-h-64 overflow-y-auto"
-      >
-        {doc.exams.map((exam, index) => {
-          const proposed = audit.mappings.find(
-            (m) => m.rawName === exam.rawName,
-          );
-          const loincKey = `${index}.loinc`;
-          const confirmedLoinc = labFilledFields[loincKey] ?? null;
-          return (
-            <div
-              key={`${index}-${exam.rawName}`}
-              className="neu-inset rounded-lg p-3 text-sm space-y-2"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="font-semibold text-slate-700">{exam.rawName}</p>
-                  <p className="text-slate-500">
-                    {exam.value ?? t("noValue")} {exam.unit ?? ""}
-                  </p>
-                </div>
-                {proposed && !proposed.confirmed && (
-                  <span className="text-[10px] px-2 py-1 rounded-full bg-amber-50 text-amber-700 whitespace-nowrap">
-                    {t("unconfirmed")}
-                  </span>
-                )}
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-slate-500">{t("loincLabel")}</p>
-                <LoincSelector
-                  value={confirmedLoinc}
-                  onChange={(code) =>
-                    onChange(setField(labFilledFields, loincKey, code))
-                  }
-                  placeholder={t("loincPlaceholder")}
-                  disabled={generating}
-                  noMatchesLabel={t("loincNoMatches")}
-                  clearLabel={t("loincClear")}
-                  extraOptions={loincResults[index] ?? []}
-                />
-                {proposed && !confirmedLoinc && (
-                  <p className="text-xs text-slate-400">
-                    {t("loincProposed")}:{" "}
-                    {proposed.loincCode ?? t("unconfirmed")} —{" "}
-                    {proposed.display ?? exam.rawName}
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
+      {/* Step indicator */}
+      <div className="flex items-center gap-2">
+        <div
+          className={`flex-1 h-1 rounded-full transition-colors ${
+            step === "loinc" ? "bg-sky-500" : "bg-sky-200"
+          }`}
+        />
+        <div
+          className={`flex-1 h-1 rounded-full transition-colors ${
+            step === "fields" ? "bg-sky-500" : "bg-sky-200"
+          }`}
+        />
       </div>
 
-      <div id="review-missing-fields" className="space-y-3">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-slate-700">
-            {t("completeFields")}
-          </p>
-          <p className="text-xs text-slate-500">{t("missingHint")}</p>
-        </div>
-        {audit.missing && audit.missing.length > 0 ? (
-          Object.entries(groupedMissing).map(([examIndex, items]) => {
-            const index = Number(examIndex);
-            const exam = doc.exams[index];
-            return (
-              <div
-                key={examIndex}
-                className="neu-inset rounded-lg p-3 space-y-2"
-              >
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-semibold text-slate-700">
-                    {exam?.rawName ?? t("unknownExam", { index: index + 1 })}
-                  </span>
-                  <span className="text-slate-500">
-                    {exam?.value ?? t("noValue")} {exam?.unit ?? ""}
-                  </span>
-                </div>
-                {items.map((item) => (
-                  <div key={`${item.examIndex}-${item.field}`}>
-                    {renderFieldControl(item)}
+      {/* STEP 1: LOINC Codes */}
+      {step === "loinc" && (
+        <>
+          <div
+            id="review-exams-list"
+            className="space-y-3 max-h-[60vh] overflow-y-auto"
+          >
+            {doc.exams.map((exam, index) => {
+              const proposed = audit.mappings.find(
+                (m) => m.rawName === exam.rawName,
+              );
+              const loincKey = `${index}.loinc`;
+              const confirmedLoinc = labFilledFields[loincKey] ?? null;
+              return (
+                <div
+                  key={`${index}-${exam.rawName}`}
+                  className="neu-inset rounded-xl p-4 space-y-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-slate-700">
+                        {exam.rawName}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {exam.value ?? t("noValue")} {exam.unit ?? ""}
+                      </p>
+                    </div>
+                    {proposed && !proposed.confirmed && (
+                      <span className="text-[10px] px-2 py-1 rounded-full bg-amber-50 text-amber-700 whitespace-nowrap">
+                        {t("unconfirmed")}
+                      </span>
+                    )}
                   </div>
-                ))}
-              </div>
-            );
-          })
-        ) : (
-          <p className="text-sm text-slate-500 bg-slate-50 rounded-lg p-3">
-            {t("noMissingFields")}
-          </p>
-        )}
-      </div>
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-slate-600">
+                      {t("loincLabel")}
+                    </p>
+                    <LoincSelector
+                      value={confirmedLoinc}
+                      onChange={(code) =>
+                        onChange(setField(labFilledFields, loincKey, code))
+                      }
+                      placeholder={t("loincPlaceholder")}
+                      disabled={generating}
+                      noMatchesLabel={t("loincNoMatches")}
+                      clearLabel={t("loincClear")}
+                      extraOptions={loincResults[index] ?? []}
+                    />
+                    {proposed && !confirmedLoinc && (
+                      <p className="text-xs text-slate-400">
+                        {t("loincProposed")}:{" "}
+                        {proposed.loincCode ?? t("unconfirmed")} —{" "}
+                        {proposed.display ?? exam.rawName}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-      <button
-        id="review-generate-button"
-        type="button"
-        disabled={generating}
-        onClick={onGenerate}
-        className="neu-surface hover:neu-pressed w-full rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
-      >
-        {generating ? t("generating") : t("generateFhir")}
-      </button>
+          <button
+            type="button"
+            onClick={() => setStep("fields")}
+            className="neu-surface hover:neu-pressed w-full rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 flex items-center justify-center gap-2"
+          >
+            {hasMissingFields
+              ? t("continueToFields")
+              : t("generateFhir")}
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </>
+      )}
+
+      {/* STEP 2: Missing Fields */}
+      {step === "fields" && (
+        <>
+          <div id="review-missing-fields" className="space-y-3 max-h-[60vh] overflow-y-auto">
+            {hasMissingFields ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-slate-700">
+                    {t("completeFields")}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {t("missingCount", { count: remaining })}
+                  </p>
+                </div>
+                {Object.entries(groupedMissing).map(([examIndex, items]) => {
+                  const index = Number(examIndex);
+                  const exam = doc.exams[index];
+                  return (
+                    <div
+                      key={examIndex}
+                      className="neu-inset rounded-xl p-4 space-y-2"
+                    >
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-semibold text-slate-700">
+                          {exam?.rawName ??
+                            t("unknownExam", { index: index + 1 })}
+                        </span>
+                        <span className="text-slate-500">
+                          {exam?.value ?? t("noValue")} {exam?.unit ?? ""}
+                        </span>
+                      </div>
+                      {items.map((item) => (
+                        <div key={`${item.examIndex}-${item.field}`}>
+                          {renderFieldControl(item)}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </>
+            ) : (
+              <p className="text-sm text-slate-500 bg-slate-50 rounded-lg p-3">
+                {t("noMissingFields")}
+              </p>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setStep("loinc")}
+              className="neu-surface hover:neu-pressed rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 flex items-center gap-1"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              {t("backToLoinc")}
+            </button>
+            <button
+              id="review-generate-button"
+              type="button"
+              disabled={generating}
+              onClick={onGenerate}
+              className="neu-surface hover:neu-pressed flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 disabled:opacity-50"
+            >
+              {generating ? t("generating") : t("generateFhir")}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
