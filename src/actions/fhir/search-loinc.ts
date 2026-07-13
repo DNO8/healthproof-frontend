@@ -42,12 +42,12 @@ export const searchLoincCodes = withAuth(
       return { error: "EmptyPayload" };
     }
 
+    let apiResults: Awaited<ReturnType<typeof apiProvider.search>> = [];
     try {
-      const results = await apiProvider.search(query, {
+      apiResults = await apiProvider.search(query, {
         limit: 8,
         language: "es",
       });
-      return { results, apiFailed: false };
     } catch (err) {
       logger.warn(
         {
@@ -55,16 +55,22 @@ export const searchLoincCodes = withAuth(
           query,
           error: err instanceof Error ? err.message : String(err),
         },
-        "searchLoincCodes API failed, returning local subset",
+        "searchLoincCodes API failed, falling back to local subset",
       );
-      const results = await localProvider.search(query, {
-        limit: 8,
-        language: "es",
-      });
-      return { results, apiFailed: true };
     }
+
+    if (apiResults.length > 0) {
+      return { results: apiResults, apiFailed: false };
+    }
+
+    // Fallback: local subset search when API fails or returns empty
+    const localResults = await localProvider.search(query, {
+      limit: 8,
+      language: "es",
+    });
+    return { results: localResults, apiFailed: apiResults.length === 0 };
   },
   {
-    rateLimit: { windowMs: 60000, maxRequests: 10 },
+    rateLimit: { windowMs: 60000, maxRequests: 30 },
   },
 );

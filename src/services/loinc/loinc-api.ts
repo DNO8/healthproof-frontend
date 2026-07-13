@@ -239,11 +239,13 @@ function parseLoincSearchApiResponse(
 			if (!item || typeof item !== "object") return null;
 			const i = item as Record<string, unknown>;
 			const code = String(
-				i.loincNumber ?? i.LoincNumber ?? i.code ?? i.Code ?? "",
+				i.LOINC_NUM ?? i.loincNumber ?? i.LoincNumber ?? i.code ?? i.Code ?? "",
 			).trim();
 			const display = String(
-				i.longName ??
+				i.LONG_COMMON_NAME ??
+					i.longName ??
 					i.LongName ??
+					i.DisplayName ??
 					i.display ??
 					i.Display ??
 					i.name ??
@@ -251,17 +253,18 @@ function parseLoincSearchApiResponse(
 					"",
 			).trim();
 			const spanishDisplay = String(
-				i.spanishName ??
+				i.LinguisticVariantDisplayName ??
+					i.spanishName ??
 					i.SpanishName ??
 					i.spanishDisplayName ??
 					i.SpanishDisplayName ??
 					display,
 			).trim();
 			const component = String(
-				i.component ?? i.Component ?? i.COMPONENT ?? "",
+				i.COMPONENT ?? i.component ?? i.Component ?? "",
 			).trim();
-			const system = String(i.system ?? i.System ?? i.SYSTEM ?? "").trim();
-			const scale = String(i.scale ?? i.Scale ?? i.SCALE_TYP ?? "").trim();
+			const system = String(i.SYSTEM ?? i.system ?? i.System ?? "").trim();
+			const scale = String(i.SCALE_TYP ?? i.scale ?? i.Scale ?? "").trim();
 			if (!code) return null;
 			return {
 				code,
