@@ -1,0 +1,95 @@
+{
+  "_nota": "Datos ficticios para demo. El 'onchain' respeta el shape real de MedicalDocument (ver MedicalDocumentRegistry.sol); el 'offchain' simula el contenido que hoy vive cifrado en Supabase/IPFS y que en el mock va en claro para simplicidad.",
+
+  "escenario_riesgo_bajo": {
+    "onchain": {
+      "documentId": "0xmock0001",
+      "patient": "0xPatientMock1",
+      "issuer": "0xLabMockA",
+      "institution": "0xLabMockA",
+      "documentType": "LAB_RESULT",
+      "clinicalHash": "0xhashmock0001",
+      "episodeId": "0xepisodeMock1",
+      "cid": "mock://doc-0001",
+      "standard": "LOINC",
+      "classification": "GLUCOSE_PANEL",
+      "createdAt": "2026-05-10T09:00:00Z"
+    },
+    "offchain": {
+      "examType": "Glicemia en ayunas",
+      "loincCode": "1558-6",
+      "value": 92,
+      "unit": "mg/dL",
+      "referenceRange": "70-100"
+    },
+    "historialPrevio": [{ "date": "2026-02-10", "value": 90, "unit": "mg/dL" }],
+    "resultadoEsperadoDemo": {
+      "healthScore": 95,
+      "riesgo": "bajo",
+      "explicacion": "Glicemia estable dentro de rango, sin tendencia al alza"
+    }
+  },
+
+  "escenario_riesgo_en_ascenso": {
+    "onchain": {
+      "documentId": "0xmock0002",
+      "patient": "0xPatientMock2",
+      "issuer": "0xLabMockA",
+      "institution": "0xLabMockA",
+      "documentType": "LAB_RESULT",
+      "clinicalHash": "0xhashmock0002",
+      "episodeId": "0xepisodeMock2",
+      "cid": "mock://doc-0002",
+      "standard": "LOINC",
+      "classification": "GLUCOSE_PANEL",
+      "createdAt": "2026-08-05T10:00:00Z"
+    },
+    "offchain": {
+      "examType": "Glicemia en ayunas",
+      "loincCode": "1558-6",
+      "value": 128,
+      "unit": "mg/dL",
+      "referenceRange": "70-100"
+    },
+    "historialPrevio": [
+      { "date": "2026-05-05", "value": 110, "unit": "mg/dL" },
+      { "date": "2026-02-05", "value": 98, "unit": "mg/dL" }
+    ],
+    "resultadoEsperadoDemo": {
+      "healthScore": 72,
+      "riesgo": "moderado, en ascenso",
+      "explicacion": "Glicemia subió 110→128 mg/dL (+16%) en el último control; tendencia de 2 controles al alza"
+    }
+  },
+
+  "escenario_riesgo_alto": {
+    "onchain": {
+      "documentId": "0xmock0003",
+      "patient": "0xPatientMock3",
+      "issuer": "0xLabMockB",
+      "institution": "0xLabMockB",
+      "documentType": "LAB_RESULT",
+      "clinicalHash": "0xhashmock0003",
+      "episodeId": "0xepisodeMock3",
+      "cid": "mock://doc-0003",
+      "standard": "LOINC",
+      "classification": "LIPID_PANEL",
+      "createdAt": "2026-08-05T11:00:00Z"
+    },
+    "offchain": {
+      "examType": "Colesterol LDL",
+      "loincCode": "13457-7",
+      "value": 195,
+      "unit": "mg/dL",
+      "referenceRange": "<100 deseable, 100-129 casi óptimo, >=190 muy alto"
+    },
+    "historialPrevio": [
+      { "date": "2026-05-01", "value": 175, "unit": "mg/dL" }
+    ],
+    "resultadoEsperadoDemo": {
+      "healthScore": 48,
+      "riesgo": "alto",
+      "explicacion": "LDL en rango 'muy alto' (195 mg/dL) y en ascenso respecto al control previo (175→195)"
+    }
+  }
+}
