@@ -419,6 +419,7 @@
 			"orders": "Orders",
 			"episodes": "Episodes",
 			"myOrders": "My Orders",
+			"preventIa": "Prevent IA",
 			"labOrders": "Lab Orders",
 			"upload": "Upload",
 			"scan": "Scan",
@@ -448,6 +449,57 @@
 				"admin": "As an admin, you manage protocol settings, networks, and kernel modules.",
 				"institution": "As an institution, you manage healthcare networks and member verification.",
 				"certifier": "As a certifier, you register and verify healthcare entities on-chain."
+			}
+		},
+		"preventIa": {
+			"title": "Prevent IA",
+			"subtitle": "Preventive clinical agent: detects early risk from your results and suggests follow-up — it does not replace medical judgment.",
+			"loading": "Loading…",
+			"myAnalysisTitle": "My analysis",
+			"healthScore": "Health Score",
+			"riskLevel": {
+				"bajo": "Low risk",
+				"moderado": "Moderate risk",
+				"alto": "High risk"
+			},
+			"patientPanelTitle": "For the patient",
+			"followUpSuggested": "Suggested follow-up",
+			"followUpRepeatIn": "repeat in {when}",
+			"clinicalDisclaimer": "This is not a medical diagnosis. Prevent IA supports clinical decisions, it does not replace them.",
+			"clinicalSummaryTitle": "Clinical summary (doctor)",
+			"exam": "Exam",
+			"currentValue": "Current value",
+			"referenceRange": "Ref",
+			"patientHistory": "Patient history",
+			"historyMissing": "No previous history recorded for this patient.",
+			"demoDataDisclaimer": "All data in this demo is fictional. The patient universe is inspired by public health statistics (DEIS/MINSAL), but no record corresponds to a real person.",
+			"scenarios": {
+				"escenario_riesgo_bajo": {
+					"label": "Low risk",
+					"hint": "Stable glucose"
+				},
+				"escenario_riesgo_en_ascenso": {
+					"label": "Rising risk",
+					"hint": "Rising glucose"
+				},
+				"escenario_riesgo_alto": {
+					"label": "High risk",
+					"hint": "Very high LDL"
+				}
+			},
+			"ranking": {
+				"title": "Patient ranking",
+				"summary": "{count} patients, ranked 0 to 100 by Health Score (highest risk first). {followUp} require active preventive follow-up.",
+				"loading": "Loading…",
+				"empty": "No patients to show.",
+				"patientMeta": "{edad} years · {sexo} · {comuna}",
+				"risk": {
+					"bajo": "low",
+					"moderado": "moderate",
+					"alto": "high"
+				},
+				"patientNotification": "Patient notification",
+				"followUpIn": "Follow-up suggested in {when}"
 			}
 		},
 		"permissions": {

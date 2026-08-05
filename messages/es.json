@@ -419,6 +419,7 @@
 			"orders": "Órdenes",
 			"episodes": "Episodios",
 			"myOrders": "Mis Órdenes",
+			"preventIa": "Prevent IA",
 			"labOrders": "Órdenes de Lab",
 			"upload": "Subir",
 			"scan": "Escanear",
@@ -448,6 +449,57 @@
 				"admin": "Como administrador, gestionas la configuración del protocolo, redes y módulos del kernel.",
 				"institution": "Como institución, gestionas redes de salud y la verificación de miembros.",
 				"certifier": "Como certificador, registras y verificas entidades de salud on-chain."
+			}
+		},
+		"preventIa": {
+			"title": "Prevent IA",
+			"subtitle": "Agente de prevención clínica: detecta riesgo temprano a partir de tus resultados y sugiere seguimiento — no reemplaza el criterio médico.",
+			"loading": "Cargando…",
+			"myAnalysisTitle": "Mi análisis",
+			"healthScore": "Health Score",
+			"riskLevel": {
+				"bajo": "Riesgo bajo",
+				"moderado": "Riesgo moderado",
+				"alto": "Riesgo alto"
+			},
+			"patientPanelTitle": "Para el paciente",
+			"followUpSuggested": "Seguimiento sugerido",
+			"followUpRepeatIn": "repetir en {when}",
+			"clinicalDisclaimer": "Esto no es un diagnóstico médico. Prevent IA apoya la decisión clínica, no la reemplaza.",
+			"clinicalSummaryTitle": "Resumen clínico (médico)",
+			"exam": "Examen",
+			"currentValue": "Valor actual",
+			"referenceRange": "Ref",
+			"patientHistory": "Historial del paciente",
+			"historyMissing": "Sin historial previo registrado para este paciente.",
+			"demoDataDisclaimer": "Todos los datos de esta demo son ficticios. El universo de pacientes está inspirado en estadísticas públicas de salud (DEIS/MINSAL), pero ninguna ficha corresponde a una persona real.",
+			"scenarios": {
+				"escenario_riesgo_bajo": {
+					"label": "Riesgo bajo",
+					"hint": "Glicemia estable"
+				},
+				"escenario_riesgo_en_ascenso": {
+					"label": "Riesgo en ascenso",
+					"hint": "Glicemia subiendo"
+				},
+				"escenario_riesgo_alto": {
+					"label": "Riesgo alto",
+					"hint": "LDL muy alto"
+				}
+			},
+			"ranking": {
+				"title": "Ranking de pacientes",
+				"summary": "{count} pacientes, ranqueados de 0 a 100 por Health Score (más riesgo primero). {followUp} requieren seguimiento preventivo activo.",
+				"loading": "Cargando…",
+				"empty": "Sin pacientes para mostrar.",
+				"patientMeta": "{edad} años · {sexo} · {comuna}",
+				"risk": {
+					"bajo": "bajo",
+					"moderado": "moderado",
+					"alto": "alto"
+				},
+				"patientNotification": "Notificación al paciente",
+				"followUpIn": "Seguimiento sugerido en {when}"
 			}
 		},
 		"permissions": {
