@@ -40,7 +40,6 @@ export type RoleConfig = {
   key: UserRole;
   label: string;
   description: string;
-  icon: string;
 };
 
 export const ROLES: RoleConfig[] = [
@@ -49,19 +48,16 @@ export const ROLES: RoleConfig[] = [
     label: "Patient",
     description:
       "Sovereignty over your medical history. Delegate access via QR.",
-    icon: "🩺",
   },
   {
     key: "doctor",
     label: "Doctor",
     description: "Validate results and manage medical orders.",
-    icon: "🏥",
   },
   {
     key: "lab",
     label: "Laboratory",
     description: "Issue verifiable clinical evidence and test results.",
-    icon: "🔬",
   },
 ];
 
@@ -108,6 +104,15 @@ export interface QRData extends SignedPermission {
   type: "healthproof_permission";
 }
 
+export interface QRCryptoDocument {
+  document_id: string;
+  cid: string;
+  iv: string;
+  encrypted_key: { data: string; iv: string };
+  document_type?: string | null;
+  file_name?: string | null;
+}
+
 export interface EncryptedQRData extends QRData {
   crypto: {
     document_id: string;
@@ -115,6 +120,7 @@ export interface EncryptedQRData extends QRData {
     iv: string;
     encrypted_key: { data: string; iv: string };
     patient_public_key: string;
+    documents?: QRCryptoDocument[];
   };
 }
 

@@ -5,6 +5,7 @@ interface UiState {
   isQrModalOpen: boolean;
   isScannerOpen: boolean;
   activeModal: string | null;
+  mobileSheetOpen: boolean;
 
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
@@ -13,6 +14,7 @@ interface UiState {
   openScanner: () => void;
   closeScanner: () => void;
   setActiveModal: (modal: string | null) => void;
+  setMobileSheetOpen: (open: boolean) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -20,6 +22,7 @@ export const useUiStore = create<UiState>((set) => ({
   isQrModalOpen: false,
   isScannerOpen: false,
   activeModal: null,
+  mobileSheetOpen: false,
 
   toggleSidebar: () => set((s) => ({ isSidebarOpen: !s.isSidebarOpen })),
   setSidebarOpen: (open) => set({ isSidebarOpen: open }),
@@ -28,4 +31,5 @@ export const useUiStore = create<UiState>((set) => ({
   openScanner: () => set({ isScannerOpen: true }),
   closeScanner: () => set({ isScannerOpen: false }),
   setActiveModal: (modal) => set({ activeModal: modal }),
+  setMobileSheetOpen: (open) => set({ mobileSheetOpen: open }),
 }));

@@ -8,6 +8,11 @@ function asAddress(value: string, key: string): `0x${string}` {
   return value as `0x${string}`;
 }
 
+function asAddressOptional(value: string): `0x${string}` | undefined {
+  if (!value || !/^0x[a-fA-F0-9]{40}$/.test(value)) return undefined;
+  return value as `0x${string}`;
+}
+
 export const HEALTHPROOF_CHAIN = defineChain({
   id: env.CHAIN_ID,
   name: "Hygieia",
@@ -17,15 +22,28 @@ export const HEALTHPROOF_CHAIN = defineChain({
     decimals: 18,
   },
   rpcUrls: {
-    default: { http: [env.RPC_URL] },
-    public: { http: [env.RPC_URL] },
+    default: {
+      http: [typeof window !== "undefined" ? "/api/rpc" : env.RPC_URL],
+    },
+    public: {
+      http: [typeof window !== "undefined" ? "/api/rpc" : env.RPC_URL],
+    },
   },
 });
 
 export const CONTRACT_ADDRESSES = {
-  IdentityRegistry: asAddress(env.IDENTITY_REGISTRY_ADDRESS, "NEXT_PUBLIC_IDENTITY_REGISTRY_ADDRESS"),
-  GuardianRegistry: asAddress(env.GUARDIAN_REGISTRY_ADDRESS, "NEXT_PUBLIC_GUARDIAN_REGISTRY_ADDRESS"),
-  PermissionManager: asAddress(env.PERMISSION_MANAGER_ADDRESS, "NEXT_PUBLIC_PERMISSION_MANAGER_ADDRESS"),
+  IdentityRegistry: asAddress(
+    env.IDENTITY_REGISTRY_ADDRESS,
+    "NEXT_PUBLIC_IDENTITY_REGISTRY_ADDRESS",
+  ),
+  GuardianRegistry: asAddress(
+    env.GUARDIAN_REGISTRY_ADDRESS,
+    "NEXT_PUBLIC_GUARDIAN_REGISTRY_ADDRESS",
+  ),
+  PermissionManager: asAddress(
+    env.PERMISSION_MANAGER_ADDRESS,
+    "NEXT_PUBLIC_PERMISSION_MANAGER_ADDRESS",
+  ),
   ClinicalEpisodeRegistry: asAddress(
     env.CLINICAL_EPISODE_REGISTRY_ADDRESS,
     "NEXT_PUBLIC_CLINICAL_EPISODE_REGISTRY_ADDRESS",
@@ -42,10 +60,25 @@ export const CONTRACT_ADDRESSES = {
     env.HEALTHCARE_NETWORK_REGISTRY_ADDRESS,
     "NEXT_PUBLIC_HEALTHCARE_NETWORK_REGISTRY_ADDRESS",
   ),
-  AuditTrail: asAddress(env.AUDIT_TRAIL_ADDRESS, "NEXT_PUBLIC_AUDIT_TRAIL_ADDRESS"),
-  HealthProofKernel: asAddress(env.HEALTH_PROOF_KERNEL_ADDRESS, "NEXT_PUBLIC_HEALTH_PROOF_KERNEL_ADDRESS"),
-  HealthProofGateway: asAddress(env.HEALTH_PROOF_GATEWAY_ADDRESS, "NEXT_PUBLIC_HEALTH_PROOF_GATEWAY_ADDRESS"),
-  HealthProofProtocol: asAddress(env.HEALTH_PROOF_PROTOCOL_ADDRESS, "NEXT_PUBLIC_HEALTH_PROOF_PROTOCOL_ADDRESS"),
+  AuditTrail: asAddress(
+    env.AUDIT_TRAIL_ADDRESS,
+    "NEXT_PUBLIC_AUDIT_TRAIL_ADDRESS",
+  ),
+  EmergencyAccessManager: asAddressOptional(
+    env.EMERGENCY_ACCESS_MANAGER_ADDRESS,
+  ),
+  HealthProofKernel: asAddress(
+    env.HEALTH_PROOF_KERNEL_ADDRESS,
+    "NEXT_PUBLIC_HEALTH_PROOF_KERNEL_ADDRESS",
+  ),
+  HealthProofGateway: asAddress(
+    env.HEALTH_PROOF_GATEWAY_ADDRESS,
+    "NEXT_PUBLIC_HEALTH_PROOF_GATEWAY_ADDRESS",
+  ),
+  HealthProofProtocol: asAddress(
+    env.HEALTH_PROOF_PROTOCOL_ADDRESS,
+    "NEXT_PUBLIC_HEALTH_PROOF_PROTOCOL_ADDRESS",
+  ),
 } as const;
 
 export const DEPLOYER_ADDRESS = asAddress(

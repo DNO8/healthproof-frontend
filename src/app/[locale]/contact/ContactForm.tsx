@@ -1,8 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef, useTransition } from "react";
 import { sileo } from "sileo";
-import { useTranslations } from "next-intl";
 import { sendContactEmail } from "./actions";
 
 export function ContactForm() {

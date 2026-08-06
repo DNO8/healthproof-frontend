@@ -2,10 +2,11 @@
 
 import { useLoginWithEmail, usePrivy } from "@privy-io/react-auth";
 import Image from "next/image";
-import { Link } from "@/i18n/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { sileo } from "sileo";
-import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { ROLE_ICONS } from "@/lib/icons";
 import { ROLES, type UserRole } from "@/types/domain.types";
 
 export default function AuthPage() {
@@ -32,11 +33,18 @@ export default function AuthPage() {
     }
   }, [ready, authenticated, dashboardPath]);
 
-  const roleLabels: Partial<Record<UserRole, { label: string; desc: string }>> = {
-    patient: { label: tRoles("patient"), desc: tRoles("patientDesc") },
-    doctor: { label: tRoles("medicalCenter"), desc: tRoles("medicalCenterDesc") },
-    lab: { label: tRoles("laboratory"), desc: tRoles("laboratoryDesc") },
-  };
+  const roleLabels: Partial<Record<UserRole, { label: string; desc: string }>> =
+    {
+      patient: { label: tRoles("patient"), desc: tRoles("patientDesc") },
+      doctor: { label: tRoles("doctor"), desc: tRoles("doctorDesc") },
+    };
+
+  const loginRoles = ROLES.filter(
+    (r) => r.key === "patient" || r.key === "doctor",
+  );
+  const allowedRoles: UserRole[] = ["patient", "doctor"];
+  const isAllowedRole = (r: UserRole | null): r is UserRole =>
+    r !== null && allowedRoles.includes(r);
 
   async function handleSendCode() {
     const trimmed = email.trim();
@@ -58,8 +66,9 @@ export default function AuthPage() {
 
     setIsPending(true);
     try {
-      if (selectedRole) {
+      if (isAllowedRole(selectedRole)) {
         localStorage.setItem("hp_selected_role", selectedRole);
+        localStorage.setItem("hp_intended_role", selectedRole);
       }
       await sendCode({ email: trimmed });
       setStep("otp");
@@ -174,8 +183,8 @@ export default function AuthPage() {
                   <p className="mb-2 text-xs font-medium text-slate-700">
                     {t("selectRole")}
                   </p>
-                  <div className="grid grid-cols-3 gap-3">
-                    {ROLES.map((role) => {
+                  <div className="grid grid-cols-2 gap-3">
+                    {loginRoles.map((role) => {
                       const isSelected = selectedRole === role.key;
                       return (
                         <button
@@ -188,7 +197,12 @@ export default function AuthPage() {
                           onClick={() => setSelectedRole(role.key)}
                           type="button"
                         >
-                          <span className="text-2xl">{role.icon}</span>
+                          {(() => {
+                            const Icon = ROLE_ICONS[role.key];
+                            return Icon ? (
+                              <Icon className="h-6 w-6 text-sky-600" />
+                            ) : null;
+                          })()}
                           <span className="text-[11px] font-semibold leading-tight">
                             {roleLabels[role.key]?.label}
                           </span>
@@ -242,8 +256,9 @@ export default function AuthPage() {
                 className="neu-surface w-full rounded-2xl border border-white/60 px-8 py-3 text-sm font-medium text-slate-600 transition hover:text-slate-800 active:translate-y-px disabled:opacity-60"
                 disabled={mode === "signup" && !selectedRole}
                 onClick={() => {
-                  if (mode === "signup" && selectedRole) {
+                  if (mode === "signup" && isAllowedRole(selectedRole)) {
                     localStorage.setItem("hp_selected_role", selectedRole);
+                    localStorage.setItem("hp_intended_role", selectedRole);
                   } else {
                     localStorage.removeItem("hp_selected_role");
                   }

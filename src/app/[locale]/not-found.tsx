@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { DecorativeCross, DecorativeCircle } from "@/components/ui";
 import { GoBackButton } from "@/components/feedback/GoBackButton";
+import { DecorativeCircle, DecorativeCross } from "@/components/ui";
 
 export default function NotFound() {
   const t = useTranslations("errors.notFound");

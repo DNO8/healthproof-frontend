@@ -8,7 +8,9 @@ const HKDF_INFO = new TextEncoder().encode("HealthProof-ECDH-v1");
 
 // ─── Key Pair Generation ────────────────────────────────
 
-export async function generateKeyPair(extractable = false): Promise<CryptoKeyPair> {
+export async function generateKeyPair(
+  extractable = false,
+): Promise<CryptoKeyPair> {
   return crypto.subtle.generateKey(
     { name: "ECDH", namedCurve: ECDH_CURVE },
     extractable, // private key extractability
@@ -61,7 +63,9 @@ async function deriveWrappingKey(
   privateKey: CryptoKey,
   publicKey: CryptoKey,
 ): Promise<CryptoKey> {
+  console.log("[deriveWrappingKey] deriving shared bits...");
   const sharedBits = await deriveSharedBits(privateKey, publicKey);
+  console.log("[deriveWrappingKey] sharedBits length:", sharedBits.byteLength);
 
   // Import shared bits as HKDF key material
   const hkdfKey = await crypto.subtle.importKey(
@@ -71,9 +75,10 @@ async function deriveWrappingKey(
     false,
     ["deriveKey"],
   );
+  console.log("[deriveWrappingKey] hkdfKey imported");
 
   // Derive AES-GCM wrapping key via HKDF
-  return crypto.subtle.deriveKey(
+  const wrappingKey = await crypto.subtle.deriveKey(
     {
       name: "HKDF",
       hash: HKDF_HASH,
@@ -85,6 +90,8 @@ async function deriveWrappingKey(
     false,
     ["encrypt", "decrypt"],
   );
+  console.log("[deriveWrappingKey] wrappingKey derived");
+  return wrappingKey;
 }
 
 // ─── Wrap / Unwrap AES Session Key ──────────────────────
@@ -123,24 +130,46 @@ export async function unwrapSessionKey(
   myPrivateKey: CryptoKey,
   senderPublicKey: CryptoKey,
 ): Promise<CryptoKey> {
+  console.log("[unwrapSessionKey] starting unwrap...");
+  console.log(
+    "[unwrapSessionKey] wrapped.data length:",
+    wrapped.data.length,
+    "wrapped.iv length:",
+    wrapped.iv.length,
+  );
+
   const wrappingKey = await deriveWrappingKey(myPrivateKey, senderPublicKey);
+  console.log("[unwrapSessionKey] wrappingKey ready");
 
   const encryptedData = base64ToArrayBuffer(wrapped.data);
   const iv = new Uint8Array(base64ToArrayBuffer(wrapped.iv));
+  console.log(
+    "[unwrapSessionKey] encryptedData length:",
+    encryptedData.byteLength,
+    "iv length:",
+    iv.length,
+  );
 
+  console.log("[unwrapSessionKey] decrypting wrapped key...");
   const rawKey = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv },
     wrappingKey,
     encryptedData,
   );
+  console.log(
+    "[unwrapSessionKey] rawKey decrypted, length:",
+    rawKey.byteLength,
+  );
 
-  return crypto.subtle.importKey(
+  const sessionKey = await crypto.subtle.importKey(
     "raw",
     rawKey,
     DERIVED_KEY_ALGO,
     true, // exportable so it can be re-wrapped for sharing
     ["encrypt", "decrypt"],
   );
+  console.log("[unwrapSessionKey] sessionKey imported successfully");
+  return sessionKey;
 }
 
 // ─── Helpers ────────────────────────────────────────────

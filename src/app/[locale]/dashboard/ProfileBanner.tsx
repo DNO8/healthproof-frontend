@@ -1,7 +1,7 @@
 "use client";
 
-import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 
 type ProfileBannerProps = {
   isComplete: boolean;
@@ -13,7 +13,10 @@ export function ProfileBanner({ isComplete }: ProfileBannerProps) {
   if (isComplete) return null;
 
   return (
-    <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-amber-200/60 bg-amber-50/50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+    <div
+      data-tour="profile-banner"
+      className="mt-6 flex flex-col gap-3 rounded-2xl border border-amber-200/60 bg-amber-50/50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
+    >
       <div className="flex items-start gap-3">
         <span className="text-xl">⚠️</span>
         <div>

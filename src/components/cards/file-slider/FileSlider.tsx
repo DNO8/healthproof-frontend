@@ -1,5 +1,5 @@
-import { FileSliderCard, TAB_HEIGHT } from "./FileSliderCard";
 import type { FileSliderItem } from "./constants";
+import { FileSliderCard, TAB_HEIGHT } from "./FileSliderCard";
 
 const CARD_BODY_HEIGHT = 320;
 

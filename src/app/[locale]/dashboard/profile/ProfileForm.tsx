@@ -1,11 +1,11 @@
 "use client";
 
-import { Link } from "@/i18n/navigation";
-import { useState } from "react";
-import { sileo } from "sileo";
 import { useTranslations } from "next-intl";
-import { updateProfile } from "@/actions/update-profile";
-import { clearDbUserCache } from "@/hooks/useDbUser";
+import { useEffect, useState } from "react";
+import { sileo } from "sileo";
+import { updateProfile } from "@/actions/auth/update-profile";
+import { clearDbUserCache } from "@/hooks/auth/useDbUser";
+import { Link } from "@/i18n/navigation";
 
 type ProfileFormProps = {
   userId: string;
@@ -14,6 +14,8 @@ type ProfileFormProps = {
   walletAddress: string;
   role: string;
   roleLabel: string;
+  specialty: string;
+  institution: string;
 };
 
 export function ProfileForm({
@@ -23,10 +25,17 @@ export function ProfileForm({
   walletAddress,
   role,
   roleLabel,
+  specialty,
+  institution,
 }: ProfileFormProps) {
   const t = useTranslations("dashboard.profile");
   const [fullName, setFullName] = useState(initialName);
   const [saving, setSaving] = useState(false);
+
+  // Sync local state when parent prop changes (after profile save invalidates cache)
+  useEffect(() => {
+    setFullName(initialName);
+  }, [initialName]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -35,7 +44,7 @@ export function ProfileForm({
     try {
       const result = await updateProfile({ id: userId, full_name: fullName });
 
-      if (result.error) {
+      if (!result.success) {
         sileo.error({
           title: t("errorTitle"),
           description: result.error,
@@ -99,6 +108,32 @@ export function ProfileForm({
           placeholder={t("fullNamePlaceholder")}
           type="text"
           value={fullName}
+        />
+      </div>
+
+      <div>
+        <label className={labelClass} htmlFor="specialty">
+          {t("specialtyLabel")}
+        </label>
+        <input
+          className={readOnlyClass}
+          id="specialty"
+          readOnly
+          type="text"
+          value={specialty || t("notSet")}
+        />
+      </div>
+
+      <div>
+        <label className={labelClass} htmlFor="institution">
+          {t("institutionLabel")}
+        </label>
+        <input
+          className={readOnlyClass}
+          id="institution"
+          readOnly
+          type="text"
+          value={institution || t("notSet")}
         />
       </div>
 

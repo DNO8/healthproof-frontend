@@ -1,0 +1,248 @@
+"use server";
+
+import { createPublicClient, fromHex, http, keccak256, toHex } from "viem";
+import ClinicalEpisodeRegistryAbi from "@/lib/abis/ClinicalEpisodeRegistry.json";
+import { logAuditEvent } from "@/lib/audit-onchain";
+import { isVerifiedDoctor } from "@/lib/auth/permissions";
+import type { AuthContext } from "@/lib/auth/with-auth";
+import { auditLog, withAuth } from "@/lib/auth/with-auth";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import type { OnChainEpisode } from "@/lib/medical-constants";
+import { AuditAction } from "@/lib/medical-constants";
+import type { SignedForwardRequest } from "@/lib/metatx/types";
+import { executeForwardRequest } from "../relay/relay-core";
+
+interface OpenEpisodeMetaTx {
+  request: SignedForwardRequest;
+  patientWallet: string;
+  episodeType: string;
+  classification?: string;
+  episodeId: string;
+}
+
+// ─── Open Episode (via EIP-2771 meta-tx → HealthProofGateway) ───
+// Requires authenticated verified doctor.
+// The frontend signs the meta-tx with the doctor's wallet; the deployer relays it.
+
+async function openEpisodeHandler(
+  data: OpenEpisodeMetaTx,
+  auth: AuthContext,
+): Promise<{ txHash: string; episodeId: string }> {
+  console.log(
+    "[openEpisodeHandler] Called with auth.wallet:",
+    auth.wallet,
+    "request.from:",
+    data.request.from,
+  );
+  if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
+    console.error(
+      "[openEpisodeHandler] Signer mismatch! auth.wallet:",
+      auth.wallet,
+      "request.from:",
+      data.request.from,
+    );
+    throw new Error("Signer mismatch: request.from != authenticated wallet");
+  }
+
+  const result = await executeForwardRequest(data.request);
+  console.log("[openEpisodeHandler] executeForwardRequest result:", result);
+  if (!result.success) {
+    console.error(
+      "[openEpisodeHandler] Meta-transaction failed on-chain. txHash:",
+      result.txHash,
+    );
+    throw new Error("Meta-transaction failed on-chain");
+  }
+
+  try {
+    await logAuditEvent(
+      data.patientWallet,
+      data.episodeId,
+      AuditAction.EPISODE_OPENED,
+    );
+  } catch {
+    // On-chain audit logging is best-effort
+  }
+
+  auditLog("openEpisodeOnChain", auth, true, {
+    patientWallet: data.patientWallet,
+    episodeType: data.episodeType,
+    episodeId: data.episodeId,
+  });
+
+  return { txHash: result.txHash, episodeId: data.episodeId };
+}
+
+async function validateOpenEpisode(
+  _data: OpenEpisodeMetaTx,
+  auth: AuthContext,
+): Promise<boolean> {
+  return await isVerifiedDoctor(auth.wallet);
+}
+
+export const openEpisodeOnChain = withAuth(openEpisodeHandler, {
+  rateLimit: { windowMs: 60000, maxRequests: 5 },
+  requireOnChainPermission: validateOpenEpisode,
+});
+
+interface CloseEpisodeMetaTx {
+  request: SignedForwardRequest;
+  episodeId: string;
+}
+
+// ─── Close Episode ───
+// Calls closeEpisodeViaGateway on HealthProofGateway via EIP-2771.
+
+async function closeEpisodeHandler(
+  data: CloseEpisodeMetaTx,
+  auth: AuthContext,
+): Promise<{ txHash: string }> {
+  console.log(
+    "[closeEpisodeHandler] Called with auth.wallet:",
+    auth.wallet,
+    "request.from:",
+    data.request.from,
+  );
+  if (data.request.from.toLowerCase() !== auth.wallet.toLowerCase()) {
+    console.error("[closeEpisodeHandler] Signer mismatch!");
+    throw new Error("Signer mismatch: request.from != authenticated wallet");
+  }
+
+  // Pre-check: log episode state on-chain before attempting close
+  const publicClient = createPublicClient({
+    chain: HEALTHPROOF_CHAIN,
+    transport: http(),
+  });
+  const episodeIdBytes =
+    data.episodeId.startsWith("0x") && data.episodeId.length === 66
+      ? (data.episodeId as `0x${string}`)
+      : keccak256(toHex(data.episodeId));
+
+  try {
+    const epResult = await publicClient.readContract({
+      address: CONTRACT_ADDRESSES.ClinicalEpisodeRegistry as `0x${string}`,
+      abi: ClinicalEpisodeRegistryAbi,
+      functionName: "getEpisode",
+      args: [episodeIdBytes],
+    });
+    const ep = epResult as {
+      patient: string;
+      openedBy: string;
+      institution: string;
+      episodeType: `0x${string}`;
+      classification: `0x${string}`;
+      openedAt: bigint;
+      active: boolean;
+    };
+    console.log("[closeEpisodeHandler] On-chain episode state:", {
+      openedAt: Number(ep.openedAt),
+      active: ep.active,
+      openedBy: ep.openedBy,
+      patient: ep.patient,
+    });
+    if (Number(ep.openedAt) === 0) {
+      console.error(
+        "[closeEpisodeHandler] Episode does not exist on-chain (openedAt === 0)",
+      );
+    } else if (!ep.active) {
+      console.error(
+        "[closeEpisodeHandler] Episode already closed (active === false)",
+      );
+    } else if (ep.openedBy.toLowerCase() !== auth.wallet.toLowerCase()) {
+      console.error(
+        "[closeEpisodeHandler] Caller is not the episode opener. openedBy:",
+        ep.openedBy,
+        "caller:",
+        auth.wallet,
+      );
+    }
+  } catch (preErr) {
+    console.error("[closeEpisodeHandler] Pre-check getEpisode failed:", preErr);
+  }
+
+  const result = await executeForwardRequest(data.request);
+  console.log("[closeEpisodeHandler] executeForwardRequest result:", result);
+  if (!result.success) {
+    console.error(
+      "[closeEpisodeHandler] Meta-transaction failed on-chain. txHash:",
+      result.txHash,
+    );
+    throw new Error("Meta-transaction failed on-chain");
+  }
+
+  auditLog("closeEpisodeOnChain", auth, true, {
+    episodeId: data.episodeId,
+  });
+
+  return { txHash: result.txHash };
+}
+
+async function validateCloseEpisode(
+  _data: CloseEpisodeMetaTx,
+  auth: AuthContext,
+): Promise<boolean> {
+  return await isVerifiedDoctor(auth.wallet);
+}
+
+export const closeEpisodeOnChain = withAuth(closeEpisodeHandler, {
+  rateLimit: { windowMs: 60000, maxRequests: 5 },
+  requireOnChainPermission: validateCloseEpisode,
+});
+
+// ─── Get Episode (read-only) ───
+// Requires authentication but no special permissions
+
+async function getEpisodeHandler(
+  data: { episodeId: string },
+  _auth: AuthContext,
+): Promise<OnChainEpisode | null> {
+  console.log("[getEpisodeHandler] Looking up episodeId:", data.episodeId);
+  const publicClient = createPublicClient({
+    chain: HEALTHPROOF_CHAIN,
+    transport: http(),
+  });
+
+  const episodeIdBytes =
+    data.episodeId.startsWith("0x") && data.episodeId.length === 66
+      ? (data.episodeId as `0x${string}`)
+      : keccak256(toHex(data.episodeId));
+
+  const result = await publicClient.readContract({
+    address: CONTRACT_ADDRESSES.ClinicalEpisodeRegistry as `0x${string}`,
+    abi: ClinicalEpisodeRegistryAbi,
+    functionName: "getEpisode",
+    args: [episodeIdBytes],
+  });
+  console.log("[getEpisodeHandler] Raw contract result:", result);
+
+  const ep = result as {
+    patient: string;
+    openedBy: string;
+    institution: string;
+    episodeType: `0x${string}`;
+    classification: `0x${string}`;
+    openedAt: bigint;
+    active: boolean;
+  };
+
+  if (Number(ep.openedAt) === 0) {
+    console.log("[getEpisodeHandler] Episode not found (openedAt === 0)");
+    return null;
+  }
+
+  console.log("[getEpisodeHandler] Episode found:", ep);
+  return {
+    episodeId: data.episodeId,
+    patient: ep.patient,
+    openedBy: ep.openedBy,
+    institution: ep.institution,
+    episodeType: fromHex(ep.episodeType, "string").replace(/\0+$/, ""),
+    classification: fromHex(ep.classification, "string").replace(/\0+$/, ""),
+    openedAt: Number(ep.openedAt),
+    active: ep.active,
+  };
+}
+
+export const getEpisodeOnChain = withAuth(getEpisodeHandler, {
+  rateLimit: { windowMs: 60000, maxRequests: 20 },
+});

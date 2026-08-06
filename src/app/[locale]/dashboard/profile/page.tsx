@@ -1,21 +1,26 @@
 "use client";
 
-import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { usePrivy } from "@privy-io/react-auth";
 import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
+import { getEntityOnChain } from "@/actions/healthcare-networks/register-entity-onchain";
+import { TourTrigger } from "@/components/onboarding/TourTrigger";
+import { SecuritySection } from "@/components/profile/SecuritySection";
+import { useDbUser } from "@/hooks/auth/useDbUser";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { useOnChainRole } from "@/hooks/healthcare-networks/useOnChainRole";
+import { useRouter } from "@/i18n/navigation";
+import { ROLE_ICONS } from "@/lib/icons";
 import type { UserRole } from "@/types/domain.types";
 import { ROLES } from "@/types/domain.types";
-import { useDbUser } from "@/hooks/useDbUser";
-import { useOnChainRole } from "@/hooks/useOnChainRole";
 import { ProfileForm } from "./ProfileForm";
 
 const ROLE_LABEL_KEYS: Partial<
-  Record<UserRole, "patient" | "laboratory" | "medicalCenter">
+  Record<UserRole, "patient" | "laboratory" | "doctor">
 > = {
   patient: "patient",
   lab: "laboratory",
-  doctor: "medicalCenter",
+  doctor: "doctor",
 };
 
 export default function ProfilePage() {
@@ -24,39 +29,14 @@ export default function ProfilePage() {
   const tDash = useTranslations("dashboard");
   const router = useRouter();
   const { ready, authenticated, user } = usePrivy();
-  const { wallets } = useWallets();
   const { dbUser } = useDbUser();
-
-  const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
-
-  // Fallback: extract from user.linkedAccounts (available before useWallets resolves)
-  const linkedWalletAddress = (() => {
-    const accounts = user?.linkedAccounts;
-    if (!accounts) return null;
-    for (const a of accounts) {
-      const raw = a as unknown as {
-        type: string;
-        walletClientType?: string;
-        address?: string;
-      };
-      if (
-        raw.type === "wallet" &&
-        raw.walletClientType === "privy" &&
-        raw.address
-      ) {
-        return raw.address;
-      }
-    }
-    return null;
-  })();
-
-  const walletAddress =
-    dbUser?.wallet_address ||
-    embeddedWallet?.address ||
-    linkedWalletAddress ||
-    "";
+  const walletAddress = useWalletAddress() ?? "";
 
   const { role: onChainRole } = useOnChainRole(walletAddress || null);
+  const [entity, setEntity] = useState<{
+    specialty: string;
+    institution: string;
+  } | null>(null);
 
   useEffect(() => {
     if (ready && !authenticated) {
@@ -64,6 +44,18 @@ export default function ProfilePage() {
       if (!loggingOut) router.replace("/auth");
     }
   }, [ready, authenticated, router]);
+
+  useEffect(() => {
+    if (!walletAddress) return;
+    getEntityOnChain({ wallet: walletAddress }).then((res) => {
+      if (res.success && res.data) {
+        setEntity({
+          specialty: res.data.specialty,
+          institution: res.data.institution,
+        });
+      }
+    });
+  }, [walletAddress]);
 
   if (!ready || !authenticated || !user) {
     return (
@@ -75,8 +67,16 @@ export default function ProfilePage() {
 
   const email =
     user.email?.address ?? user.google?.email ?? dbUser?.email ?? "";
-  const effectiveRole: UserRole = onChainRole ?? "patient";
-  const roleConfig = ROLES.find((r) => r.key === effectiveRole);
+
+  // Fallback chain: on-chain role → DB role → localStorage intended role → patient
+  const intendedRole =
+    typeof window !== "undefined"
+      ? (localStorage.getItem("hp_intended_role") as UserRole | null)
+      : null;
+  const dbRole = dbUser?.role?.toLowerCase() as UserRole | null;
+  const effectiveRole: UserRole =
+    onChainRole ?? dbRole ?? intendedRole ?? "patient";
+  const _roleConfig = ROLES.find((r) => r.key === effectiveRole);
   const roleLabel = tRoles(ROLE_LABEL_KEYS[effectiveRole] ?? "patient");
   const fullName = dbUser?.full_name ?? user.google?.name ?? "";
 
@@ -84,7 +84,10 @@ export default function ProfilePage() {
     <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
       <div className="neu-shell border border-white/70 p-6 sm:p-10">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">{roleConfig?.icon}</span>
+          {(() => {
+            const Icon = ROLE_ICONS[effectiveRole];
+            return Icon ? <Icon className="h-6 w-6 text-sky-600" /> : null;
+          })()}
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">
               {t("eyebrow")}
@@ -104,6 +107,14 @@ export default function ProfilePage() {
           role={effectiveRole}
           roleLabel={roleLabel}
           walletAddress={walletAddress}
+          specialty={entity?.specialty ?? ""}
+          institution={entity?.institution ?? ""}
+        />
+
+        <SecuritySection userId={user.id} />
+
+        <TourTrigger
+          onboardingCompletedAt={dbUser?.onboarding_completed_at ?? null}
         />
       </div>
     </main>

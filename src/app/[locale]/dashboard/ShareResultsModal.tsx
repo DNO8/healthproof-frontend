@@ -1,34 +1,75 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { useWallets } from "@privy-io/react-auth";
-import { QRCodeSVG } from "qrcode.react";
-import { sileo } from "sileo";
-import { useTranslations } from "next-intl";
-import type { GrantedToRole, EncryptedQRData } from "@/types/domain.types";
-import { QR_EXPIRY_MINUTES } from "@/lib/constants";
-import { buildPermissionPayload } from "@/features/permissions";
 import {
-  listDocumentSecretsForWallet,
+  AlertTriangle,
+  Building2,
+  FlaskConical,
+  Stethoscope,
+} from "lucide-react";
+import { useTranslations } from "next-intl";
+import { QRCodeSVG } from "qrcode.react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { sileo } from "sileo";
+import { createWalletClient, custom, keccak256, toHex } from "viem";
+import { getDbUser } from "@/actions/auth/get-user";
+import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
+import {
   type DocumentSecretRow,
-} from "@/actions/get-document-secret";
-import { getDbUser } from "@/actions/get-user";
-import { grantPermissionOnChain } from "@/actions/grant-permission-onchain";
-import { getUserPublicKey } from "@/actions/get-user-public-key";
-import { rewrapKeyForRecipient } from "@/services/encryption/rewrap";
+  listDocumentSecretsForWallet,
+} from "@/actions/documents/get-document-secret";
+import { getRelatedDocuments } from "@/actions/documents/get-related-documents";
+import { grantPermissionOnChain } from "@/actions/permissions/grant-permission-onchain";
+import { savePermissionKey } from "@/actions/permissions/save-permission-key";
+import { UserSelect } from "@/components/forms/UserSelect";
+import { buildPermissionPayload } from "@/features/permissions";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
+import { QR_EXPIRY_MINUTES } from "@/lib/constants";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import { signMetaTransaction } from "@/lib/metatx/forwarder";
 import { exportPublicKey } from "@/services/encryption/ecdh";
 import { getKeyPair } from "@/services/encryption/keystore";
-import { UserSelect } from "@/components/forms/UserSelect";
+import { rewrapKeyForRecipient } from "@/services/encryption/rewrap";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
+import type {
+  EncryptedQRData,
+  GrantedToRole,
+  QRCryptoDocument,
+} from "@/types/domain.types";
+
+async function getViemWalletClient(wallet: {
+  getEthereumProvider: () => Promise<unknown>;
+}) {
+  const provider = (await wallet.getEthereumProvider()) as {
+    request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  };
+  return createWalletClient({
+    chain: HEALTHPROOF_CHAIN,
+    transport: custom(provider),
+  });
+}
 
 const GRANTED_ROLES: {
   key: GrantedToRole;
   labelKey: string;
-  icon: string;
+  icon: ReactNode;
 }[] = [
-  { key: "doctor", labelKey: "doctor", icon: "🩺" },
-  { key: "lab", labelKey: "laboratory", icon: "🔬" },
-  { key: "institution", labelKey: "medicalCenter", icon: "🏥" },
+  {
+    key: "doctor",
+    labelKey: "doctor",
+    icon: <Stethoscope className="h-5 w-5" />,
+  },
+  {
+    key: "lab",
+    labelKey: "laboratory",
+    icon: <FlaskConical className="h-5 w-5" />,
+  },
+  {
+    key: "institution",
+    labelKey: "medicalCenter",
+    icon: <Building2 className="h-5 w-5" />,
+  },
 ];
 
 export function ShareResultsModal({
@@ -39,25 +80,27 @@ export function ShareResultsModal({
   patientId: string;
 }) {
   const t = useTranslations("shareModal");
+  const walletAddress = useWalletAddress();
   const { wallets } = useWallets();
   const [grantedTo, setGrantedTo] = useState<GrantedToRole | null>(null);
   const [recipientId, setRecipientId] = useState("");
   const [results, setResults] = useState<DocumentSecretRow[]>([]);
-  const [selectedResult, setSelectedResult] =
-    useState<DocumentSecretRow | null>(null);
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  const [relatedDocs, setRelatedDocs] = useState<DocumentSecretRow[]>([]);
   const [loadingResults, setLoadingResults] = useState(true);
   const [qrData, setQrData] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
 
-  const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
   const keyConflict = useKeyConflictStore((s) => s.conflict);
 
   const fetchResults = useCallback(async () => {
     setLoadingResults(true);
     try {
       // Resolve wallet address from Privy DID
-      const dbUser = await getDbUser(patientId);
-      const wallet = dbUser?.wallet_address;
+      const dbUserRes = await getDbUser({ idOrWallet: patientId });
+      const wallet = dbUserRes.success
+        ? dbUserRes.data?.wallet_address
+        : undefined;
       if (!wallet) {
         setResults([]);
         return;
@@ -75,26 +118,56 @@ export function ShareResultsModal({
     fetchResults();
   }, [fetchResults]);
 
+  useEffect(() => {
+    if (!selectedDocId) {
+      setRelatedDocs([]);
+      return;
+    }
+    getRelatedDocuments(selectedDocId).then((rows) => {
+      const distinct = rows.filter((r) => r.document_id !== selectedDocId);
+      setRelatedDocs(distinct);
+    });
+  }, [selectedDocId]);
+
   async function handleGenerate() {
-    if (!selectedResult) {
+    if (!selectedDocId) {
       sileo.warning({
-        title: t("selectResultTitle"),
-        description: t("selectResultDesc"),
+        title: t("selectDocumentTitle"),
+        description: t("selectDocumentDesc"),
       });
       return;
     }
     if (!grantedTo) {
       sileo.warning({
-        title: t("selectRecipient"),
-        description: t("selectRecipientDesc"),
+        title: t("selectRoleTitle"),
+        description: t("selectRoleDesc"),
       });
       return;
     }
     const trimmedRecipient = recipientId.trim();
     if (!trimmedRecipient) {
       sileo.warning({
-        title: t("recipientRequired"),
-        description: t("recipientRequiredDesc"),
+        title: t("selectRecipient"),
+        description: t("selectRecipientDesc"),
+      });
+      return;
+    }
+
+    const selectedResult =
+      results.find((r) => r.document_id === selectedDocId) ?? null;
+    if (!selectedResult) {
+      sileo.warning({
+        title: t("selectDocumentTitle"),
+        description: t("selectDocumentDesc"),
+      });
+      return;
+    }
+
+    const activeWallet = wallets.find((w) => w.address);
+    if (!activeWallet) {
+      sileo.error({
+        title: t("errorTitle"),
+        description: "No active wallet found",
       });
       return;
     }
@@ -108,98 +181,137 @@ export function ShareResultsModal({
         throw new Error(t("noRecipientKey"));
       }
 
-      // 2. Get the uploader's public key — prefer the stored key from upload time,
-      //    fall back to current DB key for legacy records without uploader_public_key
-      let senderPublicKeyJwk = selectedResult.uploader_public_key;
-      if (!senderPublicKeyJwk) {
-        senderPublicKeyJwk = await getUserPublicKey(
-          selectedResult.uploader_wallet,
-        );
-      }
-      if (!senderPublicKeyJwk) {
-        throw new Error(t("noLabPublicKey"));
-      }
-
-      // 3. Re-wrap the AES key for the recipient
-      const myWrappedKey =
-        selectedResult.encrypted_keys[selectedResult.patient_wallet] ??
-        selectedResult.encrypted_keys[patientId];
-
-      if (!myWrappedKey) {
-        throw new Error(t("noWrappedKey"));
-      }
-
-      const rewrapped = await rewrapKeyForRecipient({
-        myUserId: patientId,
-        myWrappedKey,
-        senderPublicKeyJwk,
-        recipientPublicKeyJwk: recipientPubKeyJwk,
-      });
-
-      // 4. Get my public key to include in QR
+      // 2. Get my public key to include in QR
       const myKeys = await getKeyPair(patientId);
-      if (!myKeys) {
+      if (!myKeys?.publicKey) {
         throw new Error(t("noPatientKeys"));
       }
       const myPublicKeyJwk = await exportPublicKey(myKeys.publicKey);
 
-      // 5. Resolve wallet address
-      let walletAddress = patientId;
-      let provider: Awaited<
-        ReturnType<NonNullable<typeof embeddedWallet>["getEthereumProvider"]>
-      > | null = null;
-      if (embeddedWallet) {
-        provider = await embeddedWallet.getEthereumProvider();
-        const accounts = (await provider.request({
-          method: "eth_accounts",
-        })) as string[];
-        walletAddress = accounts[0] ?? embeddedWallet.address;
+      // 3. Resolve wallet address and documents to share (selected + related pair)
+      const resolvedWalletAddress = walletAddress ?? patientId;
+      const docsToShare = [selectedResult, ...relatedDocs];
+
+      // 4. Re-wrap AES keys for every document in the pair
+      const rewrappedDocs: QRCryptoDocument[] = [];
+      for (const doc of docsToShare) {
+        let senderPublicKeyJwk = doc.uploader_public_key;
+        if (!senderPublicKeyJwk) {
+          senderPublicKeyJwk = await getUserPublicKey(doc.uploader_wallet);
+        }
+        if (!senderPublicKeyJwk) {
+          console.warn(
+            "[ShareResultsModal] skipping related doc, no uploader public key:",
+            doc.document_id,
+          );
+          continue;
+        }
+        const myWrappedKey =
+          doc.encrypted_keys[doc.patient_wallet] ??
+          doc.encrypted_keys[patientId];
+        if (!myWrappedKey) {
+          console.warn(
+            "[ShareResultsModal] skipping related doc, no wrapped key:",
+            doc.document_id,
+          );
+          continue;
+        }
+        const rewrapped = await rewrapKeyForRecipient({
+          myUserId: patientId,
+          myWrappedKey,
+          senderPublicKeyJwk,
+          recipientPublicKeyJwk: recipientPubKeyJwk,
+        });
+        rewrappedDocs.push({
+          document_id: doc.document_id,
+          cid: doc.document_id,
+          iv: doc.iv,
+          encrypted_key: rewrapped,
+          document_type: null,
+          file_name: doc.file_name,
+        });
       }
 
-      // 6. Build permission payload
+      if (rewrappedDocs.length === 0) {
+        throw new Error(t("noWrappedKey"));
+      }
+
+      const primaryDoc = rewrappedDocs[0];
+      const documentId = primaryDoc.document_id;
+
+      // 5. Build permission payload
       const payload = buildPermissionPayload({
-        patientWallet: walletAddress,
+        patientWallet: resolvedWalletAddress,
         granteeWallet: trimmedRecipient,
         grantedToRole: grantedTo,
-        documentId: selectedResult.document_id,
+        documentId,
       });
 
-      // 7. Sign with wallet
-      const message = JSON.stringify(payload);
-      let signature = "unsigned";
-
-      if (provider) {
-        signature = (await provider.request({
-          method: "personal_sign",
-          params: [message, walletAddress],
-        })) as string;
-      }
-
-      // 7.5 Grant permission on-chain
-      const grantResult = await grantPermissionOnChain({
-        patientWallet: walletAddress,
-        granteeWallet: trimmedRecipient,
-        documentId: selectedResult.document_id,
-      });
-      if ("error" in grantResult) {
-        console.warn(
-          "[ShareResultsModal] On-chain grant failed:",
-          grantResult.error,
+      // 6. Grant on-chain access for each document in the pair
+      const viemWallet = await getViemWalletClient(activeWallet);
+      for (const doc of rewrappedDocs) {
+        const resourceId =
+          doc.document_id.startsWith("0x") && doc.document_id.length === 66
+            ? (doc.document_id as `0x${string}`)
+            : keccak256(toHex(doc.document_id));
+        const request = await signMetaTransaction(
+          viemWallet,
+          CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
+          "grantAccess",
+          [
+            resolvedWalletAddress.toLowerCase(),
+            trimmedRecipient.toLowerCase(),
+            0, // Scope.DOCUMENT
+            resourceId,
+            BigInt(0), // no expiry
+          ],
+          HealthProofGatewayAbi,
         );
+        const grantResult = await grantPermissionOnChain({
+          request,
+          patientWallet: resolvedWalletAddress,
+          granteeWallet: trimmedRecipient,
+          documentId: doc.document_id,
+          scope: 0,
+        });
+        if (!grantResult.success) {
+          throw new Error(grantResult.error ?? "On-chain grant failed");
+        }
       }
 
-      // 8. Build encrypted QR data
+      // 7. Persist rewrapped keys for every document
+      for (const doc of rewrappedDocs) {
+        try {
+          const permSave = await savePermissionKey({
+            document_id: doc.document_id,
+            patient_wallet: resolvedWalletAddress,
+            grantee_wallet: trimmedRecipient,
+            encrypted_key: JSON.stringify(doc.encrypted_key),
+          });
+          if (!permSave.success) {
+            console.warn(
+              "[ShareResultsModal] savePermissionKey:",
+              permSave.error,
+            );
+          }
+        } catch (e) {
+          console.warn("[ShareResultsModal] savePermissionKey failed:", e);
+        }
+      }
+
+      // 8. Build encrypted QR data with the document pair
       const qr: EncryptedQRData = {
         type: "healthproof_permission",
         payload,
-        signature,
-        wallet: walletAddress,
+        signature: "unsigned",
+        wallet: resolvedWalletAddress,
         crypto: {
-          document_id: selectedResult.document_id,
-          cid: selectedResult.document_id,
-          iv: selectedResult.iv,
-          encrypted_key: rewrapped,
+          document_id: primaryDoc.document_id,
+          cid: primaryDoc.cid,
+          iv: primaryDoc.iv,
+          encrypted_key: primaryDoc.encrypted_key,
           patient_public_key: myPublicKeyJwk,
+          documents: rewrappedDocs,
         },
       };
 
@@ -258,37 +370,41 @@ export function ShareResultsModal({
             {/* Select result */}
             <div className="mt-5">
               <p className="mb-2 text-xs font-medium text-slate-700">
-                {t("selectResult")}
+                {t("selectDocument")}
               </p>
               {loadingResults ? (
-                <div className="flex items-center gap-2 py-4 text-xs text-slate-400">
-                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-sky-500" />
-                  {t("loadingResults")}
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="neu-pressed h-10 w-full animate-pulse rounded-xl bg-slate-200"
+                    />
+                  ))}
                 </div>
               ) : results.length === 0 ? (
                 <p className="py-4 text-center text-xs text-slate-400">
                   {t("noResults")}
                 </p>
               ) : (
-                <div className="max-h-36 space-y-1.5 overflow-y-auto">
+                <div className="neu-inset rounded-xl p-4 space-y-2 max-h-56 overflow-y-auto">
                   {results.map((r) => (
-                    <button
-                      className={`w-full rounded-xl px-3 py-2.5 text-left transition-all duration-200 ${
-                        selectedResult?.document_id === r.document_id
-                          ? "neu-pressed border border-sky-200 text-sky-700"
-                          : "neu-surface border border-transparent text-slate-600 hover:border-slate-200"
-                      }`}
+                    <label
                       key={r.document_id}
-                      onClick={() => setSelectedResult(r)}
-                      type="button"
+                      className="flex items-center gap-2 cursor-pointer py-1"
                     >
-                      <p className="truncate font-mono text-[11px]">
-                        CID: {r.document_id.slice(0, 20)}...
-                      </p>
-                      <p className="mt-0.5 text-[10px] text-slate-400">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-200"
+                        checked={selectedDocId === r.document_id}
+                        onChange={() => setSelectedDocId(r.document_id)}
+                      />
+                      <span className="text-sm text-slate-700 truncate">
+                        {r.file_name ?? `${r.document_id.slice(0, 24)}…`}
+                      </span>
+                      <span className="text-xs text-slate-400 ml-auto shrink-0">
                         {new Date(r.created_at).toLocaleDateString()}
-                      </p>
-                    </button>
+                      </span>
+                    </label>
                   ))}
                 </div>
               )}
@@ -314,7 +430,7 @@ export function ShareResultsModal({
                     }}
                     type="button"
                   >
-                    <span className="text-xl">{role.icon}</span>
+                    {role.icon}
                     <span className="text-[11px] font-semibold">
                       {t(role.labelKey)}
                     </span>
@@ -339,13 +455,13 @@ export function ShareResultsModal({
             {/* Expiry info */}
             <p className="mt-4 text-[11px] text-slate-400">
               {t("expiryInfo", { minutes: QR_EXPIRY_MINUTES })}{" "}
-              {embeddedWallet ? t("walletSigned") : t("noWallet")}
+              {walletAddress ? t("walletSigned") : t("noWallet")}
             </p>
 
             {/* Key conflict warning */}
             {keyConflict && (
-              <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                ⚠️{" "}
+              <p className="mt-4 flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
                 {keyConflict === "missing_local_keys"
                   ? t("keyConflictMissing")
                   : t("keyConflictMismatch")}
@@ -355,7 +471,7 @@ export function ShareResultsModal({
             {/* Generate button */}
             <button
               className="mt-6 w-full rounded-2xl border border-white/60 bg-(--hp-primary) px-6 py-3 text-sm font-semibold text-slate-800 shadow-(--hp-shadow-raised) transition hover:bg-(--hp-primary-soft) active:translate-y-px disabled:opacity-60"
-              disabled={generating || !selectedResult || !!keyConflict}
+              disabled={generating || !!keyConflict}
               onClick={handleGenerate}
               type="button"
             >
@@ -413,7 +529,7 @@ export function ShareResultsModal({
                 onClick={() => {
                   setQrData(null);
                   setGrantedTo(null);
-                  setSelectedResult(null);
+                  setSelectedDocId(null);
                   setRecipientId("");
                 }}
                 type="button"

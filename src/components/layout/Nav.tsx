@@ -1,24 +1,22 @@
 "use client";
 
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { sileo } from "sileo";
 import { usePrivy } from "@privy-io/react-auth";
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
+import { sileo } from "sileo";
+import { clearDbUserCache } from "@/hooks/auth/useDbUser";
 import {
   Link,
-  useRouter as useIntlRouter,
   usePathname as useIntlPathname,
+  useRouter as useIntlRouter,
 } from "@/i18n/navigation";
-import { clearDbUserCache } from "@/hooks/useDbUser";
+import { clearUserSession } from "@/lib/auth/clear-session";
+import { useUiStore } from "@/state/ui.store";
 
 export function Nav() {
   const t = useTranslations("nav");
-  const router = useRouter();
   const { ready, authenticated, logout } = usePrivy();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const setSheetOpen = useUiStore((s) => s.setMobileSheetOpen);
   const locale = useLocale();
   const intlRouter = useIntlRouter();
   const intlPathname = useIntlPathname();
@@ -29,41 +27,18 @@ export function Nav() {
 
   const loading = !ready;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: close menu on route change
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [intlPathname]);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-    if (menuOpen) {
-      document.addEventListener("pointerdown", handleClickOutside);
-    }
-    return () =>
-      document.removeEventListener("pointerdown", handleClickOutside);
-  }, [menuOpen]);
-
   async function handleLogout() {
     sessionStorage.setItem("hp_logging_out", "true");
     await logout();
-    setMenuOpen(false);
     clearDbUserCache();
-    sessionStorage.removeItem("hp_upserted");
-    sessionStorage.removeItem("hp_wallet_synced");
-    sessionStorage.removeItem("hp_welcome_shown");
-    sessionStorage.removeItem("hp_logging_out");
+    clearUserSession();
     sileo.success({
       title: t("signedOut"),
       description: t("signedOutDescription"),
     });
-    router.replace("/");
+    window.location.href = "/";
   }
 
-  // Hide nav on auth page
   if (intlPathname === "/auth") return null;
 
   const linkClass = (active: boolean) =>
@@ -101,10 +76,7 @@ export function Nav() {
   );
 
   return (
-    <div
-      className="sticky top-0 z-50 flex w-full justify-center px-4 pt-4"
-      ref={menuRef}
-    >
+    <div className="sticky top-0 z-50 flex w-full justify-center px-4 pt-4">
       <nav className="neu-shell relative w-full max-w-5xl rounded-full border border-white/70 px-5 py-2.5 sm:px-8">
         <div className="flex items-center justify-between">
           {/* Logo */}
@@ -156,46 +128,41 @@ export function Nav() {
               {t("contact")}
             </Link>
 
-            {!loading && (
-              <>
-                {authenticated ? (
-                  <>
-                    <Link
-                      className={linkClass(
-                        intlPathname === "/dashboard" ||
-                          (intlPathname.startsWith("/dashboard") &&
-                            !intlPathname.startsWith("/dashboard/profile")),
-                      )}
-                      href="/dashboard"
-                    >
-                      {t("dashboard")}
-                    </Link>
-                    <Link
-                      className={linkClass(
-                        intlPathname === "/dashboard/profile",
-                      )}
-                      href="/dashboard/profile"
-                    >
-                      {t("profile")}
-                    </Link>
-                    <button
-                      className="rounded-full px-4 py-1.5 text-sm font-medium text-slate-500 transition-all duration-200 hover:bg-white/50 hover:text-slate-800"
-                      onClick={handleLogout}
-                      type="button"
-                    >
-                      {t("logout")}
-                    </button>
-                  </>
-                ) : (
+            {!loading &&
+              (authenticated ? (
+                <>
                   <Link
-                    className={linkClass(intlPathname === "/auth")}
-                    href="/auth"
+                    className={linkClass(
+                      intlPathname === "/dashboard" ||
+                        (intlPathname.startsWith("/dashboard") &&
+                          !intlPathname.startsWith("/dashboard/profile")),
+                    )}
+                    href="/dashboard"
                   >
-                    {t("login")}
+                    {t("dashboard")}
                   </Link>
-                )}
-              </>
-            )}
+                  <Link
+                    className={linkClass(intlPathname === "/dashboard/profile")}
+                    href="/dashboard/profile"
+                  >
+                    {t("profile")}
+                  </Link>
+                  <button
+                    className="rounded-full px-4 py-1.5 text-sm font-medium text-slate-500 transition-all duration-200 hover:bg-white/50 hover:text-slate-800"
+                    onClick={handleLogout}
+                    type="button"
+                  >
+                    {t("logout")}
+                  </button>
+                </>
+              ) : (
+                <Link
+                  className={linkClass(intlPathname === "/auth")}
+                  href="/auth"
+                >
+                  {t("login")}
+                </Link>
+              ))}
 
             {localePill}
           </div>
@@ -206,9 +173,9 @@ export function Nav() {
 
             <button
               className="flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-white/50"
-              onClick={() => setMenuOpen((prev) => !prev)}
+              onClick={() => setSheetOpen(true)}
               type="button"
-              aria-label="Toggle menu"
+              aria-label={t("openMenu")}
             >
               <svg
                 fill="none"
@@ -220,76 +187,14 @@ export function Nav() {
                 viewBox="0 0 24 24"
                 width="20"
               >
-                <title>{menuOpen ? t("closeMenu") : t("openMenu")}</title>
-                {menuOpen ? (
-                  <path d="M18 6 6 18M6 6l12 12" />
-                ) : (
-                  <>
-                    <path d="M4 6h16" />
-                    <path d="M4 12h16" />
-                    <path d="M4 18h16" />
-                  </>
-                )}
+                <title>{t("openMenu")}</title>
+                <path d="M4 6h16" />
+                <path d="M4 12h16" />
+                <path d="M4 18h16" />
               </svg>
             </button>
           </div>
         </div>
-
-        {/* Mobile dropdown */}
-        {menuOpen && (
-          <div className="absolute left-0 right-0 top-full mt-2 flex flex-col gap-1 rounded-2xl border border-white/70 bg-(--hp-bg) p-3 shadow-lg md:hidden">
-            <Link className={linkClass(intlPathname === "/")} href="/">
-              {t("home")}
-            </Link>
-            <Link
-              className={linkClass(intlPathname === "/contact")}
-              href="/contact"
-            >
-              {t("contact")}
-            </Link>
-
-            {!loading && (
-              <>
-                {authenticated ? (
-                  <>
-                    <Link
-                      className={linkClass(
-                        intlPathname === "/dashboard" ||
-                          (intlPathname.startsWith("/dashboard") &&
-                            !intlPathname.startsWith("/dashboard/profile")),
-                      )}
-                      href="/dashboard"
-                    >
-                      {t("dashboard")}
-                    </Link>
-                    <Link
-                      className={linkClass(
-                        intlPathname === "/dashboard/profile",
-                      )}
-                      href="/dashboard/profile"
-                    >
-                      {t("profile")}
-                    </Link>
-                    <button
-                      className="rounded-full px-4 py-1.5 text-left text-sm font-medium text-slate-500 transition-all duration-200 hover:bg-white/50 hover:text-slate-800"
-                      onClick={handleLogout}
-                      type="button"
-                    >
-                      {t("logout")}
-                    </button>
-                  </>
-                ) : (
-                  <Link
-                    className={linkClass(intlPathname === "/auth")}
-                    href="/auth"
-                  >
-                    {t("login")}
-                  </Link>
-                )}
-              </>
-            )}
-          </div>
-        )}
       </nav>
     </div>
   );

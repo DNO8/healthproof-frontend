@@ -1,89 +1,259 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useWallets } from "@privy-io/react-auth";
-import { listDocumentSecretsForWallet } from "@/actions/get-document-secret";
-
-type DocumentRow = {
-  id: string;
-  document_id: string;
-  uploader_wallet: string;
-  patient_wallet: string;
-  created_at: string;
-};
+import { usePrivy } from "@privy-io/react-auth";
+import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useState } from "react";
+import { sileo } from "sileo";
+import type { DocumentSecretRow } from "@/actions/documents/get-document-secret";
+import { listDocumentSecretsForWallet } from "@/actions/documents/get-document-secret";
+import {
+  FilePreview,
+  getExtensionFromMime,
+} from "@/components/documents/FilePreview";
+import { useWalletAddress } from "@/hooks/auth/useWalletAddress";
+import { useDocumentDecrypt } from "@/hooks/documents/useDocumentDecrypt";
 
 type MyDocumentsModalProps = {
   onClose: () => void;
 };
 
+function formatAddress(addr: string): string {
+  if (!addr || addr.length < 10) return addr;
+  return `${addr.slice(0, 8)}…${addr.slice(-4)}`;
+}
+
 export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
-  const { wallets } = useWallets();
-  const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
-  const walletAddress = embeddedWallet?.address;
+  const t = useTranslations("myDocuments");
+  const walletAddress = useWalletAddress();
+  const { user } = usePrivy();
+  const userId = user?.id ?? "";
 
-  const [docs, setDocs] = useState<DocumentRow[]>([]);
+  const [docs, setDocs] = useState<DocumentSecretRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDoc, setSelectedDoc] = useState<DocumentSecretRow | null>(
+    null,
+  );
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [viewError, setViewError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const {
+    decrypt,
+    decryptedFile,
+    loading: decryptLoading,
+    error: decryptError,
+    clear,
+  } = useDocumentDecrypt();
+
+  const fetchDocs = useCallback(async () => {
     if (!walletAddress) return;
     setLoading(true);
-    listDocumentSecretsForWallet(walletAddress)
-      .then((rows) => setDocs(rows as DocumentRow[]))
-      .finally(() => setLoading(false));
-  }, [walletAddress]);
+    try {
+      const rows = await listDocumentSecretsForWallet(walletAddress);
+      setDocs(rows);
+    } catch (e) {
+      sileo.error({
+        title: t("loadError"),
+        description: String(e).slice(0, 120),
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [walletAddress, t]);
+
+  useEffect(() => {
+    fetchDocs();
+  }, [fetchDocs]);
+
+  function _handleSelect(doc: DocumentSecretRow) {
+    if (selectedDoc?.id === doc.id) {
+      setSelectedDoc(null);
+      setViewError(null);
+      clear();
+      return;
+    }
+    setSelectedDoc(doc);
+    setViewError(null);
+    clear();
+  }
+
+  async function handleView(doc: DocumentSecretRow) {
+    setSelectedDoc(doc);
+    setViewError(null);
+    clear();
+    await performDecrypt(doc);
+  }
+
+  async function handleDownload(doc: DocumentSecretRow) {
+    setDownloadingId(doc.id);
+    try {
+      const file = await performDecrypt(doc, true);
+      if (file) {
+        const ext = getExtensionFromMime(file.mime);
+        const name = `document-${doc.document_id.slice(0, 8)}${ext}`;
+        const a = document.createElement("a");
+        a.href = file.url;
+        a.download = name;
+        a.click();
+      }
+    } catch (e) {
+      sileo.error({
+        title: t("downloadError"),
+        description: String(e).slice(0, 120),
+      });
+    } finally {
+      setDownloadingId(null);
+    }
+  }
+
+  async function performDecrypt(doc: DocumentSecretRow, silent = false) {
+    if (!walletAddress || !userId) {
+      if (!silent)
+        setViewError(t("missingWallet") ?? "Wallet or user not available.");
+      return null;
+    }
+    const wrappedKey =
+      doc.encrypted_keys[walletAddress.toLowerCase()] ??
+      doc.encrypted_keys[userId];
+    if (!wrappedKey) {
+      if (!silent) {
+        setViewError(
+          t("noKeyDesc") ??
+            "You don't have a decryption key for this document.",
+        );
+        sileo.error({ title: t("noKey"), description: t("noKeyDesc") });
+      }
+      return null;
+    }
+    if (!doc.uploader_public_key) {
+      if (!silent) {
+        setViewError(t("noUploaderKey") ?? "Uploader public key is missing.");
+        sileo.error({ title: t("noKey"), description: t("noUploaderKey") });
+      }
+      return null;
+    }
+    return await decrypt({
+      cid: doc.document_id,
+      iv: doc.iv,
+      wrappedKey,
+      senderPublicKeyJwk: doc.uploader_public_key,
+      myUserId: userId,
+    });
+  }
+
+  const isDecrypting = decryptLoading || !!downloadingId;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="neu-surface w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-3xl border border-white/70 p-6 sm:p-8">
+      <div className="neu-surface w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-white/70 p-6 sm:p-8">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-800">My Documents</h2>
+          <h2 className="text-lg font-bold text-slate-800">{t("title")}</h2>
           <button
             className="text-slate-400 hover:text-slate-600"
             onClick={onClose}
             type="button"
           >
-            ✕
+            <X className="h-5 w-5" />
           </button>
         </div>
 
         {loading ? (
-          <p className="py-8 text-center text-sm text-slate-400">Loading…</p>
+          <p className="py-8 text-center text-sm text-slate-400">
+            {t("loading")}
+          </p>
         ) : docs.length === 0 ? (
           <p className="py-8 text-center text-sm text-slate-400">
-            No documents found for your wallet.
+            {t("empty")}
           </p>
         ) : (
           <div className="space-y-3">
-            {docs.map((doc) => (
-              <div
-                key={doc.id}
-                className="rounded-xl bg-slate-50 p-4 text-xs text-slate-700 space-y-1"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-800">
-                    Document
-                  </span>
-                  <span className="text-[10px] text-slate-400">
-                    {new Date(doc.created_at).toLocaleDateString()}
-                  </span>
+            {docs.map((doc) => {
+              const isSelected = selectedDoc?.id === doc.id;
+              const isBusy = isDecrypting && isSelected;
+              return (
+                <div
+                  key={doc.id}
+                  className={`rounded-xl p-4 space-y-2 transition-all ${
+                    isSelected
+                      ? "neu-pressed border-l-4 border-l-sky-500"
+                      : "neu-surface"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">
+                        {doc.file_name ?? t("documentTitle")}
+                      </p>
+                      <p className="text-[10px] font-mono text-slate-400">
+                        {formatAddress(doc.document_id)}
+                      </p>
+                      <p className="text-[10px] text-slate-400">
+                        {new Date(doc.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        className="rounded-lg bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700 transition hover:bg-sky-100 disabled:opacity-50"
+                        disabled={isBusy}
+                        onClick={() => handleView(doc)}
+                        type="button"
+                      >
+                        {isBusy ? t("decrypting") : t("view")}
+                      </button>
+                      <button
+                        className="rounded-lg bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                        disabled={isDecrypting}
+                        onClick={() => handleDownload(doc)}
+                        type="button"
+                      >
+                        {downloadingId === doc.id
+                          ? t("decrypting")
+                          : t("download")}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-xs text-slate-500 space-y-0.5">
+                    <p className="font-mono text-[11px]">
+                      {formatAddress(doc.document_id)}
+                    </p>
+                    <p>
+                      {t("uploadedBy")}:{" "}
+                      {doc.uploader_name || formatAddress(doc.uploader_wallet)}
+                    </p>
+                  </div>
+
+                  {/* Inline preview */}
+                  {isSelected && decryptedFile && (
+                    <div className="mt-2 pt-2 border-t border-slate-200/60">
+                      <FilePreview file={decryptedFile} />
+                    </div>
+                  )}
+                  {isSelected && (viewError || decryptError) && (
+                    <div className="mt-2 flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 border border-red-100">
+                      <svg
+                        className="h-4 w-4 shrink-0 text-red-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                        />
+                      </svg>
+                      <p className="text-xs text-red-600">
+                        {viewError || decryptError}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <span className="font-medium">ID:</span>{" "}
-                  <code className="break-all rounded bg-white px-1 py-0.5 text-[11px]">
-                    {doc.document_id}
-                  </code>
-                </div>
-                <div>
-                  <span className="font-medium">Uploaded by:</span>{" "}
-                  <code className="text-[11px]">
-                    {doc.uploader_wallet.slice(0, 8)}…
-                    {doc.uploader_wallet.slice(-6)}
-                  </code>
-                </div>
-              </div>
-            ))}
+              );
+            })}
             <p className="pt-2 text-center text-[10px] text-slate-400">
-              {docs.length} document{docs.length !== 1 ? "s" : ""} on record
+              {docs.length} document{docs.length !== 1 ? "s" : ""}
             </p>
           </div>
         )}
@@ -93,7 +263,7 @@ export function MyDocumentsModal({ onClose }: MyDocumentsModalProps) {
           onClick={onClose}
           type="button"
         >
-          Close
+          {t("close")}
         </button>
       </div>
     </div>

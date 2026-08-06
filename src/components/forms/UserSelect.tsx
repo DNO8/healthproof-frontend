@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-  listUsersByOnChainRole,
   type FilteredUserOption,
-} from "@/actions/list-users-by-onchain-role";
+  listUsersByOnChainRole,
+} from "@/actions/healthcare-networks/list-users-by-onchain-role";
 import type { UserRole } from "@/types/domain.types";
 
 export type UserSelectProps = {
@@ -13,6 +13,7 @@ export type UserSelectProps = {
   label: string;
   placeholder: string;
   filterRole?: UserRole;
+  filterRoles?: UserRole[];
   excludeWallet?: string;
 };
 
@@ -22,17 +23,20 @@ export function UserSelect({
   label,
   placeholder,
   filterRole,
+  filterRoles,
   excludeWallet,
 }: UserSelectProps) {
   const [users, setUsers] = useState<FilteredUserOption[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const roleFilter = filterRoles ?? filterRole;
+
   useEffect(() => {
     setLoading(true);
-    listUsersByOnChainRole(filterRole, excludeWallet)
+    listUsersByOnChainRole(roleFilter, excludeWallet)
       .then(setUsers)
       .finally(() => setLoading(false));
-  }, [filterRole, excludeWallet]);
+  }, [excludeWallet, roleFilter]);
 
   function formatLabel(u: FilteredUserOption) {
     const name = u.full_name || u.email || "Unknown";
@@ -55,9 +59,7 @@ export function UserSelect({
         onChange={(e) => onChange(e.target.value)}
         disabled={loading}
       >
-        <option value="">
-          {loading ? "Loading…" : placeholder}
-        </option>
+        <option value="">{loading ? "Loading…" : placeholder}</option>
         {users.map((u) => (
           <option key={u.wallet_address} value={u.wallet_address}>
             {formatLabel(u)}

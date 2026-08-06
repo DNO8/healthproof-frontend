@@ -44,6 +44,24 @@ export const POST_BLOCKCHAIN_ASSETS = [
   "/images/icons/post-blockchain/ficha-digital.png",
 ];
 
+// Demo mocks for the interactive hero
+export const DEMO_PATIENTS = [
+  { id: "P001", name: "Ana García", wallet: "0xA1b...3c4d" },
+  { id: "P002", name: "Carlos Ruiz", wallet: "0xB2c...4d5e" },
+  { id: "P003", name: "María López", wallet: "0xC3d...5e6f" },
+];
+
+export const DEMO_LABS = [
+  { id: "L001", name: "Lab Central", wallet: "0xD4e...6f7a" },
+  { id: "L002", name: "BioScan Labs", wallet: "0xE5f...7a8b" },
+  { id: "L003", name: "MediTest", wallet: "0xF6a...8b9c" },
+];
+
+export const DEMO_EXAM_TYPE = "Complete Blood Count";
+export const DEMO_ORDER_ID = "ORD-7462";
+export const DEMO_FILE_NAME = "result_cbc.pdf";
+export const DEMO_HASH = "0x7a3f...9e2d";
+
 export const HERO_CIRCLE_DECORS: DecorShape[] = [
   { className: "left-6 top-10", color: "#0EA5B7", size: 10 },
   { className: "left-10 top-16", color: "#38BDF8", size: 8 },
@@ -272,33 +290,43 @@ export const TEAM_MEMBERS: TeamMember[] = [
   {
     name: "Catalina Orellana",
     role: "CEO",
-    photo: "/images/team/catalina_orellana.png",
+    photo: "/images/team/catalina_orellana.webp",
     icons: ["/images/icons/herdao-icon.png"],
     linkedin: "https://www.linkedin.com/in/catalina-orellana-riveros/",
   },
   {
     name: "Pablo Guzmán",
     role: "CTO",
-    photo: "/images/team/pablo_guzman.png",
+    photo: "/images/team/pablo_guzman.webp",
     icons: ["/images/icons/team-one-icon.png", "/images/icons/pablo-icon.png"],
     linkedin: "https://www.linkedin.com/in/pablo-guzman-sanchez/",
   },
   {
     name: "Danilo Contreras",
     role: "CPO",
-    photo: "/images/team/danilo_contreras.png",
+    photo: "/images/team/danilo_contreras.webp",
     icons: ["/images/icons/ronin-icon.png", "/images/icons/stellar-icon.png"],
     linkedin: "https://www.linkedin.com/in/danilo-contreras-05597922b/",
   },
   {
     name: "Andrés Peña",
     role: "CMO",
-    photo: "/images/team/andres_peña.png",
+    photo: "/images/team/andres_peña.webp",
     icons: [
       "/images/icons/andres-icon.png",
       "/images/icons/chatterpay-icon.png",
     ],
     linkedin: "https://www.linkedin.com/in/andresanemic/",
+  },
+  {
+    name: "Marcos Vinicio Reyes",
+    role: "Asesor en Tecnología y Sistemas de Negocio",
+    photo: "/images/team/marcos_vini.webp",
+    icons: [
+      "/images/icons/stellar-icon.png",
+      "/images/icons/tupartnerti-icon.jpeg",
+    ],
+    linkedin: "https://www.linkedin.com/in/marcosvinicioreyes/",
   },
 ];
 

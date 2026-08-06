@@ -41,8 +41,9 @@ yarn-error.log*
 next-env.d.ts
 # skills
 .windsurf
-.windsurf/*
+.windsurf\*
 #documentacion
 docs
 docs/*
 db-file.md
+WEB_DESIGN.md

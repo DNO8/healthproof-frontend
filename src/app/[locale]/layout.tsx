@@ -1,6 +1,7 @@
+import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
-import { notFound } from "next/navigation";
+import { MobileSheet } from "@/components/layout/MobileSheet";
 import { Nav } from "@/components/layout/Nav";
 import { ToastProvider } from "@/components/providers/ToastProvider";
 import { routing } from "@/i18n/routing";
@@ -29,6 +30,7 @@ export default async function LocaleLayout({ children, params }: Props) {
       <Providers>
         <ToastProvider />
         <Nav />
+        <MobileSheet />
         {children}
       </Providers>
     </NextIntlClientProvider>

@@ -1,0 +1,176 @@
+{
+  "_nota": "Pacientes 100% ficticios. Inspirados en distribución epidemiológica pública (Encuesta Nacional de Salud / series DEIS-MINSAL: prevalencia diabetes ~12%, hipertensión ~27%, dislipidemia ~38% en adultos chilenos) para que la demo se sienta realista — NO son microdatos reales de DEIS (que no publica fichas individuales identificables). Shape de 'offchain'/'historialPrevio' idéntico al usado en mock-clinical-results.json para reusar health-score-engine.ts y agent.ts sin cambios.",
+  "pacientes": [
+    {
+      "patientId": "0xMockP01",
+      "nombre": "Camila Rojas Muñoz",
+      "edad": 34,
+      "sexo": "F",
+      "comuna": "Ñuñoa",
+      "offchain": {
+        "examType": "Glicemia en ayunas",
+        "loincCode": "1558-6",
+        "value": 88,
+        "unit": "mg/dL",
+        "referenceRange": "70-100"
+      },
+      "historialPrevio": [
+        { "date": "2026-05-01", "value": 93, "unit": "mg/dL" }
+      ]
+    },
+    {
+      "patientId": "0xMockP02",
+      "nombre": "Jorge Pérez Silva",
+      "edad": 61,
+      "sexo": "M",
+      "comuna": "Puente Alto",
+      "offchain": {
+        "examType": "Glicemia en ayunas",
+        "loincCode": "1558-6",
+        "value": 96,
+        "unit": "mg/dL",
+        "referenceRange": "70-100"
+      },
+      "historialPrevio": [
+        { "date": "2026-05-01", "value": 95, "unit": "mg/dL" }
+      ]
+    },
+    {
+      "patientId": "0xMockP03",
+      "nombre": "Valentina Torres Díaz",
+      "edad": 45,
+      "sexo": "F",
+      "comuna": "La Florida",
+      "offchain": {
+        "examType": "Glicemia en ayunas",
+        "loincCode": "1558-6",
+        "value": 122,
+        "unit": "mg/dL",
+        "referenceRange": "70-100"
+      },
+      "historialPrevio": [
+        { "date": "2026-02-01", "value": 101, "unit": "mg/dL" },
+        { "date": "2026-05-01", "value": 112, "unit": "mg/dL" }
+      ]
+    },
+    {
+      "patientId": "0xMockP04",
+      "nombre": "Manuel Contreras Vidal",
+      "edad": 67,
+      "sexo": "M",
+      "comuna": "Maipú",
+      "offchain": {
+        "examType": "Colesterol LDL",
+        "loincCode": "13457-7",
+        "value": 205,
+        "unit": "mg/dL",
+        "referenceRange": "<100 deseable, 100-129 casi óptimo, >=190 muy alto"
+      },
+      "historialPrevio": [
+        { "date": "2026-04-01", "value": 188, "unit": "mg/dL" }
+      ]
+    },
+    {
+      "patientId": "0xMockP05",
+      "nombre": "Francisca Espinoza Leiva",
+      "edad": 29,
+      "sexo": "F",
+      "comuna": "Providencia",
+      "offchain": {
+        "examType": "Colesterol LDL",
+        "loincCode": "13457-7",
+        "value": 92,
+        "unit": "mg/dL",
+        "referenceRange": "<100 deseable, 100-129 casi óptimo, >=190 muy alto"
+      },
+      "historialPrevio": [
+        { "date": "2026-03-01", "value": 98, "unit": "mg/dL" }
+      ]
+    },
+    {
+      "patientId": "0xMockP06",
+      "nombre": "Ricardo Fuentes Bravo",
+      "edad": 54,
+      "sexo": "M",
+      "comuna": "San Bernardo",
+      "offchain": {
+        "examType": "Glicemia en ayunas",
+        "loincCode": "1558-6",
+        "value": 131,
+        "unit": "mg/dL",
+        "referenceRange": "70-100"
+      },
+      "historialPrevio": [
+        { "date": "2026-01-01", "value": 108, "unit": "mg/dL" },
+        { "date": "2026-04-01", "value": 120, "unit": "mg/dL" }
+      ]
+    },
+    {
+      "patientId": "0xMockP07",
+      "nombre": "Daniela Morales Aguilera",
+      "edad": 40,
+      "sexo": "F",
+      "comuna": "Peñalolén",
+      "offchain": {
+        "examType": "Colesterol LDL",
+        "loincCode": "13457-7",
+        "value": 145,
+        "unit": "mg/dL",
+        "referenceRange": "<100 deseable, 100-129 casi óptimo, >=190 muy alto"
+      },
+      "historialPrevio": [
+        { "date": "2026-03-15", "value": 150, "unit": "mg/dL" }
+      ]
+    },
+    {
+      "patientId": "0xMockP08",
+      "nombre": "Sergio Navarro Cárdenas",
+      "edad": 72,
+      "sexo": "M",
+      "comuna": "Independencia",
+      "offchain": {
+        "examType": "Glicemia en ayunas",
+        "loincCode": "1558-6",
+        "value": 140,
+        "unit": "mg/dL",
+        "referenceRange": "70-100"
+      },
+      "historialPrevio": []
+    },
+    {
+      "patientId": "0xMockP09",
+      "nombre": "Antonia Reyes Campos",
+      "edad": 51,
+      "sexo": "F",
+      "comuna": "Recoleta",
+      "offchain": {
+        "examType": "Colesterol LDL",
+        "loincCode": "13457-7",
+        "value": 178,
+        "unit": "mg/dL",
+        "referenceRange": "<100 deseable, 100-129 casi óptimo, >=190 muy alto"
+      },
+      "historialPrevio": [
+        { "date": "2026-02-10", "value": 165, "unit": "mg/dL" },
+        { "date": "2026-05-10", "value": 172, "unit": "mg/dL" }
+      ]
+    },
+    {
+      "patientId": "0xMockP10",
+      "nombre": "Cristóbal Silva Poblete",
+      "edad": 38,
+      "sexo": "M",
+      "comuna": "Estación Central",
+      "offchain": {
+        "examType": "Glicemia en ayunas",
+        "loincCode": "1558-6",
+        "value": 99,
+        "unit": "mg/dL",
+        "referenceRange": "70-100"
+      },
+      "historialPrevio": [
+        { "date": "2026-04-01", "value": 99, "unit": "mg/dL" }
+      ]
+    }
+  ]
+}

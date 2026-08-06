@@ -1,17 +1,43 @@
 "use client";
 
+import { useWallets } from "@privy-io/react-auth";
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { sileo } from "sileo";
-import { useTranslations } from "next-intl";
-import { uploadHybridEncryptedFile } from "@/services/storage/upload";
-import { getKeyPair } from "@/services/encryption/keystore";
-import { exportPublicKey } from "@/services/encryption/ecdh";
-import { getUserPublicKey } from "@/actions/get-user-public-key";
-import { saveDocumentSecret } from "@/actions/save-document-secret";
-import { getDbUser } from "@/actions/get-user";
-import { registerDocumentOnChain } from "@/actions/register-document-onchain";
+import { createWalletClient, custom, keccak256, toHex } from "viem";
+import { getDbUser } from "@/actions/auth/get-user";
+import { getUserPublicKey } from "@/actions/auth/get-user-public-key";
+import { registerDocumentOnChain } from "@/actions/documents/register-document-onchain";
+import { saveDocumentSecret } from "@/actions/documents/save-document-secret";
 import { UserSelect } from "@/components/forms/UserSelect";
+import HealthProofGatewayAbi from "@/lib/abis/HealthProofGateway.json";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "@/lib/contracts";
+import {
+  DOC_TYPE,
+  NO_CLASSIFICATION,
+  NO_STANDARD,
+} from "@/lib/medical-constants";
+import { signMetaTransaction } from "@/lib/metatx/forwarder";
+import { isPdfFile } from "@/lib/validate-file";
+import { exportPublicKey } from "@/services/encryption/ecdh";
+import { getKeyPair } from "@/services/encryption/keystore";
+import { uploadHybridEncryptedFile } from "@/services/storage/upload";
 import { useKeyConflictStore } from "@/state/key-conflict.store";
+
+const ZERO_BYTES32 =
+  "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
+
+async function getViemWalletClient(wallet: {
+  getEthereumProvider: () => Promise<unknown>;
+}) {
+  const provider = (await wallet.getEthereumProvider()) as {
+    request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  };
+  return createWalletClient({
+    chain: HEALTHPROOF_CHAIN,
+    transport: custom(provider),
+  });
+}
 
 type UploadResultsModalProps = {
   onClose: () => void;
@@ -49,6 +75,7 @@ export function UploadResultsModal({
   labId,
 }: UploadResultsModalProps) {
   const t = useTranslations("uploadModal");
+  const { wallets } = useWallets();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [patientId, setPatientId] = useState("");
@@ -75,8 +102,18 @@ export function UploadResultsModal({
     dragCounter.current = 0;
     setDragging(false);
     const dropped = e.dataTransfer.files?.[0];
-    if (dropped) setFile(dropped);
+    if (!dropped) return;
+    if (!isPdfFile(dropped)) {
+      sileo.error({
+        title: t("uploadFailed"),
+        description: t("invalidFileType"),
+      });
+      return;
+    }
+    setFile(dropped);
   }
+
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
   async function handleUpload() {
     if (!file) return;
@@ -90,11 +127,37 @@ export function UploadResultsModal({
       return;
     }
 
+    if (!isPdfFile(file)) {
+      sileo.error({
+        title: t("uploadFailed"),
+        description: t("invalidFileType"),
+      });
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      sileo.error({
+        title: t("uploadFailed"),
+        description: t("fileTooLarge"),
+      });
+      return;
+    }
+
+    // Hard guard: verify encryption key backup exists
+    const { checkKeyBackup } = await import("@/actions/auth/check-key-backup");
+    const backupResult = await checkKeyBackup({ userId: labId });
+    if (!backupResult.success || !backupResult.data?.hasBackup) {
+      sileo.error({
+        title: t("backupRequired"),
+        description: t("backupRequiredDesc"),
+      });
+      return;
+    }
+
     setUploading(true);
     try {
       // Get lab's key pair from IndexedDB
       const labKeys = await getKeyPair(labId);
-      if (!labKeys) {
+      if (!labKeys?.publicKey || !labKeys?.privateKey) {
         throw new Error(t("noLabKeys"));
       }
 
@@ -107,25 +170,31 @@ export function UploadResultsModal({
       // Get lab's own public key for self-wrapping
       const labPubKeyJwk = await exportPublicKey(labKeys.publicKey);
 
+      // Resolve wallet addresses for DB storage
+      // patientId is already a wallet address from UserSelect
+      const labResult = await getDbUser({ idOrWallet: labId });
+      const labWallet =
+        labResult.success && labResult.data && labResult.data.wallet_address
+          ? labResult.data.wallet_address
+          : "";
+      if (!labWallet) throw new Error("NoLabWallet");
+      const patientWallet = trimmedPatientId;
+
       // Hybrid encrypt: AES-GCM + wrap key for lab & patient
       const uploadResult = await uploadHybridEncryptedFile(
         file,
         labKeys.privateKey,
+        labKeys.publicKey,
         [
-          { userId: labId, publicKeyJwk: labPubKeyJwk },
-          { userId: trimmedPatientId, publicKeyJwk: patientPubKeyJwk },
+          { wallet: labWallet, publicKeyJwk: labPubKeyJwk },
+          { wallet: trimmedPatientId, publicKeyJwk: patientPubKeyJwk },
         ],
       );
-
-      // Resolve wallet addresses for DB storage
-      // patientId is already a wallet address from UserSelect
-      const labUser = await getDbUser(labId);
-      const labWallet = labUser?.wallet_address ?? "";
-      const patientWallet = trimmedPatientId;
 
       // Save encryption secrets to document_secrets table
       await saveDocumentSecret({
         document_id: uploadResult.ipfs.cid,
+        file_name: file.name,
         uploader_wallet: labWallet,
         patient_wallet: patientWallet,
         iv: uploadResult.iv,
@@ -133,11 +202,42 @@ export function UploadResultsModal({
         uploader_public_key: labPubKeyJwk,
       });
 
+      // Sign meta-tx for on-chain document registration via Gateway
+      const activeWallet = wallets.find((w) => w.address);
+      if (!activeWallet) throw new Error("No active wallet");
+
+      const viemWallet = await getViemWalletClient(activeWallet);
+      const documentId = keccak256(toHex(uploadResult.ipfs.cid));
+      const clinicalHash = keccak256(toHex(uploadResult.fileHash));
+
+      const registerRequest = await signMetaTransaction(
+        viemWallet,
+        CONTRACT_ADDRESSES.HealthProofGateway as `0x${string}`,
+        "registerMedicalDocument",
+        [
+          documentId,
+          patientWallet as `0x${string}`,
+          "0x0000000000000000000000000000000000000000" as `0x${string}`, // institution
+          ZERO_BYTES32, // documentType
+          clinicalHash,
+          ZERO_BYTES32, // episodeId
+          uploadResult.ipfs.cid,
+          ZERO_BYTES32, // standard
+          ZERO_BYTES32, // classification
+        ],
+        HealthProofGatewayAbi,
+      );
+
       // Register document on-chain
       const onChainResult = await registerDocumentOnChain({
+        request: registerRequest,
         cid: uploadResult.ipfs.cid,
         fileHash: uploadResult.fileHash,
         patientWallet: patientWallet,
+        documentType: DOC_TYPE.MEDICAL_RESULT,
+        standard: NO_STANDARD,
+        classification: NO_CLASSIFICATION,
+        episodeId: ZERO_BYTES32,
       });
       if ("error" in onChainResult) {
         console.warn(
@@ -246,9 +346,19 @@ export function UploadResultsModal({
                 )}
               </button>
               <input
-                accept="*/*"
+                accept=".pdf,application/pdf"
                 className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  if (f && !isPdfFile(f)) {
+                    sileo.error({
+                      title: t("uploadFailed"),
+                      description: t("invalidFileType"),
+                    });
+                    return;
+                  }
+                  setFile(f);
+                }}
                 ref={fileRef}
                 type="file"
               />

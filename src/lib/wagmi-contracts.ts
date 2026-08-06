@@ -1,13 +1,26 @@
-import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "./contracts";
+import GuardianRegistryArtifact from "./abis/GuardianRegistry.json";
 
 import IdentityRegistryAbi from "./abis/IdentityRegistry.json";
-import GuardianRegistryAbi from "./abis/GuardianRegistry.json";
-import PermissionManagerAbi from "./abis/PermissionManager.json";
+import { CONTRACT_ADDRESSES, HEALTHPROOF_CHAIN } from "./contracts";
+
+const GuardianRegistryAbi = GuardianRegistryArtifact.abi;
+
+import PermissionManagerArtifact from "./abis/PermissionManager.json";
+
+const PermissionManagerAbi = PermissionManagerArtifact.abi;
+
+import AuditTrailArtifact from "./abis/AuditTrail.json";
 import ClinicalEpisodeRegistryAbi from "./abis/ClinicalEpisodeRegistry.json";
-import MedicalOrderRegistryAbi from "./abis/MedicalOrderRegistry.json";
-import MedicalDocumentRegistryAbi from "./abis/MedicalDocumentRegistry.json";
 import HealthcareNetworkRegistryAbi from "./abis/HealthcareNetworkRegistry.json";
-import AuditTrailAbi from "./abis/AuditTrail.json";
+import MedicalDocumentRegistryAbi from "./abis/MedicalDocumentRegistry.json";
+import MedicalOrderRegistryAbi from "./abis/MedicalOrderRegistry.json";
+
+const AuditTrailAbi = AuditTrailArtifact.abi;
+
+import EmergencyAccessManagerArtifact from "./abis/EmergencyAccessManager.json";
+
+const EmergencyAccessManagerAbi = EmergencyAccessManagerArtifact.abi;
+
 import HealthProofGatewayAbi from "./abis/HealthProofGateway.json";
 import HealthProofKernelAbi from "./abis/HealthProofKernel.json";
 import HealthProofProtocolAbi from "./abis/HealthProofProtocol.json";
@@ -18,10 +31,7 @@ type ContractConfig = {
   chainId: number;
 };
 
-function cfg(
-  address: string,
-  abi: unknown[],
-): ContractConfig {
+function cfg(address: string, abi: unknown[]): ContractConfig {
   return {
     address: address as `0x${string}`,
     abi: abi as readonly Record<string, unknown>[],
@@ -68,6 +78,11 @@ export const auditTrailConfig = cfg(
   CONTRACT_ADDRESSES.AuditTrail,
   AuditTrailAbi,
 );
+
+export const emergencyAccessManagerConfig =
+  CONTRACT_ADDRESSES.EmergencyAccessManager
+    ? cfg(CONTRACT_ADDRESSES.EmergencyAccessManager, EmergencyAccessManagerAbi)
+    : undefined;
 
 export const healthProofGatewayConfig = cfg(
   CONTRACT_ADDRESSES.HealthProofGateway,

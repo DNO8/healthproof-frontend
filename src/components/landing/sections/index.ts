@@ -1,10 +1,14 @@
 export { BeforeAfterSection } from "./BeforeAfterSection";
+export { DemoVideoSection } from "./DemoVideoSection";
 export { FinalCtaSection } from "./FinalCtaSection";
 export { HeroCarouselSection } from "./HeroCarouselSection";
 export { Icd11Section } from "./Icd11Section";
 export { RegulatoryUrgencySection } from "./RegulatoryUrgencySection";
 export { SolutionSection } from "./SolutionSection";
 export { TeamSection } from "./TeamSection";
+export { TechDecentralizedNetworkSection } from "./TechDecentralizedNetworkSection";
+export { TechEncryptionSection } from "./TechEncryptionSection";
 export { TechnologySection } from "./TechnologySection";
+export { TechTraceabilitySection } from "./TechTraceabilitySection";
 export { UseCasesSection } from "./UseCasesSection";
 export { WorkflowSection } from "./WorkflowSection";
