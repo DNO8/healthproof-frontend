@@ -507,8 +507,6 @@
 				"empty": "You need at least one previous EMPA on record to compare over time.",
 				"current": "New EMPA",
 				"currentLabel": "The highlighted point is the EMPA that HealthProof Layer 1 just recorded; the others are this same patient's previous check-ups."
-<<<<<<< HEAD
-=======
 			},
 			"agent": {
 				"demoLabel": "Demo mode · choose which clinical result came in",
@@ -554,7 +552,6 @@
 				"shareDeclined": "Understood. Your analysis stays private — you can share it whenever you want.",
 				"restart": "Start over",
 				"rankingIntro": "Prevent IA is also watching over your patients."
->>>>>>> feature/prevent-ia-integration
 			}
 		},
 		"permissions": {

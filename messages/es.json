@@ -507,8 +507,6 @@
 				"empty": "Necesitás al menos un EMPA previo registrado para comparar en el tiempo.",
 				"current": "Nuevo EMPA",
 				"currentLabel": "El punto resaltado es el EMPA que HealthProof Layer 1 acaba de registrar; los demás son controles previos de este mismo paciente."
-<<<<<<< HEAD
-=======
 			},
 			"agent": {
 				"demoLabel": "Modo demo · elegí qué resultado clínico llegó",
@@ -554,7 +552,6 @@
 				"shareDeclined": "Entendido. Tu análisis queda guardado de forma privada — podés compartirlo cuando quieras.",
 				"restart": "Volver a empezar",
 				"rankingIntro": "Prevent IA también está acompañando a tus pacientes."
->>>>>>> feature/prevent-ia-integration
 			}
 		},
 		"permissions": {
