@@ -500,6 +500,13 @@
 				},
 				"patientNotification": "Notificación al paciente",
 				"followUpIn": "Seguimiento sugerido en {when}"
+			},
+			"longitudinal": {
+				"title": "Comparación longitudinal (EMPA)",
+				"subtitle": "{count} controles",
+				"empty": "Necesitás al menos un EMPA previo registrado para comparar en el tiempo.",
+				"current": "Nuevo EMPA",
+				"currentLabel": "El punto resaltado es el EMPA que HealthProof Layer 1 acaba de registrar; los demás son controles previos de este mismo paciente."
 			}
 		},
 		"permissions": {

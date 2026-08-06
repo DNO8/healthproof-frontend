@@ -500,6 +500,13 @@
 				},
 				"patientNotification": "Patient notification",
 				"followUpIn": "Follow-up suggested in {when}"
+			},
+			"longitudinal": {
+				"title": "Longitudinal comparison (EMPA)",
+				"subtitle": "{count} check-ups",
+				"empty": "You need at least one previous EMPA on record to compare over time.",
+				"current": "New EMPA",
+				"currentLabel": "The highlighted point is the EMPA that HealthProof Layer 1 just recorded; the others are this same patient's previous check-ups."
 			}
 		},
 		"permissions": {

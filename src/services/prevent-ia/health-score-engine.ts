@@ -34,6 +34,17 @@ export interface HealthScoreBreakdown {
   historyMissing: boolean;
 }
 
+/** Un punto de la serie histórica: un EMPA (control) de este paciente. */
+export interface ScoreTimelinePoint {
+  /** ISO date del control, o `null` para el EMPA actual (recién registrado en HealthProof Layer 1). */
+  date: string | null;
+  value: number;
+  unit: string;
+  healthScore: number;
+  riskLevel: RiskLevel;
+  isCurrent: boolean;
+}
+
 function sortHistoryAscending(
   history: PatientHistoryEntry[],
 ): PatientHistoryEntry[] {
@@ -194,4 +205,52 @@ function buildScoreExplanation(args: {
 
 function capitalize(s: string): string {
   return s.length === 0 ? s : s[0].toUpperCase() + s.slice(1);
+}
+
+/**
+ * Reconstruye la serie longitudinal de Health Score de este paciente: un
+ * punto por cada EMPA (control) previo + el EMPA actual (recién registrado
+ * en HealthProof Layer 1). Cada punto histórico se calcula con solo la
+ * información disponible hasta ese momento (nunca "ve" el futuro), para que
+ * la comparación longitudinal sea trazable EMPA a EMPA, igual que el score
+ * puntual.
+ */
+export function buildScoreTimeline(
+  current: ClinicalResult,
+  history: PatientHistoryEntry[],
+  currentDate: string | null = null,
+): ScoreTimelinePoint[] {
+  const historyAsc = sortHistoryAscending(history);
+
+  const historicalPoints: ScoreTimelinePoint[] = historyAsc.map(
+    (point, index) => {
+      const priorHistory = historyAsc.slice(0, index);
+      const pointAsResult: ClinicalResult = {
+        ...current,
+        value: point.value,
+        unit: point.unit,
+      };
+      const breakdown = calculateHealthScore(pointAsResult, priorHistory);
+      return {
+        date: point.date,
+        value: point.value,
+        unit: point.unit,
+        healthScore: breakdown.healthScore,
+        riskLevel: breakdown.riskLevel,
+        isCurrent: false,
+      };
+    },
+  );
+
+  const currentBreakdown = calculateHealthScore(current, history);
+  const currentPoint: ScoreTimelinePoint = {
+    date: currentDate,
+    value: current.value,
+    unit: current.unit,
+    healthScore: currentBreakdown.healthScore,
+    riskLevel: currentBreakdown.riskLevel,
+    isCurrent: true,
+  };
+
+  return [...historicalPoints, currentPoint];
 }

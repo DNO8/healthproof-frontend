@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { ScenarioKey } from "@/actions/prevent-ia/analyze-document";
 import { ClinicalSummaryPanel } from "@/components/prevent-ia/ClinicalSummaryPanel";
 import { DemoDataBanner } from "@/components/prevent-ia/DemoDataBanner";
+import { LongitudinalComparisonChart } from "@/components/prevent-ia/LongitudinalComparisonChart";
 import { PatientPanel } from "@/components/prevent-ia/PatientPanel";
 import { PatientRankingTable } from "@/components/prevent-ia/PatientRankingTable";
 import { ScenarioSwitcher } from "@/components/prevent-ia/ScenarioSwitcher";
@@ -94,6 +95,9 @@ export default function PreventIaPage() {
                   current={data.current}
                   history={data.history}
                 />
+                <div className="sm:col-span-2">
+                  <LongitudinalComparisonChart points={data.scoreTimeline} />
+                </div>
               </div>
             </div>
           )}

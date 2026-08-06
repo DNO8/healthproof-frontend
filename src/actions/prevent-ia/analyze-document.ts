@@ -16,7 +16,11 @@
 import type { AuthContext } from "@/lib/auth/with-auth";
 import { withAuth } from "@/lib/auth/with-auth";
 import { runPreventIaAgent } from "@/services/prevent-ia/agent";
-import { calculateHealthScore } from "@/services/prevent-ia/health-score-engine";
+import {
+  buildScoreTimeline,
+  calculateHealthScore,
+  type ScoreTimelinePoint,
+} from "@/services/prevent-ia/health-score-engine";
 import mockScenarios from "@/services/prevent-ia/mock/mock-clinical-results.json";
 import type {
   ClinicalResult,
@@ -46,6 +50,8 @@ export interface AnalyzeDocumentResponse {
   current: ClinicalResult;
   history: PatientHistoryEntry[];
   result: PreventIaResult;
+  /** Serie de Health Score por EMPA (controles previos + el EMPA actual) — ver `buildScoreTimeline`. */
+  scoreTimeline: ScoreTimelinePoint[];
 }
 
 async function analyzeDocumentHandler(
@@ -63,12 +69,18 @@ async function analyzeDocumentHandler(
     payload.historialPrevio,
   );
   const result = await runPreventIaAgent(payload, breakdown);
+  const scoreTimeline = buildScoreTimeline(
+    payload.offchain,
+    payload.historialPrevio,
+    payload.onchain.createdAt,
+  );
 
   return {
     scenario: scenarioKey,
     current: payload.offchain,
     history: payload.historialPrevio,
     result,
+    scoreTimeline,
   };
 }
 

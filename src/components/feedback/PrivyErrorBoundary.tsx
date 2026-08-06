@@ -100,7 +100,9 @@ export function PrivyErrorBoundary({ children }: { children: ReactNode }) {
   const t = useTranslations("privyError");
   const messages: ErrorBoundaryMessages = {
     privyTitle: t("privyTitle"),
-    privyDesc: t("privyDesc"),
+    // t.raw() skips ICU parsing: "privyDesc" contains a literal "{{origin}}"
+    // placeholder that this component splits and replaces manually below.
+    privyDesc: t.raw("privyDesc"),
     privyStepsTitle: t("privyStepsTitle"),
     step1: t("step1"),
     step2: t("step2"),
