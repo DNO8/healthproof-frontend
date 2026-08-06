@@ -1,6 +1,7 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+import Script from "next/script";
 
 import "./globals.css";
 
@@ -25,7 +26,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script
+        <Script
+          id="privy-bug-suppressor"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
 (function(){

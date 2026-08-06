@@ -1,5 +1,6 @@
 export const env = {
   OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? "",
+  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? "",
   PRIVY_APP_ID: process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? "",
   PRIVY_APP_SECRET: process.env.PRIVY_APP_SECRET ?? "",
   SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",

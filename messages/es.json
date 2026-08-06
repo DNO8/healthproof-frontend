@@ -419,6 +419,7 @@
 			"orders": "Órdenes",
 			"episodes": "Episodios",
 			"myOrders": "Mis Órdenes",
+			"preventIa": "Prevent IA",
 			"labOrders": "Órdenes de Lab",
 			"upload": "Subir",
 			"scan": "Escanear",
@@ -448,6 +449,112 @@
 				"admin": "Como administrador, gestionas la configuración del protocolo, redes y módulos del kernel.",
 				"institution": "Como institución, gestionas redes de salud y la verificación de miembros.",
 				"certifier": "Como certificador, registras y verificas entidades de salud on-chain."
+			}
+		},
+		"preventIa": {
+			"title": "Prevent IA",
+			"subtitle": "Agente de prevención clínica: detecta riesgo temprano a partir de tus resultados y sugiere seguimiento — no reemplaza el criterio médico.",
+			"loading": "Cargando…",
+			"myAnalysisTitle": "Mi análisis",
+			"healthScore": "Health Score",
+			"riskLevel": {
+				"bajo": "Riesgo bajo",
+				"moderado": "Riesgo moderado",
+				"alto": "Riesgo alto"
+			},
+			"patientPanelTitle": "Para el paciente",
+			"followUpSuggested": "Seguimiento sugerido",
+			"followUpRepeatIn": "repetir en {when}",
+			"clinicalDisclaimer": "Esto no es un diagnóstico médico. Prevent IA apoya la decisión clínica, no la reemplaza.",
+			"clinicalSummaryTitle": "Resumen clínico (médico)",
+			"exam": "Examen",
+			"currentValue": "Valor actual",
+			"referenceRange": "Ref",
+			"patientHistory": "Historial del paciente",
+			"historyMissing": "Sin historial previo registrado para este paciente.",
+			"demoDataDisclaimer": "Todos los datos de esta demo son ficticios. El universo de pacientes está inspirado en estadísticas públicas de salud (DEIS/MINSAL), pero ninguna ficha corresponde a una persona real.",
+			"scenarios": {
+				"escenario_riesgo_bajo": {
+					"label": "Riesgo bajo",
+					"hint": "Glicemia estable"
+				},
+				"escenario_riesgo_en_ascenso": {
+					"label": "Riesgo en ascenso",
+					"hint": "Glicemia subiendo"
+				},
+				"escenario_riesgo_alto": {
+					"label": "Riesgo alto",
+					"hint": "LDL muy alto"
+				}
+			},
+			"ranking": {
+				"title": "Ranking de pacientes",
+				"summary": "{count} pacientes, ranqueados de 0 a 100 por Health Score (más riesgo primero). {followUp} requieren seguimiento preventivo activo.",
+				"loading": "Cargando…",
+				"empty": "Sin pacientes para mostrar.",
+				"patientMeta": "{edad} años · {sexo} · {comuna}",
+				"risk": {
+					"bajo": "bajo",
+					"moderado": "moderado",
+					"alto": "alto"
+				},
+				"patientNotification": "Notificación al paciente",
+				"followUpIn": "Seguimiento sugerido en {when}"
+			},
+			"longitudinal": {
+				"title": "Comparación longitudinal (EMPA)",
+				"subtitle": "{count} controles",
+				"empty": "Necesitás al menos un EMPA previo registrado para comparar en el tiempo.",
+				"current": "Nuevo EMPA",
+				"currentLabel": "El punto resaltado es el EMPA que HealthProof Layer 1 acaba de registrar; los demás son controles previos de este mismo paciente."
+<<<<<<< HEAD
+=======
+			},
+			"agent": {
+				"demoLabel": "Modo demo · elegí qué resultado clínico llegó",
+				"greetingNamed": "Bienvenido nuevamente, {name}.",
+				"greetingGeneric": "Bienvenido nuevamente.",
+				"greetingBody": "Recibimos nuevos resultados clínicos de tu último control. Encontramos algunos cambios que vale la pena revisar.",
+				"startButton": "Comenzar",
+				"wakingUp": "Prevent IA está despertando…",
+				"analyzingNamed": "Hola, {name}.",
+				"analyzingGeneric": "Hola.",
+				"analyzingBody": "He revisado tus resultados. Detecté algunos cambios que vale la pena revisar. Necesitaré hacerte algunas preguntas para entregar un análisis más preciso.",
+				"continueButton": "Continuar",
+				"consentAgeQuestion": "¿Me autorizas a utilizar tu edad para este análisis?",
+				"accept": "Aceptar",
+				"cancel": "Cancelar",
+				"smokingQuestion": "¿Fumas?",
+				"yes": "Sí",
+				"no": "No",
+				"familyDiabetesQuestion": "¿Existe diabetes en tu familia?",
+				"thanksMessage": "Gracias. Ya tengo suficiente información.",
+				"calculatingMessage": "Estoy calculando tu Estado Preventivo…",
+				"resultTitle": "Estado Preventivo",
+				"resultBrand": "HealthProof Prevent Score",
+				"resultNarrative": {
+					"bajo": "Estás saludable. Seguí así.",
+					"moderado": "Saludable, pero existe un riesgo que vale la pena vigilar.",
+					"alto": "Es importante que converses estos resultados con tu médico pronto."
+				},
+				"viewClinicalDetail": "Ver detalle clínico (para tu médico)",
+				"hideClinicalDetail": "Ocultar detalle clínico",
+				"recommendationsTitle": "Estas acciones pueden mejorar tu Score.",
+				"shareQuestion": "¿Deseas compartir este análisis con un profesional de salud?",
+				"shareYes": "Sí, compartir",
+				"shareNo": "No, gracias",
+				"shareSelectTitle": "Selecciona con quién compartir tu análisis",
+				"shareOptions": {
+					"cesfam": "CESFAM",
+					"hospital": "Hospital",
+					"clinica": "Clínica",
+					"medico": "Médico"
+				},
+				"shareConfirmed": "Listo. Tu análisis fue compartido con {target}. Un profesional podrá revisarlo pronto.",
+				"shareDeclined": "Entendido. Tu análisis queda guardado de forma privada — podés compartirlo cuando quieras.",
+				"restart": "Volver a empezar",
+				"rankingIntro": "Prevent IA también está acompañando a tus pacientes."
+>>>>>>> feature/prevent-ia-integration
 			}
 		},
 		"permissions": {

@@ -419,6 +419,7 @@
 			"orders": "Orders",
 			"episodes": "Episodes",
 			"myOrders": "My Orders",
+			"preventIa": "Prevent IA",
 			"labOrders": "Lab Orders",
 			"upload": "Upload",
 			"scan": "Scan",
@@ -448,6 +449,112 @@
 				"admin": "As an admin, you manage protocol settings, networks, and kernel modules.",
 				"institution": "As an institution, you manage healthcare networks and member verification.",
 				"certifier": "As a certifier, you register and verify healthcare entities on-chain."
+			}
+		},
+		"preventIa": {
+			"title": "Prevent IA",
+			"subtitle": "Preventive clinical agent: detects early risk from your results and suggests follow-up — it does not replace medical judgment.",
+			"loading": "Loading…",
+			"myAnalysisTitle": "My analysis",
+			"healthScore": "Health Score",
+			"riskLevel": {
+				"bajo": "Low risk",
+				"moderado": "Moderate risk",
+				"alto": "High risk"
+			},
+			"patientPanelTitle": "For the patient",
+			"followUpSuggested": "Suggested follow-up",
+			"followUpRepeatIn": "repeat in {when}",
+			"clinicalDisclaimer": "This is not a medical diagnosis. Prevent IA supports clinical decisions, it does not replace them.",
+			"clinicalSummaryTitle": "Clinical summary (doctor)",
+			"exam": "Exam",
+			"currentValue": "Current value",
+			"referenceRange": "Ref",
+			"patientHistory": "Patient history",
+			"historyMissing": "No previous history recorded for this patient.",
+			"demoDataDisclaimer": "All data in this demo is fictional. The patient universe is inspired by public health statistics (DEIS/MINSAL), but no record corresponds to a real person.",
+			"scenarios": {
+				"escenario_riesgo_bajo": {
+					"label": "Low risk",
+					"hint": "Stable glucose"
+				},
+				"escenario_riesgo_en_ascenso": {
+					"label": "Rising risk",
+					"hint": "Rising glucose"
+				},
+				"escenario_riesgo_alto": {
+					"label": "High risk",
+					"hint": "Very high LDL"
+				}
+			},
+			"ranking": {
+				"title": "Patient ranking",
+				"summary": "{count} patients, ranked 0 to 100 by Health Score (highest risk first). {followUp} require active preventive follow-up.",
+				"loading": "Loading…",
+				"empty": "No patients to show.",
+				"patientMeta": "{edad} years · {sexo} · {comuna}",
+				"risk": {
+					"bajo": "low",
+					"moderado": "moderate",
+					"alto": "high"
+				},
+				"patientNotification": "Patient notification",
+				"followUpIn": "Follow-up suggested in {when}"
+			},
+			"longitudinal": {
+				"title": "Longitudinal comparison (EMPA)",
+				"subtitle": "{count} check-ups",
+				"empty": "You need at least one previous EMPA on record to compare over time.",
+				"current": "New EMPA",
+				"currentLabel": "The highlighted point is the EMPA that HealthProof Layer 1 just recorded; the others are this same patient's previous check-ups."
+<<<<<<< HEAD
+=======
+			},
+			"agent": {
+				"demoLabel": "Demo mode · choose which clinical result came in",
+				"greetingNamed": "Welcome back, {name}.",
+				"greetingGeneric": "Welcome back.",
+				"greetingBody": "We received new clinical results from your last check-up. We found some changes worth reviewing.",
+				"startButton": "Get started",
+				"wakingUp": "Prevent IA is waking up…",
+				"analyzingNamed": "Hi, {name}.",
+				"analyzingGeneric": "Hi.",
+				"analyzingBody": "I've reviewed your results. I detected some changes worth reviewing. I'll need to ask you a few questions to give you a more accurate analysis.",
+				"continueButton": "Continue",
+				"consentAgeQuestion": "Do you authorize me to use your age for this analysis?",
+				"accept": "Accept",
+				"cancel": "Cancel",
+				"smokingQuestion": "Do you smoke?",
+				"yes": "Yes",
+				"no": "No",
+				"familyDiabetesQuestion": "Is there a family history of diabetes?",
+				"thanksMessage": "Thank you. I now have enough information.",
+				"calculatingMessage": "I'm calculating your Preventive Status…",
+				"resultTitle": "Preventive Status",
+				"resultBrand": "HealthProof Prevent Score",
+				"resultNarrative": {
+					"bajo": "You're healthy. Keep it up.",
+					"moderado": "Healthy, but there's a risk worth keeping an eye on.",
+					"alto": "It's important to discuss these results with your doctor soon."
+				},
+				"viewClinicalDetail": "View clinical detail (for your doctor)",
+				"hideClinicalDetail": "Hide clinical detail",
+				"recommendationsTitle": "These actions can improve your Score.",
+				"shareQuestion": "Would you like to share this analysis with a health professional?",
+				"shareYes": "Yes, share it",
+				"shareNo": "No, thanks",
+				"shareSelectTitle": "Choose who to share your analysis with",
+				"shareOptions": {
+					"cesfam": "CESFAM",
+					"hospital": "Hospital",
+					"clinica": "Clinic",
+					"medico": "Doctor"
+				},
+				"shareConfirmed": "Done. Your analysis was shared with {target}. A professional will be able to review it soon.",
+				"shareDeclined": "Understood. Your analysis stays private — you can share it whenever you want.",
+				"restart": "Start over",
+				"rankingIntro": "Prevent IA is also watching over your patients."
+>>>>>>> feature/prevent-ia-integration
 			}
 		},
 		"permissions": {

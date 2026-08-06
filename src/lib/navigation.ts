@@ -22,6 +22,12 @@ export const LINKS_BY_ROLE: Record<UserRole, SidebarLink[]> = {
       href: "/dashboard/my-orders",
     },
     {
+      id: "prevent-ia",
+      labelKey: "preventIa",
+      icon: "HeartPulse",
+      href: "/dashboard/prevent-ia",
+    },
+    {
       id: "documents",
       labelKey: "documents",
       icon: "FileText",
@@ -64,6 +70,12 @@ export const LINKS_BY_ROLE: Record<UserRole, SidebarLink[]> = {
       labelKey: "orders",
       icon: "ClipboardList",
       href: "/dashboard/orders",
+    },
+    {
+      id: "prevent-ia",
+      labelKey: "preventIa",
+      icon: "HeartPulse",
+      href: "/dashboard/prevent-ia",
     },
     {
       id: "episodes",

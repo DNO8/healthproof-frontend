@@ -9,6 +9,7 @@ import {
   FileText,
   FolderOpen,
   Globe,
+  HeartPulse,
   LayoutDashboard,
   Lock,
   Mail,
@@ -47,6 +48,7 @@ const NAV_ICON_MAP: Record<string, LucideIcon> = {
   Upload,
   Globe,
   Building2,
+  HeartPulse,
   Settings,
   Lock,
 };
