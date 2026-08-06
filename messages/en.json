@@ -507,6 +507,51 @@
 				"empty": "You need at least one previous EMPA on record to compare over time.",
 				"current": "New EMPA",
 				"currentLabel": "The highlighted point is the EMPA that HealthProof Layer 1 just recorded; the others are this same patient's previous check-ups."
+			},
+			"agent": {
+				"demoLabel": "Demo mode · choose which clinical result came in",
+				"greetingNamed": "Welcome back, {name}.",
+				"greetingGeneric": "Welcome back.",
+				"greetingBody": "We received new clinical results from your last check-up. We found some changes worth reviewing.",
+				"startButton": "Get started",
+				"wakingUp": "Prevent IA is waking up…",
+				"analyzingNamed": "Hi, {name}.",
+				"analyzingGeneric": "Hi.",
+				"analyzingBody": "I've reviewed your results. I detected some changes worth reviewing. I'll need to ask you a few questions to give you a more accurate analysis.",
+				"continueButton": "Continue",
+				"consentAgeQuestion": "Do you authorize me to use your age for this analysis?",
+				"accept": "Accept",
+				"cancel": "Cancel",
+				"smokingQuestion": "Do you smoke?",
+				"yes": "Yes",
+				"no": "No",
+				"familyDiabetesQuestion": "Is there a family history of diabetes?",
+				"thanksMessage": "Thank you. I now have enough information.",
+				"calculatingMessage": "I'm calculating your Preventive Status…",
+				"resultTitle": "Preventive Status",
+				"resultBrand": "HealthProof Prevent Score",
+				"resultNarrative": {
+					"bajo": "You're healthy. Keep it up.",
+					"moderado": "Healthy, but there's a risk worth keeping an eye on.",
+					"alto": "It's important to discuss these results with your doctor soon."
+				},
+				"viewClinicalDetail": "View clinical detail (for your doctor)",
+				"hideClinicalDetail": "Hide clinical detail",
+				"recommendationsTitle": "These actions can improve your Score.",
+				"shareQuestion": "Would you like to share this analysis with a health professional?",
+				"shareYes": "Yes, share it",
+				"shareNo": "No, thanks",
+				"shareSelectTitle": "Choose who to share your analysis with",
+				"shareOptions": {
+					"cesfam": "CESFAM",
+					"hospital": "Hospital",
+					"clinica": "Clinic",
+					"medico": "Doctor"
+				},
+				"shareConfirmed": "Done. Your analysis was shared with {target}. A professional will be able to review it soon.",
+				"shareDeclined": "Understood. Your analysis stays private — you can share it whenever you want.",
+				"restart": "Start over",
+				"rankingIntro": "Prevent IA is also watching over your patients."
 			}
 		},
 		"permissions": {

@@ -507,6 +507,51 @@
 				"empty": "Necesitás al menos un EMPA previo registrado para comparar en el tiempo.",
 				"current": "Nuevo EMPA",
 				"currentLabel": "El punto resaltado es el EMPA que HealthProof Layer 1 acaba de registrar; los demás son controles previos de este mismo paciente."
+			},
+			"agent": {
+				"demoLabel": "Modo demo · elegí qué resultado clínico llegó",
+				"greetingNamed": "Bienvenido nuevamente, {name}.",
+				"greetingGeneric": "Bienvenido nuevamente.",
+				"greetingBody": "Recibimos nuevos resultados clínicos de tu último control. Encontramos algunos cambios que vale la pena revisar.",
+				"startButton": "Comenzar",
+				"wakingUp": "Prevent IA está despertando…",
+				"analyzingNamed": "Hola, {name}.",
+				"analyzingGeneric": "Hola.",
+				"analyzingBody": "He revisado tus resultados. Detecté algunos cambios que vale la pena revisar. Necesitaré hacerte algunas preguntas para entregar un análisis más preciso.",
+				"continueButton": "Continuar",
+				"consentAgeQuestion": "¿Me autorizas a utilizar tu edad para este análisis?",
+				"accept": "Aceptar",
+				"cancel": "Cancelar",
+				"smokingQuestion": "¿Fumas?",
+				"yes": "Sí",
+				"no": "No",
+				"familyDiabetesQuestion": "¿Existe diabetes en tu familia?",
+				"thanksMessage": "Gracias. Ya tengo suficiente información.",
+				"calculatingMessage": "Estoy calculando tu Estado Preventivo…",
+				"resultTitle": "Estado Preventivo",
+				"resultBrand": "HealthProof Prevent Score",
+				"resultNarrative": {
+					"bajo": "Estás saludable. Seguí así.",
+					"moderado": "Saludable, pero existe un riesgo que vale la pena vigilar.",
+					"alto": "Es importante que converses estos resultados con tu médico pronto."
+				},
+				"viewClinicalDetail": "Ver detalle clínico (para tu médico)",
+				"hideClinicalDetail": "Ocultar detalle clínico",
+				"recommendationsTitle": "Estas acciones pueden mejorar tu Score.",
+				"shareQuestion": "¿Deseas compartir este análisis con un profesional de salud?",
+				"shareYes": "Sí, compartir",
+				"shareNo": "No, gracias",
+				"shareSelectTitle": "Selecciona con quién compartir tu análisis",
+				"shareOptions": {
+					"cesfam": "CESFAM",
+					"hospital": "Hospital",
+					"clinica": "Clínica",
+					"medico": "Médico"
+				},
+				"shareConfirmed": "Listo. Tu análisis fue compartido con {target}. Un profesional podrá revisarlo pronto.",
+				"shareDeclined": "Entendido. Tu análisis queda guardado de forma privada — podés compartirlo cuando quieras.",
+				"restart": "Volver a empezar",
+				"rankingIntro": "Prevent IA también está acompañando a tus pacientes."
 			}
 		},
 		"permissions": {
